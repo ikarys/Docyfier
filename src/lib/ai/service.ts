@@ -52,17 +52,37 @@ async function complete(
   }
 }
 
-/** Model output → JSON object, tolerating fences and surrounding prose. */
+/** Model output → JSON value (object or array), tolerating fences and prose. */
 function extractJson(raw: string): unknown {
   let text = raw.trim();
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenced) text = fenced[1].trim();
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
+  const firstObj = text.indexOf("{");
+  const firstArr = text.indexOf("[");
+  const isArray = firstArr !== -1 && (firstObj === -1 || firstArr < firstObj);
+  const start = isArray ? firstArr : firstObj;
+  const end = text.lastIndexOf(isArray ? "]" : "}");
   if (start === -1 || end <= start) {
-    throw new Error("No JSON object found in model output");
+    throw new Error("No JSON found in model output");
   }
   return JSON.parse(text.slice(start, end + 1));
+}
+
+/**
+ * Models don't always honor the doc envelope: tolerate a bare block or an
+ * array of blocks by wrapping them into a doc before validation.
+ */
+function normalizeToDoc(json: unknown): unknown {
+  if (Array.isArray(json)) return { type: "doc", content: json };
+  if (
+    typeof json === "object" &&
+    json !== null &&
+    (json as { type?: unknown }).type !== "doc" &&
+    typeof (json as { type?: unknown }).type === "string"
+  ) {
+    return { type: "doc", content: [json] };
+  }
+  return json;
 }
 
 async function completeDoc(
@@ -81,7 +101,7 @@ async function completeDoc(
       );
     }
     try {
-      return validateDocJson(extractJson(raw));
+      return validateDocJson(normalizeToDoc(extractJson(raw)));
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
     }
