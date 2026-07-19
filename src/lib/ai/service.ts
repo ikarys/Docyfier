@@ -20,7 +20,7 @@ import {
  * error before giving up.
  */
 
-const MAX_OUTPUT_TOKENS = 8192;
+const MAX_OUTPUT_TOKENS = 32768;
 
 class AiUnavailableError extends Error {}
 
@@ -28,17 +28,17 @@ async function complete(
   system: string,
   prompt: string,
   temperature: number,
-): Promise<string> {
+): Promise<{ text: string; truncated: boolean }> {
   try {
     const model = await languageModel();
-    const { text } = await generateText({
+    const { text, finishReason } = await generateText({
       model,
       system,
       prompt,
       temperature,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
     });
-    return text;
+    return { text, truncated: finishReason === "length" };
   } catch (err) {
     if (
       err instanceof TypeError ||
@@ -73,7 +73,13 @@ async function completeDoc(
   let lastError = "";
   for (let attempt = 0; attempt < 2; attempt++) {
     const input = attempt === 0 ? prompt : retryPrompt(prompt, lastError);
-    const raw = await complete(system, input, temperature);
+    const { text: raw, truncated } = await complete(system, input, temperature);
+    if (truncated) {
+      // Retrying cannot help: the answer does not fit the output budget.
+      throw new Error(
+        "The document is too large for a whole-document edit — select the section to change and use the selection menu instead.",
+      );
+    }
     try {
       return validateDocJson(extractJson(raw));
     } catch (err) {
@@ -114,7 +120,7 @@ export async function rewriteSelectionText(
   text: string,
   instruction: string,
 ): Promise<string> {
-  const raw = await complete(
+  const { text: raw } = await complete(
     SELECTION_TEXT_SYSTEM,
     selectionTextPrompt(text, instruction),
     0.3,
