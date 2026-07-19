@@ -6,4 +6,6 @@ export interface AiSettings {
   model: string;
   /** API key; LM Studio ignores it, other providers may require it. */
   apiKey: string;
+  /** Max tokens the model may generate per response (whole-document edits need room). */
+  maxOutputTokens: number;
 }

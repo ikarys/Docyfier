@@ -15,6 +15,7 @@ const DEFAULTS: AiSettings = {
   baseUrl: "http://localhost:1234/v1",
   model: "",
   apiKey: "",
+  maxOutputTokens: 32768,
 };
 
 function settingsFile(): string {
@@ -24,10 +25,13 @@ function settingsFile(): string {
 }
 
 function envDefaults(): AiSettings {
+  const envMax = Number(process.env.DOCYFIER_LLM_MAX_TOKENS);
   return {
     baseUrl: process.env.DOCYFIER_LLM_BASE_URL ?? DEFAULTS.baseUrl,
     model: process.env.DOCYFIER_LLM_MODEL ?? DEFAULTS.model,
     apiKey: process.env.DOCYFIER_LLM_API_KEY ?? DEFAULTS.apiKey,
+    maxOutputTokens:
+      Number.isInteger(envMax) && envMax > 0 ? envMax : DEFAULTS.maxOutputTokens,
   };
 }
 
@@ -40,6 +44,10 @@ export async function getAiSettings(): Promise<AiSettings> {
       baseUrl: saved.baseUrl?.trim() || fallback.baseUrl,
       model: saved.model?.trim() ?? fallback.model,
       apiKey: saved.apiKey ?? fallback.apiKey,
+      maxOutputTokens:
+        Number.isInteger(saved.maxOutputTokens) && (saved.maxOutputTokens as number) > 0
+          ? (saved.maxOutputTokens as number)
+          : fallback.maxOutputTokens,
     };
   } catch {
     return fallback;

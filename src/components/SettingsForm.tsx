@@ -118,6 +118,22 @@ export function SettingsForm({ initial }: { initial: AiSettings }) {
         )}
       </div>
 
+      <label className="field">
+        <span className="field-label">Max output tokens</span>
+        <input
+          className="field-input"
+          name="maxOutputTokens"
+          type="number"
+          min={256}
+          step={256}
+          defaultValue={initial.maxOutputTokens}
+        />
+        <span className="field-help">
+          Ceiling per AI response. Whole-document edits need room: large
+          documents may require 16k-64k. Higher = slower on local models.
+        </span>
+      </label>
+
       <div className="settings-actions">
         {saveState?.error && (
           <span className="field-error">{saveState.error}</span>

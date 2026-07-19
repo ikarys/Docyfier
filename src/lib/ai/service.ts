@@ -2,6 +2,7 @@ import "server-only";
 import { generateText } from "ai";
 import type { JSONContent } from "@tiptap/core";
 import { languageModel, llmBaseUrl } from "./provider";
+import { getAiSettings } from "@/lib/settings";
 import { validateDocJson } from "./doc-schema";
 import {
   GENERATE_SYSTEM,
@@ -20,8 +21,6 @@ import {
  * error before giving up.
  */
 
-const MAX_OUTPUT_TOKENS = 32768;
-
 class AiUnavailableError extends Error {}
 
 async function complete(
@@ -31,12 +30,13 @@ async function complete(
 ): Promise<{ text: string; truncated: boolean }> {
   try {
     const model = await languageModel();
+    const { maxOutputTokens } = await getAiSettings();
     const { text, finishReason } = await generateText({
       model,
       system,
       prompt,
       temperature,
-      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      maxOutputTokens,
     });
     return { text, truncated: finishReason === "length" };
   } catch (err) {

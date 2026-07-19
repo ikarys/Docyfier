@@ -51,6 +51,7 @@ Resolution order: Settings page > environment > defaults. Env vars
 | `DOCYFIER_LLM_BASE_URL` | `http://localhost:1234/v1` | OpenAI-compatible endpoint |
 | `DOCYFIER_LLM_MODEL` | first model on the server | Model id |
 | `DOCYFIER_LLM_API_KEY` | `lm-studio` | Key for providers that need one |
+| `DOCYFIER_LLM_MAX_TOKENS` | `32768` | Max tokens per AI response |
 
 Every AI response is ProseMirror JSON validated against the editor schema
 server-side (invalid output → one retry) before it touches the document.

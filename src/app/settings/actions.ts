@@ -26,10 +26,19 @@ export async function saveAiSettingsAction(
     return { saved: false, error: "Base URL is not a valid URL." };
   }
 
+  const maxOutputTokens = Number(formData.get("maxOutputTokens"));
+  if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 256) {
+    return {
+      saved: false,
+      error: "Max output tokens must be an integer ≥ 256.",
+    };
+  }
+
   await saveAiSettings({
     baseUrl,
     model: String(formData.get("model") ?? "").trim(),
     apiKey: String(formData.get("apiKey") ?? "").trim(),
+    maxOutputTokens,
   });
   clearDetectedModels();
   revalidatePath("/settings");
