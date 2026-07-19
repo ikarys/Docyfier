@@ -575,6 +575,18 @@ body {
   color: var(--purple);
 }
 
+/* Legacy safety net: layout blocks nested inside a card/column (older docs)
+   stack vertically instead of crushing into slivers */
+.doc .card .stat-row,
+.doc .card .card-grid,
+.doc .card .columns,
+.doc .column .stat-row,
+.doc .column .card-grid,
+.doc .column .columns {
+  grid-template-columns: 1fr;
+  grid-auto-flow: row;
+}
+
 /* Narrow screens: stack the grids */
 @media (max-width: 40rem) {
   .doc .card-grid,

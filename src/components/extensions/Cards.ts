@@ -78,7 +78,10 @@ export const CardGrid = Node.create({
 
 export const Card = Node.create({
   name: "card",
-  content: "block+",
+  // Whitelist: no layout blocks (cardGrid/statRow/columnList) nested inside a
+  // card — they collapse into unreadable slivers at card width.
+  content:
+    "(heading | paragraph | bulletList | orderedList | blockquote | codeBlock | table | callout)+",
   defining: true,
   isolating: true,
 

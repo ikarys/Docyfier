@@ -45,7 +45,9 @@ export const ColumnList = Node.create({
 
 export const Column = Node.create({
   name: "column",
-  content: "block+",
+  // No layout blocks nested inside a column (same rationale as Card).
+  content:
+    "(heading | paragraph | bulletList | orderedList | blockquote | codeBlock | table | callout)+",
   isolating: true,
 
   parseHTML() {

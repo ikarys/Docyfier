@@ -39,8 +39,14 @@ Marks:
 
 Constraints:
 - Never nest block nodes inside heading or paragraph.
+- Never nest cardGrid, statRow or columnList inside a card, column, stat,
+  callout, list item or table cell — layout blocks live at the top level only.
 - Never emit "content": [] — omit the key instead.
-- Write the document in the same language as the user's request or content.`;
+- Write the document in the same language as the user's request or content.
+- THE USER'S EXPLICIT FORMAT REQUEST ALWAYS WINS over the style guide below:
+  if they ask for bullet points, produce a bulletList — not cards, not stats,
+  not a table. Only choose fancy blocks when the user has not specified a
+  format.`;
 
 const STYLE_GUIDE = `Professional document style — modern, visual, striking:
 - Exactly one level-1 heading as the document title; structure with level 2/3 headings.
