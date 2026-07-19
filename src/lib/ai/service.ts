@@ -42,10 +42,10 @@ async function complete(
   } catch (err) {
     if (
       err instanceof TypeError ||
-      /fetch failed|ECONNREFUSED|ENOTFOUND/i.test(String(err))
+      /fetch failed|ECONNREFUSED|ENOTFOUND|timeout/i.test(String(err))
     ) {
       throw new AiUnavailableError(
-        `Cannot reach the AI server at ${llmBaseUrl()}. Is LM Studio running with a model loaded?`,
+        `Cannot reach the AI server at ${await llmBaseUrl()}. Check Settings and make sure the server is running with a model loaded.`,
       );
     }
     throw err;

@@ -1,0 +1,56 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getAiSettings, saveAiSettings } from "@/lib/settings";
+import {
+  listModels,
+  clearDetectedModels,
+  type ModelInfo,
+} from "@/lib/ai/provider";
+
+export type SaveSettingsState = { saved: boolean; error?: string } | null;
+
+export type ListModelsResult =
+  | { ok: true; models: ModelInfo[] }
+  | { ok: false; error: string };
+
+export async function saveAiSettingsAction(
+  _prev: SaveSettingsState,
+  formData: FormData,
+): Promise<SaveSettingsState> {
+  const baseUrl = String(formData.get("baseUrl") ?? "").trim();
+  if (!baseUrl) return { saved: false, error: "Base URL is required." };
+  try {
+    new URL(baseUrl);
+  } catch {
+    return { saved: false, error: "Base URL is not a valid URL." };
+  }
+
+  await saveAiSettings({
+    baseUrl,
+    model: String(formData.get("model") ?? "").trim(),
+    apiKey: String(formData.get("apiKey") ?? "").trim(),
+  });
+  clearDetectedModels();
+  revalidatePath("/settings");
+  return { saved: true };
+}
+
+/** Probe an OpenAI-compatible server and list its models ("test connection"). */
+export async function listModelsAction(
+  baseUrl: string,
+  apiKey: string,
+): Promise<ListModelsResult> {
+  try {
+    return { ok: true, models: await listModels(baseUrl.trim(), apiKey.trim()) };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Connection failed",
+    };
+  }
+}
+
+export async function currentAiSettings() {
+  return getAiSettings();
+}

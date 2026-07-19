@@ -905,6 +905,76 @@ body {
   }
 }
 
+/* ---- Settings ------------------------------------------------------------- */
+
+.settings-page {
+  max-width: 40rem;
+}
+.settings-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 1px 2px rgba(20, 22, 30, 0.04);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.field-label {
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--ink-soft);
+}
+.field-input {
+  font: inherit;
+  font-size: 0.92rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  outline: none;
+  color: var(--ink);
+  background: var(--paper);
+  width: 100%;
+}
+.field-input:focus {
+  border-color: var(--accent);
+}
+.field-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.field-row .btn {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.field-help {
+  font-size: 0.76rem;
+  color: var(--ink-faint);
+}
+.field-ok {
+  color: var(--tip);
+}
+.field-error {
+  color: var(--danger);
+  font-size: 0.82rem;
+}
+.settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.9rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.1rem;
+}
+
 /* ---- Print / PDF (A4) ---------------------------------------------------- */
 
 @media print {

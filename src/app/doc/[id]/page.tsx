@@ -26,6 +26,9 @@ export default async function DocumentPage({
           {doc.title}
         </span>
         <div className="toolbar">
+          <Link href="/settings" className="btn" title="Settings">
+            ⚙
+          </Link>
           <PrintButton />
           <form action={deleteDocumentAction.bind(null, doc.id)}>
             <button className="btn btn-danger" type="submit">

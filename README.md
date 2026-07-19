@@ -31,14 +31,20 @@ Markdown/richer export, diagrams, multi-tenant, auth.
 
 ## AI setup (LM Studio)
 
-AI calls go through the Vercel AI SDK to any OpenAI-compatible server; the
-default target is a local **LM Studio** instance:
+AI calls go through the Vercel AI SDK to any OpenAI-compatible server
+(LM Studio, Ollama, vLLM…); the default target is a local **LM Studio**
+instance:
 
 1. Start LM Studio, load a model, enable the local server (default
    `http://localhost:1234`).
 2. That's it — the first loaded model is auto-detected.
 
-Environment overrides (put them in `.env.local`):
+Configure the endpoint, model and API key on the **Settings page** (`/settings`,
+gear icon in the header), with a connection test and a model picker. Settings
+are persisted next to the document store (`data/settings.json`).
+
+Resolution order: Settings page > environment > defaults. Env vars
+(`.env.local`):
 
 | Variable | Default | Purpose |
 |---|---|---|

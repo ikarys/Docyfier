@@ -21,6 +21,9 @@ export default async function HomePage() {
         <span className="brand">
           Docy<span>fier</span>
         </span>
+        <Link href="/settings" className="btn" title="Settings">
+          ⚙ Settings
+        </Link>
       </header>
 
       <main className="picker">
