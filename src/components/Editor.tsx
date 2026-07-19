@@ -12,6 +12,10 @@ import { TextStyle, Color } from "@tiptap/extension-text-style";
 import { Highlight } from "@tiptap/extension-highlight";
 import type { JSONContent as DocJSON } from "@tiptap/core";
 import { Callout, type CalloutVariant } from "./extensions/Callout";
+import { Badge } from "./extensions/Badge";
+import { CardGrid, Card } from "./extensions/Cards";
+import { ColumnList, Column } from "./extensions/Columns";
+import { StatRow, Stat } from "./extensions/Stats";
 import { saveDocumentAction } from "@/app/actions";
 import { AiPanel } from "./AiPanel";
 import { SelectionAiMenu } from "./SelectionAiMenu";
@@ -60,6 +64,13 @@ export function DocumentEditor({
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
+      Badge,
+      CardGrid,
+      Card,
+      ColumnList,
+      Column,
+      StatRow,
+      Stat,
       Placeholder.configure({
         placeholder: "Write your document, or press the toolbar to add structure…",
       }),
@@ -272,6 +283,37 @@ function MenuBar({
           title="Delete table"
         >
           ✕Tbl
+        </button>
+      </div>
+
+      <div className="tb-group">
+        <button
+          className={active("badge")}
+          onClick={() => editor.chain().focus().toggleBadge("blue").run()}
+          title="Badge / pill on selection"
+        >
+          Pill
+        </button>
+        <button
+          className="tb-btn"
+          onClick={() => editor.chain().focus().insertCardGrid(3).run()}
+          title="Insert card grid"
+        >
+          ▤ Cards
+        </button>
+        <button
+          className="tb-btn"
+          onClick={() => editor.chain().focus().insertColumns(2).run()}
+          title="Insert columns"
+        >
+          ◫ Cols
+        </button>
+        <button
+          className="tb-btn"
+          onClick={() => editor.chain().focus().insertStatRow(3).run()}
+          title="Insert key figures"
+        >
+          № Stats
         </button>
       </div>
 

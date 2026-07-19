@@ -23,6 +23,9 @@ Block nodes:
 - {"type":"horizontalRule"}
 - {"type":"callout","attrs":{"variant":"note"|"tip"|"warn"|"danger"},"content":[blocks]} — colored highlight box for key information
 - {"type":"table","content":[{"type":"tableRow","content":[cells]}]} — cell = {"type":"tableHeader"|"tableCell","content":[{"type":"paragraph","content":[inline]}]}; first row uses tableHeader; every row has the same number of cells.
+- {"type":"cardGrid","attrs":{"cols":2|3|4},"content":[2-4 cards]} — card = {"type":"card","attrs":{"accent":"none"|"blue"|"green"|"yellow"|"red"|"purple"},"content":[blocks]}; start each card with a level-3 heading as its title. "cols" matches the number of cards.
+- {"type":"columnList","content":[2-4 columns]} — column = {"type":"column","content":[blocks]}; side-by-side layout.
+- {"type":"statRow","content":[2-4 stats]} — stat = {"type":"stat","attrs":{"accent":same as card},"content":[{"type":"paragraph",...} (the big value, e.g. "42%"),{"type":"paragraph",...} (the short label)]}. Exactly two paragraphs per stat.
 
 Inline nodes (only inside heading/paragraph and table-cell paragraphs):
 - {"type":"text","text":"...","marks":[mark,...]} — "marks" optional
@@ -32,15 +35,23 @@ Marks:
 - {"type":"bold"} | {"type":"italic"} | {"type":"strike"} | {"type":"code"}
 - {"type":"textStyle","attrs":{"color":"#RRGGBB"}} — text color
 - {"type":"highlight","attrs":{"color":"#RRGGBB"}} — background highlight
+- {"type":"badge","attrs":{"variant":"gray"|"blue"|"green"|"yellow"|"red"|"purple"}} — small colored pill/tag for statuses, priorities, labels ("Done", "P1", "Beta")
 
 Constraints:
 - Never nest block nodes inside heading or paragraph.
 - Never emit "content": [] — omit the key instead.
 - Write the document in the same language as the user's request or content.`;
 
-const STYLE_GUIDE = `Professional document style:
+const STYLE_GUIDE = `Professional document style — modern, visual, striking:
 - Exactly one level-1 heading as the document title; structure with level 2/3 headings.
+- Open strong: after the title, a short intro paragraph, then a statRow of key
+  figures when the topic has numbers.
+- Use cardGrid (with accents) for options, features, pillars, team roles —
+  anything that reads as "N parallel items".
 - Use tables for comparisons, criteria, figures or any tabular data.
+- Use badges for statuses, priorities and tags inside lists and table cells.
+- Use columnList to place two related things side by side (before/after,
+  pros/cons).
 - Use callouts sparingly for key takeaways (note/tip) and risks (warn/danger).
 - Use lists for enumerations; keep paragraphs short and direct.
 - Colors: a restrained professional palette (e.g. deep blue #3b5bdb for section

@@ -9,6 +9,10 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TextStyle, Color } from "@tiptap/extension-text-style";
 import { Highlight } from "@tiptap/extension-highlight";
 import { Callout } from "@/components/extensions/Callout";
+import { Badge } from "@/components/extensions/Badge";
+import { CardGrid, Card } from "@/components/extensions/Cards";
+import { ColumnList, Column } from "@/components/extensions/Columns";
+import { StatRow, Stat } from "@/components/extensions/Stats";
 
 /**
  * Headless ProseMirror schema mirroring the editor's extensions
@@ -26,6 +30,13 @@ const schema = getSchema([
   TextStyle,
   Color,
   Highlight.configure({ multicolor: true }),
+  Badge,
+  CardGrid,
+  Card,
+  ColumnList,
+  Column,
+  StatRow,
+  Stat,
 ]);
 
 /** Throws with a descriptive message when `json` is not a valid document. */

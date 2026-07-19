@@ -35,6 +35,10 @@
   --warn-bg: #fdf3e7;
   --danger: #c23b3b;
   --danger-bg: #fbecec;
+  --purple: #7048e8;
+  --purple-bg: #f3f0ff;
+  --gray: #5d6472;
+  --gray-bg: #eef0f4;
 
   --radius: 10px;
   --shell-max: 56rem;
@@ -422,6 +426,163 @@ body {
 .doc .callout[data-variant="danger"] {
   border-left-color: var(--danger);
   background: var(--danger-bg);
+}
+
+/* ---- Wow blocks: badges, cards, columns, stats ---------------------------- */
+
+/* Inline pills */
+.doc .badge {
+  display: inline-block;
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.14em 0.6em;
+  border-radius: 999px;
+  vertical-align: 0.08em;
+  white-space: nowrap;
+}
+.doc .badge[data-variant="gray"] {
+  color: var(--gray);
+  background: var(--gray-bg);
+}
+.doc .badge[data-variant="blue"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.doc .badge[data-variant="green"] {
+  color: var(--tip);
+  background: var(--tip-bg);
+}
+.doc .badge[data-variant="yellow"] {
+  color: var(--warn);
+  background: var(--warn-bg);
+}
+.doc .badge[data-variant="red"] {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+.doc .badge[data-variant="purple"] {
+  color: var(--purple);
+  background: var(--purple-bg);
+}
+
+/* Card grid */
+.doc .card-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.doc .card-grid[data-cols="2"] {
+  --cols: 2;
+}
+.doc .card-grid[data-cols="3"] {
+  --cols: 3;
+}
+.doc .card-grid[data-cols="4"] {
+  --cols: 4;
+}
+.doc .card {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+  background: linear-gradient(180deg, #fdfdfe, #f8f9fc);
+  box-shadow: 0 1px 2px rgba(20, 22, 30, 0.05);
+  border-top: 3px solid var(--rule-strong);
+  min-width: 0;
+}
+.doc .card[data-accent="blue"] {
+  border-top-color: var(--accent);
+}
+.doc .card[data-accent="green"] {
+  border-top-color: var(--tip);
+}
+.doc .card[data-accent="yellow"] {
+  border-top-color: var(--warn);
+}
+.doc .card[data-accent="red"] {
+  border-top-color: var(--danger);
+}
+.doc .card[data-accent="purple"] {
+  border-top-color: var(--purple);
+}
+.doc .card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+.doc .card > p {
+  font-size: 0.92rem;
+  margin: 0 0 0.6rem;
+}
+.doc .card > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Columns */
+.doc .columns {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+.doc .column {
+  min-width: 0;
+}
+
+/* Key figures */
+.doc .stat-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin: 1.75rem 0;
+}
+.doc .stat {
+  text-align: center;
+  padding: 1.1rem 0.8rem 0.95rem;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fdfdfe, #f6f7fb);
+  border: 1px solid var(--rule);
+  min-width: 0;
+}
+.doc .stat > p:first-child {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 0.25rem;
+  color: var(--accent);
+}
+.doc .stat > p:last-child {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  margin: 0;
+}
+.doc .stat[data-accent="green"] > p:first-child {
+  color: var(--tip);
+}
+.doc .stat[data-accent="yellow"] > p:first-child {
+  color: var(--warn);
+}
+.doc .stat[data-accent="red"] > p:first-child {
+  color: var(--danger);
+}
+.doc .stat[data-accent="purple"] > p:first-child {
+  color: var(--purple);
+}
+
+/* Narrow screens: stack the grids */
+@media (max-width: 40rem) {
+  .doc .card-grid,
+  .doc .stat-row,
+  .doc .columns {
+    grid-template-columns: 1fr;
+    grid-auto-flow: row;
+  }
 }
 
 /* ---- Editor chrome ------------------------------------------------------- */
@@ -1028,6 +1189,9 @@ body {
   .doc pre,
   .doc table,
   .doc blockquote,
+  .doc .card,
+  .doc .stat-row,
+  .doc .card-grid,
   .doc .mermaid-figure {
     break-inside: avoid;
   }
