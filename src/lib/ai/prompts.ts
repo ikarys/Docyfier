@@ -60,9 +60,11 @@ const STYLE_GUIDE = `Professional document style — modern, visual, striking:
 - Use cardGrid (with accents) for options, features, pillars, team roles —
   anything that reads as "N parallel items".
 - Use tables for comparisons, criteria, figures or any tabular data.
-- Use badges for statuses, priorities and tags inside lists and table cells.
-- Use columnList to place two related things side by side (before/after,
-  pros/cons).
+- Statuses, priorities and tags ALWAYS render as badge marks, wherever they
+  appear (table cells, lists, paragraphs): e.g. "On track" green badge,
+  "At risk" yellow badge, "Blocked" red badge, "P1" red badge, "Beta" purple.
+- Use columnList to place two related things side by side — before/after and
+  pros/cons belong in a columnList, not a table.
 - Use callouts sparingly for key takeaways (note/tip) and risks (warn/danger).
 - Use lists for enumerations; keep paragraphs short and direct.
 - Colors: a restrained professional palette (e.g. deep blue #3b5bdb for section
