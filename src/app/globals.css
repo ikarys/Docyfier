@@ -1,0 +1,958 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   Docyfier design system
+   A single editorial design language shared by the on-screen document and the
+   printed (PDF) output. Tokens first, then the document typography, then print.
+   ========================================================================= */
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo,
+    Consolas, monospace;
+
+  /* Neutral editorial palette */
+  --ink: #1a1c22;
+  --ink-soft: #454955;
+  --ink-faint: #6b7180;
+  --paper: #ffffff;
+  --paper-shell: #eef0f4;
+  --rule: #e3e6ec;
+  --rule-strong: #cdd2dc;
+
+  /* Brand accent (single, restrained) */
+  --accent: #3b5bdb;
+  --accent-soft: #e8ecfb;
+
+  /* Semantic callouts */
+  --note: #3b5bdb;
+  --note-bg: #eef2fe;
+  --tip: #1f9d6b;
+  --tip-bg: #e9f7f0;
+  --warn: #b4690e;
+  --warn-bg: #fdf3e7;
+  --danger: #c23b3b;
+  --danger-bg: #fbecec;
+
+  --radius: 10px;
+  --shell-max: 56rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--paper-shell);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---- App chrome ---------------------------------------------------------- */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand span {
+  color: var(--accent);
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #2f4bc4;
+  color: #fff;
+}
+
+/* ---- Document shell ------------------------------------------------------ */
+
+.doc-shell {
+  max-width: var(--shell-max);
+  margin: 2.5rem auto;
+  padding: 0 1.25rem;
+}
+
+.doc-sheet {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgba(20, 22, 30, 0.04),
+    0 12px 32px -12px rgba(20, 22, 30, 0.12);
+  padding: 4rem 4.5rem;
+}
+
+/* ---- Document typography (the "pretty" layer) ---------------------------- */
+
+.doc {
+  color: var(--ink);
+  font-size: 1.02rem;
+  line-height: 1.72;
+}
+
+.doc > *:first-child {
+  margin-top: 0;
+}
+
+.doc h1 {
+  font-size: 2.3rem;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.022em;
+  margin: 0 0 1.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid var(--ink);
+}
+.doc h2 {
+  font-size: 1.55rem;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  margin: 2.75rem 0 1rem;
+  padding-top: 0.25rem;
+}
+.doc h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 2rem 0 0.75rem;
+  color: var(--ink);
+}
+.doc h4 {
+  font-size: 1.02rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  margin: 1.75rem 0 0.5rem;
+}
+
+.doc p {
+  margin: 0 0 1.1rem;
+}
+
+.doc a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-soft);
+}
+.doc a:hover {
+  border-bottom-color: var(--accent);
+}
+
+.doc strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.doc ul,
+.doc ol {
+  margin: 0 0 1.1rem;
+  padding-left: 1.4rem;
+}
+.doc li {
+  margin: 0.3rem 0;
+}
+.doc li::marker {
+  color: var(--ink-faint);
+}
+
+.doc hr {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 2.5rem 0;
+}
+
+/* Tables */
+.doc table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.94rem;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--rule);
+}
+.doc thead th {
+  background: var(--ink);
+  color: #fff;
+  text-align: left;
+  font-weight: 650;
+  padding: 0.7rem 0.95rem;
+  font-size: 0.86rem;
+  letter-spacing: 0.01em;
+}
+.doc tbody td {
+  padding: 0.65rem 0.95rem;
+  border-top: 1px solid var(--rule);
+  vertical-align: top;
+}
+.doc tbody tr:nth-child(even) {
+  background: #f8f9fc;
+}
+
+/* Inline + block code */
+.doc code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: #f3f4f8;
+  padding: 0.12em 0.4em;
+  border-radius: 5px;
+  border: 1px solid var(--rule);
+}
+.doc pre {
+  background: #1c2130;
+  color: #e7eaf3;
+  padding: 1.15rem 1.3rem;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.doc pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Blockquote → callout. A leading "**Label** :" is styled by the renderer. */
+.doc blockquote {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid var(--note);
+  background: var(--note-bg);
+  border-radius: 0 8px 8px 0;
+  color: var(--ink-soft);
+}
+.doc blockquote p {
+  margin: 0.35rem 0;
+}
+.doc blockquote p:first-child {
+  margin-top: 0;
+}
+.doc blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Callout variants toggled via data-variant from the renderer */
+.doc blockquote[data-variant="tip"] {
+  border-left-color: var(--tip);
+  background: var(--tip-bg);
+}
+.doc blockquote[data-variant="warn"] {
+  border-left-color: var(--warn);
+  background: var(--warn-bg);
+}
+.doc blockquote[data-variant="danger"] {
+  border-left-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+/* Mermaid diagrams render into a centered figure */
+.doc .mermaid-figure {
+  margin: 1.75rem 0;
+  padding: 1.25rem;
+  background: #fafbfd;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  text-align: center;
+  overflow-x: auto;
+}
+.doc .mermaid-figure svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ---- Document picker ----------------------------------------------------- */
+
+.picker {
+  max-width: var(--shell-max);
+  margin: 3rem auto;
+  padding: 0 1.25rem;
+}
+.picker h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.4rem;
+}
+.picker .lede {
+  color: var(--ink-faint);
+  margin: 0 0 2rem;
+}
+.doc-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem 0.9rem 1.3rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  color: var(--ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.doc-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px -14px rgba(59, 91, 219, 0.5);
+}
+.doc-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+.doc-card .doc-card-title {
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-card .doc-card-slug {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+
+.btn-danger {
+  color: var(--danger);
+  border-color: var(--rule-strong);
+}
+.btn-danger:hover {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.empty-state {
+  padding: 2rem;
+  border: 1px dashed var(--rule-strong);
+  border-radius: 10px;
+  color: var(--ink-faint);
+  background: var(--paper);
+}
+
+/* ---- Callout blocks (Tiptap node <div class="callout">) ------------------ */
+
+.doc .callout {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid var(--note);
+  background: var(--note-bg);
+  border-radius: 0 8px 8px 0;
+  color: var(--ink-soft);
+}
+.doc .callout > *:first-child {
+  margin-top: 0;
+}
+.doc .callout > *:last-child {
+  margin-bottom: 0;
+}
+.doc .callout[data-variant="tip"] {
+  border-left-color: var(--tip);
+  background: var(--tip-bg);
+}
+.doc .callout[data-variant="warn"] {
+  border-left-color: var(--warn);
+  background: var(--warn-bg);
+}
+.doc .callout[data-variant="danger"] {
+  border-left-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+/* ---- Editor chrome ------------------------------------------------------- */
+
+.doc-title {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 1rem;
+}
+
+.toolbar-bar {
+  position: sticky;
+  top: 3.25rem;
+  z-index: 15;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1.25rem;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+}
+.tb-group {
+  display: flex;
+  gap: 0.2rem;
+  padding-right: 0.35rem;
+  margin-right: 0.35rem;
+  border-right: 1px solid var(--rule);
+}
+.tb-group:last-of-type {
+  border-right: none;
+}
+.tb-btn,
+.tb-swatch {
+  font: inherit;
+  font-size: 0.8rem;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.tb-btn:hover:not(:disabled),
+.tb-swatch:hover:not(:disabled) {
+  background: var(--paper-shell);
+  color: var(--ink);
+}
+.tb-btn.is-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-soft);
+}
+.tb-btn:disabled,
+.tb-swatch:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.tb-swatch {
+  min-width: 1.7rem;
+  padding: 0;
+  font-weight: 700;
+}
+.tb-note {
+  color: var(--note);
+}
+.tb-tip {
+  color: var(--tip);
+}
+.tb-warn {
+  color: var(--warn);
+}
+.tb-danger {
+  color: var(--danger);
+}
+.save-status {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  min-width: 4.5rem;
+  text-align: right;
+}
+.save-status[data-state="saved"] {
+  color: var(--tip);
+}
+.save-status[data-state="error"] {
+  color: var(--danger);
+}
+
+/* ---- ProseMirror editing surface ---------------------------------------- */
+
+.doc-editor {
+  outline: none;
+  min-height: 60vh;
+}
+.doc-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--ink-faint);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.doc-editor .tableWrapper {
+  overflow-x: auto;
+}
+.doc-editor .selectedCell {
+  background: var(--accent-soft);
+}
+.doc-editor table {
+  position: relative;
+}
+.doc-editor .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  cursor: col-resize;
+}
+.doc-editor .ProseMirror-gapcursor {
+  display: none;
+  pointer-events: none;
+  position: absolute;
+}
+
+/* ---- Home hero (prompt-to-document) -------------------------------------- */
+
+.hero {
+  margin: 1.5rem 0 3.5rem;
+  text-align: center;
+}
+.hero-title {
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin: 0 0 0.4rem;
+}
+.hero-title span {
+  color: var(--accent);
+}
+.hero-sub {
+  color: var(--ink-faint);
+  margin: 0 0 1.75rem;
+}
+.hero-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 0.9rem;
+  box-shadow: 0 1px 2px rgba(20, 22, 30, 0.04),
+    0 16px 40px -18px rgba(59, 91, 219, 0.25);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  text-align: left;
+}
+.hero-card:focus-within {
+  border-color: var(--accent);
+}
+.hero-card[data-pending="true"] {
+  opacity: 0.75;
+}
+.hero-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--ink);
+  background: transparent;
+  min-height: 4.5rem;
+}
+.hero-input::placeholder {
+  color: var(--ink-faint);
+}
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.hero-hint {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+.hero-error {
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+.btn-generate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+  padding: 0.55rem 1.2rem;
+}
+.hero-examples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.hero-blank {
+  margin-top: 1.25rem;
+}
+.btn-ghost {
+  font: inherit;
+  font-size: 0.85rem;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.btn-ghost:hover {
+  color: var(--accent);
+}
+.picker-heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+}
+
+.chip {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.chip:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 0.9em;
+  height: 0.9em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  vertical-align: -0.1em;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Editor layout with AI panel ----------------------------------------- */
+
+.editor-body {
+  display: flex;
+  align-items: flex-start;
+}
+.editor-body .doc-shell {
+  flex: 1;
+  min-width: 0;
+}
+
+.tb-ai {
+  margin-left: auto;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.editor-wrap .save-status {
+  margin-left: 0.75rem;
+}
+
+/* ---- AI side panel (whole-document operations) ---------------------------- */
+
+.ai-panel {
+  position: sticky;
+  top: 6.6rem;
+  width: 21rem;
+  flex-shrink: 0;
+  height: calc(100vh - 7.6rem);
+  display: flex;
+  flex-direction: column;
+  margin: 1rem 1rem 0 0;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -16px rgba(20, 22, 30, 0.18);
+  overflow: hidden;
+}
+.ai-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--rule);
+  background: linear-gradient(
+    135deg,
+    var(--accent-soft),
+    color-mix(in srgb, var(--paper) 70%, var(--accent-soft))
+  );
+}
+.ai-panel-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+.ai-panel-close {
+  font: inherit;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.ai-panel-close:hover {
+  color: var(--ink);
+}
+.ai-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--rule);
+}
+.ai-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.ai-empty {
+  font-size: 0.83rem;
+  color: var(--ink-faint);
+  margin: 0;
+  line-height: 1.55;
+}
+.ai-msg {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  max-width: 92%;
+}
+.ai-msg-user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+.ai-msg-ai {
+  align-self: flex-start;
+  background: var(--paper-shell);
+  color: var(--ink-soft);
+  border-bottom-left-radius: 3px;
+}
+.ai-msg-error {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.ai-msg-busy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ink-faint);
+}
+.ai-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border-top: 1px solid var(--rule);
+}
+.ai-input {
+  flex: 1;
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  resize: none;
+  outline: none;
+  color: var(--ink);
+  background: var(--paper);
+}
+.ai-input:focus {
+  border-color: var(--accent);
+}
+.ai-send {
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+}
+
+/* ---- Selection bubble menu ------------------------------------------------ */
+
+.ai-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px -10px rgba(20, 22, 30, 0.3);
+  max-width: 22rem;
+}
+.ai-bubble-row {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+.ai-bubble-btn {
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ai-bubble-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.ai-bubble-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ai-bubble-send {
+  border: 1px solid var(--rule-strong);
+}
+.ai-bubble-input {
+  flex: 1;
+  font: inherit;
+  font-size: 0.78rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  outline: none;
+  min-width: 14rem;
+}
+.ai-bubble-input:focus {
+  border-color: var(--accent);
+}
+.ai-bubble-busy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  padding: 0.2rem 0.4rem;
+}
+.ai-bubble-error {
+  font-size: 0.75rem;
+  color: var(--danger);
+  max-width: 20rem;
+}
+
+@media (max-width: 64rem) {
+  .ai-panel {
+    display: none;
+  }
+}
+
+/* ---- Print / PDF (A4) ---------------------------------------------------- */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+  body {
+    background: #fff;
+  }
+  .app-header,
+  .no-print {
+    display: none !important;
+  }
+  .doc-shell {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+  .doc-sheet {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+  .doc {
+    font-size: 10.5pt;
+    line-height: 1.55;
+  }
+  .doc h1 {
+    font-size: 20pt;
+  }
+  .doc h2 {
+    font-size: 15pt;
+  }
+  .doc h2,
+  .doc h3,
+  .doc h4 {
+    break-after: avoid;
+  }
+  .doc pre,
+  .doc table,
+  .doc blockquote,
+  .doc .mermaid-figure {
+    break-inside: avoid;
+  }
+  .doc a {
+    border-bottom: none;
+    color: var(--ink);
+  }
+}

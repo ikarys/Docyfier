@@ -1,0 +1,35 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import type { JSONContent } from "@tiptap/react";
+import {
+  createDocument,
+  deleteDocument,
+  updateDocument,
+} from "@/lib/store";
+
+/** Create a blank document and open it in the editor. */
+export async function newDocumentAction(): Promise<void> {
+  const doc = await createDocument();
+  revalidatePath("/");
+  redirect(`/doc/${doc.id}`);
+}
+
+/** Persist editor content. Returns the derived title and save time for the UI. */
+export async function saveDocumentAction(
+  id: string,
+  content: JSONContent,
+): Promise<{ title: string; updatedAt: string } | null> {
+  const updated = await updateDocument(id, content);
+  if (!updated) return null;
+  revalidatePath("/");
+  return { title: updated.title, updatedAt: updated.updatedAt };
+}
+
+/** Delete a document and return to the list. */
+export async function deleteDocumentAction(id: string): Promise<void> {
+  await deleteDocument(id);
+  revalidatePath("/");
+  redirect("/");
+}
