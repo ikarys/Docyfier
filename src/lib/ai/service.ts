@@ -68,6 +68,45 @@ function extractJson(raw: string): unknown {
   return JSON.parse(text.slice(start, end + 1));
 }
 
+interface LooseNode {
+  type?: string;
+  text?: string;
+  marks?: { type?: string }[];
+  content?: LooseNode[];
+  [key: string]: unknown;
+}
+
+/**
+ * Models sometimes leak markdown syntax into text nodes ("**bold**").
+ * Convert **segments** into real bold marks and drop stray markers.
+ * Code blocks are left untouched.
+ */
+function sanitizeMarkdownArtifacts(node: LooseNode): LooseNode {
+  if (node.type === "codeBlock" || !Array.isArray(node.content)) return node;
+  const content: LooseNode[] = [];
+  for (const child of node.content) {
+    if (child.type === "text" && typeof child.text === "string" && child.text.includes("**")) {
+      const parts = child.text.split("**");
+      if (parts.length % 2 === 1) {
+        // Balanced markers: odd indexes were between ** pairs → bold.
+        parts.forEach((part, i) => {
+          if (!part) return;
+          const marks = child.marks ? [...child.marks] : [];
+          if (i % 2 === 1 && !marks.some((m) => m.type === "bold")) {
+            marks.push({ type: "bold" });
+          }
+          content.push({ ...child, text: part, ...(marks.length ? { marks } : { marks: undefined }) });
+        });
+      } else {
+        content.push({ ...child, text: parts.join("") });
+      }
+    } else {
+      content.push(sanitizeMarkdownArtifacts(child));
+    }
+  }
+  return { ...node, content };
+}
+
 /**
  * Models don't always honor the doc envelope: tolerate a bare block or an
  * array of blocks by wrapping them into a doc before validation.
@@ -101,7 +140,8 @@ async function completeDoc(
       );
     }
     try {
-      return validateDocJson(normalizeToDoc(extractJson(raw)));
+      const doc = normalizeToDoc(extractJson(raw));
+      return validateDocJson(sanitizeMarkdownArtifacts(doc as LooseNode));
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
     }
@@ -149,5 +189,6 @@ export async function rewriteSelectionText(
     .trim()
     .replace(/^```[a-z]*\n?|```$/g, "")
     .replace(/^"|"$/g, "")
+    .replace(/\*\*/g, "")
     .trim();
 }

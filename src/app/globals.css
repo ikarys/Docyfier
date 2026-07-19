@@ -483,32 +483,52 @@ body {
   --cols: 4;
 }
 .doc .card {
+  --card-c: var(--ink-soft);
+  --card-bg: var(--paper-shell);
   border: 1px solid var(--rule);
-  border-radius: 12px;
-  padding: 1.1rem 1.2rem;
-  background: linear-gradient(180deg, #fdfdfe, #f8f9fc);
-  box-shadow: 0 1px 2px rgba(20, 22, 30, 0.05);
-  border-top: 3px solid var(--rule-strong);
+  border-radius: 14px;
+  padding: 1.2rem 1.3rem;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--card-bg) 55%, #fff),
+      #fff 52%
+    );
+  box-shadow: 0 1px 2px rgba(20, 22, 30, 0.04),
+    0 10px 24px -18px rgba(20, 22, 30, 0.25);
+  border-top: 3px solid var(--card-c);
   min-width: 0;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.doc-editor .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(20, 22, 30, 0.05),
+    0 16px 32px -16px rgba(20, 22, 30, 0.3);
 }
 .doc .card[data-accent="blue"] {
-  border-top-color: var(--accent);
+  --card-c: var(--accent);
+  --card-bg: var(--accent-soft);
 }
 .doc .card[data-accent="green"] {
-  border-top-color: var(--tip);
+  --card-c: var(--tip);
+  --card-bg: var(--tip-bg);
 }
 .doc .card[data-accent="yellow"] {
-  border-top-color: var(--warn);
+  --card-c: var(--warn);
+  --card-bg: var(--warn-bg);
 }
 .doc .card[data-accent="red"] {
-  border-top-color: var(--danger);
+  --card-c: var(--danger);
+  --card-bg: var(--danger-bg);
 }
 .doc .card[data-accent="purple"] {
-  border-top-color: var(--purple);
+  --card-c: var(--purple);
+  --card-bg: var(--purple-bg);
 }
 .doc .card h3 {
   margin: 0 0 0.5rem;
-  font-size: 1rem;
+  font-size: 1.02rem;
+  color: color-mix(in srgb, var(--card-c) 75%, var(--ink));
 }
 .doc .card > p {
   font-size: 0.92rem;

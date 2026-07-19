@@ -38,6 +38,11 @@ Marks:
 - {"type":"badge","attrs":{"variant":"gray"|"blue"|"green"|"yellow"|"red"|"purple"}} — small colored pill/tag for statuses, priorities, labels ("Done", "P1", "Beta")
 
 Constraints:
+- "text" values are PLAIN TEXT: never markdown syntax (**bold**, *italic*,
+  \`code\`, # headings) inside them — express styling with marks only.
+- Emoji: only when the user explicitly asks for emoji.
+- When the user asks for color, apply textStyle color marks (and/or a
+  highlight) to the relevant words — do not just add symbols.
 - Never nest block nodes inside heading or paragraph.
 - Never nest cardGrid, statRow or columnList inside a card, column, stat,
   callout, list item or table cell — layout blocks live at the top level only.
@@ -80,7 +85,8 @@ Task: you receive the current document as JSON plus an instruction. Return the F
 
 export const SELECTION_BLOCKS_SYSTEM = `${FORMAT_CONTRACT}
 
-Task: you receive an excerpt of a larger document (as a JSON doc) plus an instruction. Return a doc containing ONLY the rewritten replacement blocks for that excerpt — not the whole document, no extra sections. Keep the language of the excerpt.`;
+Task: you receive an excerpt of a larger document (as a JSON doc) plus an instruction. Return a doc containing ONLY the rewritten replacement blocks for that excerpt — not the whole document, no extra sections. Keep the language of the excerpt.
+Styling requests: "color" → textStyle/highlight marks on key words; "emphasis" → bold, highlight or badge marks; keep it restrained and professional (2-3 colors max).`;
 
 export const SELECTION_TEXT_SYSTEM = `You rewrite text fragments inside a document.
 Return ONLY the rewritten fragment as plain text — no quotes, no markdown, no commentary, no surrounding sentence. Keep the language of the fragment. It must fit grammatically where the original stood.`;
