@@ -8,6 +8,8 @@ import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { Placeholder } from "@tiptap/extension-placeholder";
+import { TextStyle, Color } from "@tiptap/extension-text-style";
+import { Highlight } from "@tiptap/extension-highlight";
 import type { JSONContent as DocJSON } from "@tiptap/core";
 import { Callout, type CalloutVariant } from "./extensions/Callout";
 import { saveDocumentAction } from "@/app/actions";
@@ -55,6 +57,9 @@ export function DocumentEditor({
       TableRow,
       TableHeader,
       TableCell,
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
       Placeholder.configure({
         placeholder: "Write your document, or press the toolbar to add structure…",
       }),

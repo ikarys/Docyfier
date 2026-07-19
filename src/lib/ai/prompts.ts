@@ -25,8 +25,13 @@ Block nodes:
 - {"type":"table","content":[{"type":"tableRow","content":[cells]}]} — cell = {"type":"tableHeader"|"tableCell","content":[{"type":"paragraph","content":[inline]}]}; first row uses tableHeader; every row has the same number of cells.
 
 Inline nodes (only inside heading/paragraph and table-cell paragraphs):
-- {"type":"text","text":"...","marks":[{"type":"bold"|"italic"|"strike"|"code"}]} — "marks" optional
+- {"type":"text","text":"...","marks":[mark,...]} — "marks" optional
 - {"type":"hardBreak"}
+
+Marks:
+- {"type":"bold"} | {"type":"italic"} | {"type":"strike"} | {"type":"code"}
+- {"type":"textStyle","attrs":{"color":"#RRGGBB"}} — text color
+- {"type":"highlight","attrs":{"color":"#RRGGBB"}} — background highlight
 
 Constraints:
 - Never nest block nodes inside heading or paragraph.
@@ -38,6 +43,10 @@ const STYLE_GUIDE = `Professional document style:
 - Use tables for comparisons, criteria, figures or any tabular data.
 - Use callouts sparingly for key takeaways (note/tip) and risks (warn/danger).
 - Use lists for enumerations; keep paragraphs short and direct.
+- Colors: a restrained professional palette (e.g. deep blue #3b5bdb for section
+  names/keywords, green #1f9d6b for positives, red #c23b3b for risks, soft
+  yellow highlight #fff3bf for emphasis). Never more than 2-3 colors per
+  document; body text stays default.
 - Modern, polished, professional tone. No filler.`;
 
 export const GENERATE_SYSTEM = `${FORMAT_CONTRACT}

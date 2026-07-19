@@ -51,12 +51,19 @@ export function AiPanel({
     if (busy) return;
     setBusy(true);
     push({ role: "user", text: label ?? instruction });
-    const res = await transformDocumentAction(editor.getJSON(), instruction);
-    if (res.ok) {
+    const before = editor.getJSON();
+    const res = await transformDocumentAction(before, instruction);
+    if (!res.ok) {
+      push({ role: "ai", text: res.error, error: true });
+    } else if (JSON.stringify(res.content) === JSON.stringify(before)) {
+      push({
+        role: "ai",
+        text: "The AI returned the document unchanged — try a more specific instruction.",
+        error: true,
+      });
+    } else {
       onApply(res.content);
       push({ role: "ai", text: "Done — applied to the document." });
-    } else {
-      push({ role: "ai", text: res.error, error: true });
     }
     setBusy(false);
   };
