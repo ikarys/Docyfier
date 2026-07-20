@@ -1,5 +1,5 @@
 import "server-only";
-import { generateText } from "ai";
+import { generateText, APICallError } from "ai";
 import type { JSONContent } from "@tiptap/core";
 import { languageModel, llmBaseUrl } from "./provider";
 import { getAiSettings } from "@/lib/settings";
@@ -40,6 +40,21 @@ async function complete(
     });
     return { text, truncated: finishReason === "length" };
   } catch (err) {
+    if (APICallError.isInstance(err)) {
+      // The provider's HTTP response didn't parse as the SDK's expected
+      // schema (e.g. an HTML error page, an SSE chunk, or a non-OpenAI
+      // envelope from a proxy) — log the raw body, it's the only way to see why.
+      console.error(
+        "[ai] APICallError from",
+        err.url,
+        "status",
+        err.statusCode,
+        "\nresponse body:",
+        err.responseBody?.slice(0, 2000),
+      );
+    } else {
+      console.error("[ai] generateText failed:", err);
+    }
     if (
       err instanceof TypeError ||
       /fetch failed|ECONNREFUSED|ENOTFOUND|timeout/i.test(String(err))
