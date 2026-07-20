@@ -5,6 +5,7 @@ import { getAiSettings, saveAiSettings } from "@/lib/settings";
 import {
   listModels,
   clearDetectedModels,
+  ModelsEndpointError,
   type ModelInfo,
 } from "@/lib/ai/provider";
 
@@ -12,7 +13,7 @@ export type SaveSettingsState = { saved: boolean; error?: string } | null;
 
 export type ListModelsResult =
   | { ok: true; models: ModelInfo[] }
-  | { ok: false; error: string };
+  | { ok: false; error: string; status?: number };
 
 export async function saveAiSettingsAction(
   _prev: SaveSettingsState,
@@ -56,6 +57,7 @@ export async function listModelsAction(
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Connection failed",
+      status: err instanceof ModelsEndpointError ? err.status : undefined,
     };
   }
 }

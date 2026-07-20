@@ -17,6 +17,13 @@ export interface ModelInfo {
   id: string;
 }
 
+/** Thrown by listModels() on a non-OK HTTP response; carries the status for callers that need to branch on it (e.g. 404 = no /models endpoint). */
+export class ModelsEndpointError extends Error {
+  constructor(public readonly status: number) {
+    super(`LLM server responded ${status} on /models`);
+  }
+}
+
 /** Models exposed by an OpenAI-compatible server. Throws on unreachable/HTTP errors. */
 export async function listModels(
   baseUrl: string,
@@ -27,7 +34,7 @@ export async function listModels(
     signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) {
-    throw new Error(`LLM server responded ${res.status} on /models`);
+    throw new ModelsEndpointError(res.status);
   }
   const body = (await res.json()) as { data?: { id?: string }[] };
   return (body.data ?? [])

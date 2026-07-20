@@ -11,7 +11,7 @@ type Probe =
   | { state: "idle" }
   | { state: "loading" }
   | { state: "ok"; models: string[] }
-  | { state: "error"; message: string };
+  | { state: "error"; message: string; status?: number };
 
 /** AI model configuration: endpoint, model picker, optional API key. */
 export function SettingsForm({ initial }: { initial: AiSettings }) {
@@ -23,15 +23,19 @@ export function SettingsForm({ initial }: { initial: AiSettings }) {
   const [apiKey, setApiKey] = useState(initial.apiKey);
   const [model, setModel] = useState(initial.model);
   const [probe, setProbe] = useState<Probe>({ state: "idle" });
+  const [manualModel, setManualModel] = useState(false);
 
   const test = async (url = baseUrl, key = apiKey) => {
     setProbe({ state: "loading" });
     const res = await listModelsAction(url, key);
-    setProbe(
-      res.ok
-        ? { state: "ok", models: res.models.map((m) => m.id) }
-        : { state: "error", message: res.error },
-    );
+    if (res.ok) {
+      setProbe({ state: "ok", models: res.models.map((m) => m.id) });
+    } else {
+      setProbe({ state: "error", message: res.error, status: res.status });
+      // Server has no /models endpoint (e.g. some OpenAI-compatible proxies):
+      // there's nothing to pick from, so switch to manual entry.
+      if (res.status === 404) setManualModel(true);
+    }
   };
 
   // Probe the configured server once on mount to populate the model picker.
@@ -75,23 +79,38 @@ export function SettingsForm({ initial }: { initial: AiSettings }) {
 
       <div className="field">
         <span className="field-label">Model</span>
-        <input type="hidden" name="model" value={model} />
         <div className="field-row">
-          <select
-            className="field-input"
-            value={knownModel ? model : "__custom"}
-            onChange={(e) => {
-              if (e.target.value !== "__custom") setModel(e.target.value);
-            }}
-          >
-            <option value="">Auto — first model on the server</option>
-            {models.map((id) => (
-              <option key={id} value={id}>
-                {id}
-              </option>
-            ))}
-            {!knownModel && <option value="__custom">{model} (saved)</option>}
-          </select>
+          {manualModel ? (
+            <input
+              className="field-input"
+              name="model"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder="Model id, e.g. gpt-4o"
+              spellCheck={false}
+            />
+          ) : (
+            <>
+              <input type="hidden" name="model" value={model} />
+              <select
+                className="field-input"
+                value={knownModel ? model : "__custom"}
+                onChange={(e) => {
+                  if (e.target.value !== "__custom") setModel(e.target.value);
+                }}
+              >
+                <option value="">Auto — first model on the server</option>
+                {models.map((id) => (
+                  <option key={id} value={id}>
+                    {id}
+                  </option>
+                ))}
+                {!knownModel && (
+                  <option value="__custom">{model} (saved)</option>
+                )}
+              </select>
+            </>
+          )}
           <button
             type="button"
             className="btn"
@@ -107,6 +126,14 @@ export function SettingsForm({ initial }: { initial: AiSettings }) {
             )}
           </button>
         </div>
+        <label className="field-help field-checkbox">
+          <input
+            type="checkbox"
+            checked={manualModel}
+            onChange={(e) => setManualModel(e.target.checked)}
+          />
+          Enter model id manually (for servers without a /models endpoint)
+        </label>
         {probe.state === "ok" && (
           <span className="field-help field-ok">
             ✓ Connected — {probe.models.length} model

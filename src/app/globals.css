@@ -1160,6 +1160,12 @@ body {
   font-size: 0.76rem;
   color: var(--ink-faint);
 }
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
 .field-ok {
   color: var(--tip);
 }
