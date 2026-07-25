@@ -17,17 +17,27 @@ work in a rich block editor with AI help. There is no dependency on markdown fil
   (rephrase / shorten / expand / formal) or a free prompt applied only to the
   selection.
 - **Create / edit / delete** documents from the home list.
-- **Block editor** (Tiptap / ProseMirror): headings, bold/italic/strike/inline
-  code, bullet & ordered lists, blockquote, code block, tables, horizontal rule,
-  undo/redo, and colored **callouts** (note / tip / warn / danger).
+- **Block editor** (Tiptap / ProseMirror): headings, bold/italic/strike/underline/
+  inline code, links, text alignment, bullet & ordered lists, blockquote, code
+  block, tables, horizontal rule, undo/redo, and colored **callouts**
+  (note / tip / warn / danger). Type `/` to insert any block.
+- **Presentation blocks**: card grids, columns, key-figure rows (compact or
+  full-width dashboard cards), timelines, step lists, pyramids, bar & line
+  **charts** (inline SVG), a document **cover** and a **table of contents**.
+- **Images**: paste, drag-drop or pick a file — uploaded, stored and re-rendered
+  at 25 / 50 / 75 / 100 % of the text column.
+- **Themes**: four presets, each an adjustable token set — accent color, font
+  pair, corner radius and density — edited live in the Design panel. Themes are
+  presentation only and never touch document content.
 - **Autosave**: edits persist automatically (debounced) with a save indicator.
 - **Export**: "PDF" via the browser print dialog (A4 print stylesheet).
 - **Internal format**: ProseMirror JSON — the product's document format
   (see PLAN.md STEP 0). It makes reliable formatting, targeted AI edits, snapshots
   and multi-format export possible.
 
-Not yet built (next STEPS in [PLAN.md](PLAN.md)): themes (STEP 2b),
-Markdown/richer export, diagrams, multi-tenant, auth.
+Not yet built (next STEPS in [PLAN.md](PLAN.md)): streaming and targeted AI
+transforms (U4), templates (U5), Markdown/richer export, diagrams, multi-tenant,
+auth.
 
 ## AI setup (LM Studio)
 

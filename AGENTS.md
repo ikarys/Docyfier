@@ -23,7 +23,13 @@ schema-validated ProseMirror JSON. No auth or multi-tenant yet.
 Documents are ProseMirror JSON stored on disk (`src/lib/store.ts`), standing in
 for the future database. The earlier markdown-file model was dropped: users arrive
 with no source. Stack validated: Next.js + TypeScript + Tailwind v4 + Tiptap.
-Node is pinned via `.nvmrc` (nvm). Next: themes (STEP 2b in [PLAN.md](PLAN.md)).
+Node is pinned via `.nvmrc` (nvm).
+
+Editor UX and rendering STEPS U1, U3, U2 and U6 are in: slash menu and drag
+handles; themes as adjustable token sets (accent, font pair, radius, density)
+with a Design panel; images, cover, table of contents and print control; charts,
+block icons and dashboard stat cards. Next: STEP U4 (streaming + targeted AI
+transforms) and STEP U5 (templates), then STEP 3.
 
 ## Working conventions
 
