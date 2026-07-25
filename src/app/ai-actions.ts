@@ -9,6 +9,7 @@ import {
   transformDocument,
   rewriteSelectionBlocks,
   rewriteSelectionText,
+  type TransformOutcome,
 } from "@/lib/ai/service";
 
 /** Server actions for the three AI surfaces (PLAN.md STEP 2). */
@@ -16,7 +17,7 @@ import {
 export type GenerateState = { error: string } | null;
 
 export type TransformResult =
-  | { ok: true; content: JSONContent }
+  | { ok: true; outcome: TransformOutcome }
   | { ok: false; error: string };
 
 export type SelectionInput =
@@ -60,7 +61,7 @@ export async function transformDocumentAction(
   const trimmed = instruction.trim();
   if (!trimmed) return { ok: false, error: "Empty instruction" };
   try {
-    return { ok: true, content: await transformDocument(content, trimmed) };
+    return { ok: true, outcome: await transformDocument(content, trimmed) };
   } catch (err) {
     return { ok: false, error: message(err) };
   }

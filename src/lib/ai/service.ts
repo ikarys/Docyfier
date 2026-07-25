@@ -5,12 +5,13 @@ import { languageModel, llmBaseUrl } from "./provider";
 import { getAiSettings } from "@/lib/settings";
 import { validateDocJson } from "./doc-schema";
 import { beautify } from "@/lib/doc/beautify";
+import { parseOps, type DocOp } from "@/lib/doc/ops";
 import {
   GENERATE_SYSTEM,
-  TRANSFORM_SYSTEM,
+  TRANSFORM_OPS_SYSTEM,
   SELECTION_BLOCKS_SYSTEM,
   SELECTION_TEXT_SYSTEM,
-  transformPrompt,
+  transformOpsPrompt,
   selectionBlocksPrompt,
   selectionTextPrompt,
   retryPrompt,
@@ -140,11 +141,18 @@ function normalizeToDoc(json: unknown): unknown {
   return json;
 }
 
-async function completeDoc(
+/**
+ * Ask for JSON and hand it to `parse`, retrying once with the parse error when
+ * the model gets it wrong. Every JSON-producing surface goes through here, so
+ * "invalid output → retry, never a broken editor" holds for documents, blocks
+ * and op lists alike.
+ */
+async function completeJson<T>(
   system: string,
   prompt: string,
   temperature: number,
-): Promise<JSONContent> {
+  parse: (json: unknown) => T,
+): Promise<T> {
   let lastError = "";
   for (let attempt = 0; attempt < 2; attempt++) {
     const input = attempt === 0 ? prompt : retryPrompt(prompt, lastError);
@@ -156,13 +164,22 @@ async function completeDoc(
       );
     }
     try {
-      const doc = normalizeToDoc(extractJson(raw));
-      return validateDocJson(sanitizeMarkdownArtifacts(doc as LooseNode));
+      return parse(extractJson(raw));
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
     }
   }
-  throw new Error(`The AI returned an invalid document (${lastError})`);
+  throw new Error(`The AI returned an invalid answer (${lastError})`);
+}
+
+function completeDoc(
+  system: string,
+  prompt: string,
+  temperature: number,
+): Promise<JSONContent> {
+  return completeJson(system, prompt, temperature, (json) =>
+    validateDocJson(sanitizeMarkdownArtifacts(normalizeToDoc(json) as LooseNode)),
+  );
 }
 
 /**
@@ -183,13 +200,57 @@ export async function generateDocument(prompt: string): Promise<JSONContent> {
   return polish(await completeDoc(GENERATE_SYSTEM, prompt, 0.7));
 }
 
+/**
+ * Result of surface 2: normally a list of edits addressing individual blocks;
+ * `doc` is the fallback for a model that answered with a whole document anyway.
+ */
+export type TransformOutcome =
+  | { kind: "ops"; ops: DocOp[] }
+  | { kind: "doc"; content: JSONContent };
+
+/** Validate (and deterministically polish) the blocks each op carries. */
+function validateOps(json: unknown, blockCount: number): DocOp[] {
+  return parseOps(json, blockCount).map((op) => {
+    if (op.op === "delete") return op;
+    const wrapped = validateDocJson(
+      sanitizeMarkdownArtifacts({ type: "doc", content: op.blocks } as LooseNode),
+    );
+    return { ...op, blocks: polish(wrapped).content ?? [] };
+  });
+}
+
+/** An array of ops, or an array of blocks the model returned instead. */
+function looksLikeOps(json: unknown[]): boolean {
+  return json.every(
+    (item) => typeof item === "object" && item !== null && "op" in item,
+  );
+}
+
 /** Surface 2 — whole-document transform (side panel, "make it pretty"). */
-export async function transformDocument(
+export function transformDocument(
   doc: JSONContent,
   instruction: string,
-): Promise<JSONContent> {
-  return polish(
-    await completeDoc(TRANSFORM_SYSTEM, transformPrompt(doc, instruction), 0.3),
+): Promise<TransformOutcome> {
+  const blocks = doc.content ?? [];
+  return completeJson(
+    TRANSFORM_OPS_SYSTEM,
+    transformOpsPrompt(blocks, instruction),
+    0.3,
+    (json): TransformOutcome => {
+      if (Array.isArray(json) && looksLikeOps(json)) {
+        return { kind: "ops", ops: validateOps(json, blocks.length) };
+      }
+      // Model ignored the op contract and rewrote the document (or returned a
+      // bare block array): fall back to the whole-document replacement.
+      return {
+        kind: "doc",
+        content: polish(
+          validateDocJson(
+            sanitizeMarkdownArtifacts(normalizeToDoc(json) as LooseNode),
+          ),
+        ),
+      };
+    },
   );
 }
 

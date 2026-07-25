@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { transformDocumentAction } from "@/app/ai-actions";
 import { toPlainJSON } from "@/lib/doc/plain";
+import { applyOps } from "@/lib/doc/ops";
 
 interface PanelItem {
   role: "user" | "ai";
@@ -56,15 +57,32 @@ export function AiPanel({
     const res = await transformDocumentAction(before, instruction);
     if (!res.ok) {
       push({ role: "ai", text: res.error, error: true });
-    } else if (JSON.stringify(res.content) === JSON.stringify(before)) {
+      setBusy(false);
+      return;
+    }
+
+    // The AI edits blocks by index; applying the ops here keeps everything it
+    // did not name byte-identical instead of trusting a rewritten document.
+    const next =
+      res.outcome.kind === "ops"
+        ? applyOps(before, res.outcome.ops)
+        : res.outcome.content;
+
+    if (JSON.stringify(next) === JSON.stringify(before)) {
       push({
         role: "ai",
         text: "The AI returned the document unchanged — try a more specific instruction.",
         error: true,
       });
     } else {
-      onApply(res.content);
-      push({ role: "ai", text: "Done — applied to the document." });
+      onApply(next);
+      const count = res.outcome.kind === "ops" ? res.outcome.ops.length : 0;
+      push({
+        role: "ai",
+        text: count
+          ? `Done — ${count} block${count > 1 ? "s" : ""} edited.`
+          : "Done — applied to the document.",
+      });
     }
     setBusy(false);
   };
