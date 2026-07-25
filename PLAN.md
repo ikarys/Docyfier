@@ -5,6 +5,9 @@ original P\* where justified; the "Was → Now" column tracks every change.
 
 **MVP = STEPS 0–4.** Everything after is post-MVP.
 
+The UX & rendering upgrade STEPS **U1–U5** ([Part C](#part-c--ux--rendering-upgrade-steps-u1u5))
+slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 → U5.
+
 ## Part A — Prioritized needs
 
 | # | Need (from vision.md) | Was | Now | Rationale for change |
@@ -171,3 +174,232 @@ theming stays in STEP 9.
 - Charts & diagrams blocks (#5) — may be pulled earlier if demand shows up.
 
 **Exit criteria:** per integration: connect, list, import, push update without leaving the app.
+
+## Part C — UX & rendering upgrade STEPS (U1–U5)
+
+Motivation: the current editor produces correct but classic documents; the UX is
+toolbar-only; themes are four fixed presets; whole-document AI transforms are
+slow and token-hungry. These STEPS modernize the editing UX (U1), make AI fast
+and safe (U4), make themes customizable (U3), enrich rendering (U2) and add
+templates (U5). They slot between STEP 2b and STEP 3 and pull parts of STEP 9
+forward. Recommended order: **U1 → U4 → U3 → U2 → U5**.
+
+### Ground rules for implementers (read before any U-STEP)
+
+- Read [AGENTS.md](AGENTS.md), then these files before writing code:
+  `src/components/Editor.tsx`, `src/components/extensions/Cards.ts` (the
+  canonical custom-node pattern — copy its structure for any new node),
+  `src/lib/ai/prompts.ts`, `src/lib/ai/doc-schema.ts`, `src/lib/ai/service.ts`,
+  `src/lib/store.ts`, `src/lib/themes.ts`, `src/app/globals.css`.
+- Stack: Next.js 15 (App Router + server actions), Tiptap v3, Vercel AI SDK v7,
+  Tailwind v4. Documents are ProseMirror JSON on disk via `src/lib/store.ts`.
+- **Every new node type must be registered in three places** or AI output will
+  fail validation: the editor extensions (`Editor.tsx`), the server validation
+  schema (`src/lib/ai/doc-schema.ts`), and the AI format contract
+  (`src/lib/ai/prompts.ts`).
+- No new UI libraries without maintainer approval — plain React + CSS in
+  `globals.css`, matching the existing code. Tiptap official extensions are fine.
+- Small diffs, Conventional Commits, one concern per commit. Verify each
+  acceptance box manually in the browser (including print preview) before
+  checking it.
+
+### STEP U1 — Modern editor UX (slash menu, drag handles)
+
+**Goal:** compose a rich document without hunting through a toolbar — Notion-grade ergonomics.
+
+Instructions:
+
+1. **Slash menu.** Add `@tiptap/suggestion`. New files:
+   `src/components/extensions/SlashCommand.ts` (extension wrapping the
+   Suggestion plugin, trigger char `/`) and `src/components/SlashMenu.tsx`
+   (popup). Items: every insertable block currently in the toolbar — H1–H3,
+   bullet/ordered list, quote, code block, table, callout (one item per
+   variant), cards, columns, stats, timeline, steps, pyramid, divider. Each
+   item: `label`, `keywords` (English + French synonyms), text/emoji icon, and
+   `command({ editor, range })` that deletes the typed range then runs the same
+   chain the toolbar buttons use today. Filtering: case-insensitive match on
+   label or keywords. Popup: absolutely positioned React list anchored on
+   `editor.view.coordsAtPos(...)`; ↑/↓ to select, Enter to apply, Esc to close.
+   No tippy/floating-ui dependency.
+2. **Drag handles.** Use `@tiptap/extension-drag-handle-react` (open source in
+   v3). On hover of a **top-level** block show `⋮⋮` (drag to reorder) and `+`
+   (opens the slash menu to insert below). Restrict dragging to top-level nodes;
+   do not allow dropping a layout block inside another layout block (the schema
+   already forbids it — verify the drop is rejected cleanly, not half-applied).
+3. **Formatting bubble menu.** Extend `SelectionAiMenu.tsx` (same positioning
+   logic) with a formatting row: bold, italic, strike, inline code, badge
+   toggle, a small set of text-color swatches, highlight swatches. AI actions
+   stay as they are.
+4. **Toolbar cleanup.** Remove from `MenuBar` the groups that moved into `/`
+   (table insert, cards, cols, stats, timeline, steps, pyramid, callout
+   swatches). Keep: undo/redo, theme select, Assistant toggle, save status.
+   Table row/column editing buttons may move into a small contextual popup
+   shown only when the caret is inside a table.
+5. **Shortcut help.** A `?` toolbar button opens a static overlay listing the
+   keyboard shortcuts (Tiptap defaults + `/`).
+
+Acceptance:
+
+- [ ] Typing `/` in an empty paragraph opens the menu; `/tim` filters to Timeline; Enter inserts it
+- [ ] Every block insertable from the old toolbar is insertable via `/` (parity checklist against the current `MenuBar`)
+- [ ] A top-level block can be dragged above/below another; dropping a card grid inside a card is cleanly refused
+- [ ] Selection shows the formatting row; bold + badge apply from it
+- [ ] Toolbar no longer contains block-insert buttons; nothing else regressed (undo/redo, theme, save states)
+
+### STEP U4 — Fast, safe AI (streaming, targeted transforms, diff preview)
+
+**Goal:** AI feels instant and never destroys content silently.
+
+Instructions:
+
+1. **Streaming prompt-to-document.** New route handler
+   `src/app/api/generate/route.ts`: uses `streamText` (AI SDK v7) with the
+   existing `GENERATE_SYSTEM`. Server incrementally parses the accumulating
+   output: track brace depth + string/escape state; every time a top-level
+   object inside the root `"content"` array closes, validate that single block
+   (wrap it in `{type:"doc",content:[block]}` → `validateDocJson`) and emit it
+   as one NDJSON line. Flow change: the home hero creates an **empty** document,
+   redirects to the editor, and the editor page streams blocks in, appending
+   each to the document with a skeleton placeholder until the first block
+   arrives. Keep the current non-streaming server action as fallback when the
+   provider rejects streaming.
+2. **Targeted whole-document transforms.** Replace the "resend the full doc,
+   get the full doc back" contract of surface 2. New prompt in
+   `src/lib/ai/prompts.ts`: input = the document as a numbered list of
+   top-level blocks (`index` + JSON); output = a JSON **array of ops**:
+   `{"op":"replace","index":n,"blocks":[...]}`,
+   `{"op":"insert_after","index":n,"blocks":[...]}`,
+   `{"op":"delete","index":n}`. In `service.ts` validate each op's blocks with
+   the existing schema; reject unknown ops or out-of-range indexes. Client
+   applies ops **from highest index to lowest** so earlier indexes stay valid.
+   Fallback: if the model returns a full doc object instead of an array, treat
+   it as a whole-document replace (current behavior).
+3. **Diff preview with accept/reject.** Before applying AI output (surfaces 1
+   fallback, 2, and 3a): snapshot `editor.getJSON()`, apply the change, mark
+   changed/inserted top-level blocks (compare by deep equality against the
+   snapshot) with a visual marker (colored left border via a decoration or a
+   temporary node attribute), and show a floating bar: **Accept all** (clear
+   markers, save) / **Reject** (restore the snapshot exactly). v1 is global
+   accept/reject; per-block accept is out of scope.
+4. **Structured output.** In `service.ts`, add a settings-gated path using
+   `generateObject`/`streamObject` with a permissive JSON schema (root object,
+   `type` + `content` required) so providers that support JSON-schema output
+   stop producing fences/prose. Keep `extractJson` as the fallback path.
+
+Acceptance:
+
+- [ ] Prompt-to-document: first block visible under ~2 s (local model), blocks appear progressively, final doc identical to non-streaming output for the same seed prompt
+- [ ] "Make it pretty" on a 10-page document returns ops, not 10 pages; untouched sections are byte-identical after apply
+- [ ] Malformed op (bad index, unknown op, invalid block) → the whole result is rejected with the existing retry, never a partial apply
+- [ ] Every AI apply shows changed blocks highlighted + Accept all / Reject; Reject restores the exact prior JSON (deep-equal)
+- [ ] Provider without streaming/JSON-schema support still works via fallbacks
+
+### STEP U3 — Customizable themes (tokens, not fixed CSS)
+
+**Goal:** themes become user-adjustable token sets; the four presets are starting points.
+
+Instructions:
+
+1. **Token model.** In `src/lib/themes.ts` define
+   `ThemeTokens = { accent: string /* hex */, fontPair: string /* id */, radius: "sharp"|"soft"|"round", density: "compact"|"normal"|"airy" }`
+   and `DocumentTheme = { preset: string; overrides?: Partial<ThemeTokens> }`.
+   Express the four existing presets as full token sets. Export
+   `resolveTokens(theme)` = preset tokens + overrides.
+2. **CSS refactor.** In `globals.css`, rewrite the `[data-theme]` blocks so
+   everything tokenizable reads CSS variables (`--doc-accent`,
+   `--doc-font-heading`, `--doc-font-body`, `--doc-radius`, `--doc-space`).
+   The `data-theme` attribute keeps controlling what is not tokenized (e.g.
+   heading underline style). The editor sets the variables as inline style on
+   `.doc-shell` from `resolveTokens`.
+3. **Fonts.** 5–6 curated font pairs (heading + body) loaded via
+   `next/font/google` in `layout.tsx`, exposed as CSS variables; `fontPair`
+   picks a pair. No runtime font fetching.
+4. **Persistence.** `DocumentRecord.theme` becomes `DocumentTheme`.
+   `normalizeTheme` must accept the legacy string form (`"corporate"` →
+   `{preset:"corporate"}`) and anything unknown → default. Extend
+   `setDocumentTheme` / `setDocumentThemeAction` to carry overrides (debounce
+   writes client-side like autosave).
+5. **Design panel.** A "Design" side panel (sibling of `AiPanel`, same slot,
+   toggle in the toolbar): preset cards (click to switch), accent color
+   (native `<input type="color">` + a few curated swatches), font pair select,
+   density and radius radio groups. All changes apply live via the inline CSS
+   variables; content JSON is never touched.
+
+Acceptance:
+
+- [ ] Old documents (string theme) load without error and render as before
+- [ ] Preset switch + accent/font/density/radius overrides apply live, survive reload, and never modify `content`
+- [ ] The same document prints correctly under customized tokens (print preview check)
+- [ ] Unknown preset/garbage overrides on disk → silent fallback to defaults, no crash
+
+### STEP U2 — Rich rendering (images, cover, TOC, print control)
+
+**Goal:** documents stop looking like plain notes — covers, images, TOC, clean pagination.
+
+Instructions:
+
+1. **Images.** Add `@tiptap/extension-image` (block-level, attrs: `src`, `alt`,
+   `width` percent). Upload: `POST src/app/api/uploads/route.ts` saving to
+   `<data dir>/uploads/<uuid>.<ext>` (reuse the `DOCYFIER_DATA_DIR` convention
+   from `store.ts`; validate mime type image/*, cap size ~10 MB);
+   `GET /api/uploads/[name]` serves the file with the right content-type and
+   an id-format check like `getDocument`. Editor: slash item + paste/drop
+   handler that uploads then inserts. Width presets (25/50/75/100%) via a small
+   bubble control. The AI contract must state images are **never** emitted by
+   the model (no fabricated `src`).
+2. **Links, alignment.** StarterKit v3 already bundles Link and Underline —
+   configure Link (`openOnClick: false` inside the editor) and surface
+   link/underline in the U1 formatting bubble. Add
+   `@tiptap/extension-text-align` on heading + paragraph.
+3. **Cover block.** New node `docCover` following the `Cards.ts` pattern:
+   content = title + optional subtitle + optional meta line (date/author);
+   full-bleed themed background (uses U3 tokens). Enforce "first node only" in
+   the insert command (not in the schema). Register in all three places.
+4. **Table of contents.** New atom node `tableOfContents` with a React NodeView
+   that walks the document's headings (debounced on update) and renders a
+   clickable list (click → scroll to heading). Stored as a single empty node in
+   JSON; the NodeView computes everything. Register in all three places (AI may
+   emit it, typically right after the cover/title).
+5. **Print control.** `@page` rules (A4, sane margins); `break-inside: avoid`
+   on cards, stats, callouts, table rows, timeline items, steps; new trivial
+   `pageBreak` node (like `horizontalRule`): dashed line in the editor,
+   `break-after: page` and invisible in print. **Page numbers are explicitly
+   deferred to STEP 3** (browser print cannot render them reliably; the
+   headless-Chromium PDF export will use header/footer templates).
+
+Acceptance:
+
+- [ ] Paste and drag-drop an image → uploaded, persisted, re-rendered after reload; width presets work
+- [ ] Cover + TOC + image document prints on 3+ pages with no block cut mid-body and the manual page break honored
+- [ ] TOC entries follow heading edits (add/rename/delete) and click-scroll correctly
+- [ ] AI "make it pretty" may add cover/TOC but never an image node
+- [ ] Links open nothing while editing (`openOnClick: false`) but are clickable in print/preview
+
+### STEP U5 — Templates & home polish
+
+**Goal:** start from something good in three clicks; manage documents like a real product.
+
+Instructions:
+
+1. **Templates.** `src/lib/templates.ts`: `TEMPLATES: { id, label, description,
+   preset, content: JSONContent }[]` — 6–8 entries: meeting notes, project
+   one-pager, tech spec, status report, roadmap, incident postmortem, decision
+   note. Content uses the rich blocks (stats, cards, timeline; cover once U2 is
+   done). Each template must pass `validateDocJson` in a build-time or startup
+   assertion.
+2. **Gallery.** Home "New document" opens a gallery (blank + template cards:
+   title, description, small static CSS thumbnail — no live Tiptap render).
+   New server action `createFromTemplateAction(templateId)` → `createDocument`
+   with the template content + preset theme → redirect to the editor.
+3. **Document list.** Add: client-side search filtering on title; inline rename
+   (add optional `titleOverride?: string` to `DocumentRecord` — when set it wins
+   over `deriveTitle`, and `updateDocument` must stop recomputing the title);
+   duplicate (new id, "Copy of …"); delete behind an explicit confirm dialog
+   (the `deleteDocument` store function already exists).
+
+Acceptance:
+
+- [ ] New doc from template in ≤ 3 clicks; the document opens fully formatted with its suggested theme
+- [ ] All templates pass schema validation automatically (assertion fails the build if one is broken)
+- [ ] Search filters as you type; rename sticks after reload and survives content edits; duplicate creates an independent copy
+- [ ] Delete requires confirmation and cannot be triggered by a single stray click
