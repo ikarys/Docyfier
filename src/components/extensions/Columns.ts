@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { deleteLayoutBlockOnBackspace } from "./layoutDelete";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -14,6 +15,10 @@ export const ColumnList = Node.create({
   group: "block",
   content: "column{2,4}",
   isolating: true,
+
+  addKeyboardShortcuts() {
+    return { Backspace: deleteLayoutBlockOnBackspace(this.name) };
+  },
 
   parseHTML() {
     return [{ tag: "div[data-columns]" }];

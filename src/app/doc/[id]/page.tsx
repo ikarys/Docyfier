@@ -37,7 +37,11 @@ export default async function DocumentPage({
           </form>
         </div>
       </header>
-      <DocumentEditor id={doc.id} initialContent={doc.content} />
+      <DocumentEditor
+        id={doc.id}
+        initialContent={doc.content}
+        initialTheme={doc.theme}
+      />
     </>
   );
 }

@@ -13,6 +13,9 @@ import { Badge } from "@/components/extensions/Badge";
 import { CardGrid, Card } from "@/components/extensions/Cards";
 import { ColumnList, Column } from "@/components/extensions/Columns";
 import { StatRow, Stat } from "@/components/extensions/Stats";
+import { Timeline, TimelineItem } from "@/components/extensions/Timeline";
+import { StepList, Step } from "@/components/extensions/Steps";
+import { Pyramid, PyramidTier } from "@/components/extensions/Pyramid";
 
 /**
  * Headless ProseMirror schema mirroring the editor's extensions
@@ -37,6 +40,12 @@ const schema = getSchema([
   Column,
   StatRow,
   Stat,
+  Timeline,
+  TimelineItem,
+  StepList,
+  Step,
+  Pyramid,
+  PyramidTier,
 ]);
 
 /** Throws with a descriptive message when `json` is not a valid document. */

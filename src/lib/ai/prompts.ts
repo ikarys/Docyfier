@@ -25,7 +25,10 @@ Block nodes:
 - {"type":"table","content":[{"type":"tableRow","content":[cells]}]} — cell = {"type":"tableHeader"|"tableCell","content":[{"type":"paragraph","content":[inline]}]}; first row uses tableHeader; every row has the same number of cells.
 - {"type":"cardGrid","attrs":{"cols":2|3|4},"content":[2-4 cards]} — card = {"type":"card","attrs":{"accent":"none"|"blue"|"green"|"yellow"|"red"|"purple"},"content":[blocks]}; start each card with a level-3 heading as its title. "cols" matches the number of cards.
 - {"type":"columnList","content":[2-4 columns]} — column = {"type":"column","content":[blocks]}; side-by-side layout.
-- {"type":"statRow","content":[2-4 stats]} — stat = {"type":"stat","attrs":{"accent":same as card},"content":[{"type":"paragraph",...} (the big value, e.g. "42%"),{"type":"paragraph",...} (the short label)]}. Exactly two paragraphs per stat.
+- {"type":"statRow","content":[2-4 stats]} — stat = {"type":"stat","attrs":{"accent":same as card,"trend":"good"|"bad"|"flat"},"content":[{"type":"paragraph",...} (the big value, e.g. "120ms"),{"type":"paragraph",...} (the short label),{"type":"paragraph",...} (OPTIONAL delta pill, e.g. "−73%")]}. Two paragraphs (value, label), or three when showing a change (value, label, delta). "trend" colors the delta pill by MEANING — "good" (green) for an improvement, "bad" (red) for a regression — regardless of whether the number went up or down.
+- {"type":"timeline","content":[2-8 timelineItem]} — roadmap / chronology. item = {"type":"timelineItem","attrs":{"accent":same as card},"content":[{"type":"paragraph",...} (short date or phase, e.g. "Q1 2025"),{"type":"heading","attrs":{"level":3},...} (milestone title),{"type":"paragraph",...} (description)]}. Order is fixed: date paragraph, then heading, then description block(s).
+- {"type":"stepList","content":[2-6 step]} — numbered process / how-it-works (the number is drawn automatically). step = {"type":"step","attrs":{"accent":same as card},"content":[{"type":"heading","attrs":{"level":3},...} (step title),{"type":"paragraph",...} (what to do)]}. Never write the number yourself.
+- {"type":"pyramid","content":[2-5 pyramidTier]} — hierarchy from narrow apex (first) to wide base (last): priorities, levels, vision→execution. tier = {"type":"pyramidTier","content":[{"type":"paragraph",...} (short label; optional second paragraph for a detail)]}. First tier = top of the pyramid.
 
 Inline nodes (only inside heading/paragraph and table-cell paragraphs):
 - {"type":"text","text":"...","marks":[mark,...]} — "marks" optional
@@ -44,8 +47,9 @@ Constraints:
 - When the user asks for color, apply textStyle color marks (and/or a
   highlight) to the relevant words — do not just add symbols.
 - Never nest block nodes inside heading or paragraph.
-- Never nest cardGrid, statRow or columnList inside a card, column, stat,
-  callout, list item or table cell — layout blocks live at the top level only.
+- Never nest cardGrid, statRow, columnList, timeline, stepList or pyramid
+  inside a card, column, stat, callout, list item, table cell or each other —
+  layout blocks live at the top level only.
 - Never emit "content": [] — omit the key instead.
 - Write the document in the same language as the user's request or content.
 - THE USER'S EXPLICIT FORMAT REQUEST ALWAYS WINS over the style guide below:
@@ -59,18 +63,26 @@ const STYLE_GUIDE = `Professional document style — modern, visual, striking:
   figures when the topic has numbers.
 - Use cardGrid (with accents) for options, features, pillars, team roles —
   anything that reads as "N parallel items".
-- Use tables for comparisons, criteria, figures or any tabular data.
+- A few metrics that CHANGED (before/after, migration results, KPIs) are a
+  statRow, NOT a table: put the new value big, the metric as label, and the
+  change as the delta paragraph with trend "good"/"bad". A plain table of
+  numbers is the last resort — reach for it only for dense, many-row/column
+  data that genuinely needs a grid.
 - Statuses, priorities and tags ALWAYS render as badge marks, wherever they
   appear (table cells, lists, paragraphs): e.g. "On track" green badge,
   "At risk" yellow badge, "Blocked" red badge, "P1" red badge, "Beta" purple.
-- Use columnList to place two related things side by side — before/after and
-  pros/cons belong in a columnList, not a table.
+- Use columnList for two QUALITATIVE things side by side (pros/cons, two
+  approaches). For numeric before/after, prefer a statRow of deltas.
+- Use timeline for anything chronological or phased (roadmap, plan, history),
+  stepList for a sequential process or method ("how it works"), and pyramid for
+  a ranked hierarchy (priorities, levels). Prefer these over a plain list when
+  the content is genuinely a sequence or a hierarchy.
 - Use callouts sparingly for key takeaways (note/tip) and risks (warn/danger).
 - Use lists for enumerations; keep paragraphs short and direct.
-- Colors: a restrained professional palette (e.g. deep blue #3b5bdb for section
-  names/keywords, green #1f9d6b for positives, red #c23b3b for risks, soft
-  yellow highlight #fff3bf for emphasis). Never more than 2-3 colors per
-  document; body text stays default.
+- Color comes from the document THEME, not hardcoded hex. Carry meaning with
+  SEMANTIC accents — badge/card/stat "accent" and callout "variant" — and let
+  the theme paint them. Do NOT set textStyle/highlight hex colors on your own:
+  reserve those only for an explicit user color request. Body text stays default.
 - Modern, polished, professional tone. No filler.`;
 
 export const GENERATE_SYSTEM = `${FORMAT_CONTRACT}
@@ -87,8 +99,10 @@ Task: you receive the current document as JSON plus an instruction. Return the F
 
 export const SELECTION_BLOCKS_SYSTEM = `${FORMAT_CONTRACT}
 
+${STYLE_GUIDE}
+
 Task: you receive an excerpt of a larger document (as a JSON doc) plus an instruction. Return a doc containing ONLY the rewritten replacement blocks for that excerpt — not the whole document, no extra sections. Keep the language of the excerpt.
-Styling requests: "color" → textStyle/highlight marks on key words; "emphasis" → bold, highlight or badge marks; keep it restrained and professional (2-3 colors max).`;
+When the instruction is about design ("make it pretty", "improve the design", "beautify"), UPGRADE the excerpt into the richest fitting visual block from the style guide — a statRow of deltas, a cardGrid, a timeline — never leave it as plain paragraphs or fall back to a bare table. Carry meaning with semantic accents/badges, never hardcoded hex colors (reserve textStyle/highlight hex only for an explicit user color request). "emphasis" → bold or badge marks.`;
 
 export const SELECTION_TEXT_SYSTEM = `You rewrite text fragments inside a document.
 Return ONLY the rewritten fragment as plain text — no quotes, no markdown, no commentary, no surrounding sentence. Keep the language of the fragment. It must fit grammatically where the original stood.`;

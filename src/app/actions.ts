@@ -6,6 +6,7 @@ import type { JSONContent } from "@tiptap/react";
 import {
   createDocument,
   deleteDocument,
+  setDocumentTheme,
   updateDocument,
 } from "@/lib/store";
 
@@ -25,6 +26,15 @@ export async function saveDocumentAction(
   if (!updated) return null;
   revalidatePath("/");
   return { title: updated.title, updatedAt: updated.updatedAt };
+}
+
+/** Persist the document's presentation theme (content untouched). */
+export async function setDocumentThemeAction(
+  id: string,
+  theme: string,
+): Promise<boolean> {
+  const updated = await setDocumentTheme(id, theme);
+  return updated !== null;
 }
 
 /** Delete a document and return to the list. */

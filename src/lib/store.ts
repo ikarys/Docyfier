@@ -3,6 +3,7 @@ import { mkdir, readFile, readdir, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { JSONContent } from "@tiptap/react";
+import { DEFAULT_THEME, normalizeTheme } from "@/lib/themes";
 
 /**
  * File-backed document store. Documents are ProseMirror JSON — the product's
@@ -14,6 +15,8 @@ export interface DocumentRecord {
   id: string;
   title: string;
   content: JSONContent;
+  /** Presentation theme id (see src/lib/themes.ts). Content stays untouched. */
+  theme: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,7 +81,10 @@ export async function getDocument(id: string): Promise<DocumentRecord | null> {
   const dir = await ensureDir();
   try {
     const raw = await readFile(filePath(dir, id), "utf8");
-    return JSON.parse(raw) as DocumentRecord;
+    const doc = JSON.parse(raw) as DocumentRecord;
+    // Older documents predate themes: fall back to the default on read.
+    doc.theme = normalizeTheme(doc.theme);
+    return doc;
   } catch {
     return null;
   }
@@ -93,6 +99,7 @@ export async function createDocument(
     id: randomUUID(),
     title: deriveTitle(content),
     content,
+    theme: DEFAULT_THEME,
     createdAt: now,
     updatedAt: now,
   };
@@ -111,6 +118,23 @@ export async function updateDocument(
     ...existing,
     content,
     title: deriveTitle(content),
+    updatedAt: new Date().toISOString(),
+  };
+  await writeFile(filePath(dir, id), JSON.stringify(updated, null, 2), "utf8");
+  return updated;
+}
+
+/** Update only the presentation theme, leaving content untouched. */
+export async function setDocumentTheme(
+  id: string,
+  theme: string,
+): Promise<DocumentRecord | null> {
+  const existing = await getDocument(id);
+  if (!existing) return null;
+  const dir = await ensureDir();
+  const updated: DocumentRecord = {
+    ...existing,
+    theme: normalizeTheme(theme),
     updatedAt: new Date().toISOString(),
   };
   await writeFile(filePath(dir, id), JSON.stringify(updated, null, 2), "utf8");

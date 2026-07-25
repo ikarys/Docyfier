@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { deleteLayoutBlockOnBackspace } from "./layoutDelete";
 
 export type CardAccent =
   | "none"
@@ -25,6 +26,10 @@ export const CardGrid = Node.create({
   group: "block",
   content: "card{2,4}",
   isolating: true,
+
+  addKeyboardShortcuts() {
+    return { Backspace: deleteLayoutBlockOnBackspace(this.name) };
+  },
 
   addAttributes() {
     return {

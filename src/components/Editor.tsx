@@ -16,7 +16,11 @@ import { Badge } from "./extensions/Badge";
 import { CardGrid, Card } from "./extensions/Cards";
 import { ColumnList, Column } from "./extensions/Columns";
 import { StatRow, Stat } from "./extensions/Stats";
-import { saveDocumentAction } from "@/app/actions";
+import { Timeline, TimelineItem } from "./extensions/Timeline";
+import { StepList, Step } from "./extensions/Steps";
+import { Pyramid, PyramidTier } from "./extensions/Pyramid";
+import { saveDocumentAction, setDocumentThemeAction } from "@/app/actions";
+import { THEMES } from "@/lib/themes";
 import { AiPanel } from "./AiPanel";
 import { SelectionAiMenu } from "./SelectionAiMenu";
 
@@ -32,24 +36,47 @@ const VARIANTS: { key: CalloutVariant; label: string }[] = [
 export function DocumentEditor({
   id,
   initialContent,
+  initialTheme,
 }: {
   id: string;
   initialContent: JSONContent;
+  initialTheme: string;
 }) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [panelOpen, setPanelOpen] = useState(true);
+  const [theme, setTheme] = useState(initialTheme);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Latest editor JSON awaiting a debounced write; null when nothing pending. */
+  const pending = useRef<JSONContent | null>(null);
+
+  /** Write any pending content immediately, cancelling the debounce. */
+  const flushSave = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    const content = pending.current;
+    if (content === null) return;
+    pending.current = null;
+    void saveDocumentAction(id, content).then((res) =>
+      setSaveState(res ? "saved" : "error"),
+    );
+  }, [id]);
+
+  const changeTheme = useCallback(
+    (next: string) => {
+      setTheme(next);
+      void setDocumentThemeAction(id, next);
+    },
+    [id],
+  );
 
   const scheduleSave = useCallback(
     (editor: Editor) => {
       setSaveState("saving");
+      pending.current = editor.getJSON();
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(async () => {
-        const res = await saveDocumentAction(id, editor.getJSON());
-        setSaveState(res ? "saved" : "error");
-      }, 700);
+      timer.current = setTimeout(() => flushSave(), 700);
     },
-    [id],
+    [flushSave],
   );
 
   const editor = useEditor({
@@ -71,6 +98,12 @@ export function DocumentEditor({
       Column,
       StatRow,
       Stat,
+      Timeline,
+      TimelineItem,
+      StepList,
+      Step,
+      Pyramid,
+      PyramidTier,
       Placeholder.configure({
         placeholder: "Write your document, or press the toolbar to add structure…",
       }),
@@ -82,11 +115,18 @@ export function DocumentEditor({
     onUpdate: ({ editor }) => scheduleSave(editor),
   });
 
+  // Flush on unmount (in-app navigation) and on tab hide so edits made in the
+  // debounce window aren't lost when the user leaves the document.
   useEffect(() => {
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
+    const onHide = () => {
+      if (document.visibilityState === "hidden") flushSave();
     };
-  }, []);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      flushSave();
+    };
+  }, [flushSave]);
 
   if (!editor) return null;
 
@@ -103,9 +143,11 @@ export function DocumentEditor({
         saveState={saveState}
         panelOpen={panelOpen}
         onTogglePanel={() => setPanelOpen((v) => !v)}
+        theme={theme}
+        onChangeTheme={changeTheme}
       />
       <div className="editor-body" data-panel={panelOpen}>
-        <main className="doc-shell">
+        <main className="doc-shell" data-theme={theme}>
           <article className="doc-sheet">
             <EditorContent editor={editor} />
             <SelectionAiMenu editor={editor} />
@@ -128,11 +170,15 @@ function MenuBar({
   saveState,
   panelOpen,
   onTogglePanel,
+  theme,
+  onChangeTheme,
 }: {
   editor: Editor;
   saveState: SaveState;
   panelOpen: boolean;
   onTogglePanel: () => void;
+  theme: string;
+  onChangeTheme: (theme: string) => void;
 }) {
   const active = (name: string, attrs?: Record<string, unknown>) =>
     editor.isActive(name, attrs) ? "tb-btn is-active" : "tb-btn";
@@ -315,6 +361,27 @@ function MenuBar({
         >
           № Stats
         </button>
+        <button
+          className="tb-btn"
+          onClick={() => editor.chain().focus().insertTimeline(3).run()}
+          title="Insert timeline / roadmap"
+        >
+          ┋ Timeline
+        </button>
+        <button
+          className="tb-btn"
+          onClick={() => editor.chain().focus().insertSteps(3).run()}
+          title="Insert process steps"
+        >
+          ➊ Steps
+        </button>
+        <button
+          className="tb-btn"
+          onClick={() => editor.chain().focus().insertPyramid(3).run()}
+          title="Insert pyramid / hierarchy"
+        >
+          ▲ Pyramid
+        </button>
       </div>
 
       <div className="tb-group">
@@ -341,6 +408,25 @@ function MenuBar({
         >
           ↷
         </button>
+      </div>
+
+      <div className="tb-group tb-theme">
+        <label className="tb-theme-label" htmlFor="theme-select">
+          Theme
+        </label>
+        <select
+          id="theme-select"
+          className="tb-select"
+          value={theme}
+          onChange={(e) => onChangeTheme(e.target.value)}
+          title="Document theme"
+        >
+          {THEMES.map((t) => (
+            <option key={t.id} value={t.id} title={t.hint}>
+              {t.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <button

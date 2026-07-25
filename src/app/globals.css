@@ -574,13 +574,33 @@ body {
   margin: 0 0 0.25rem;
   color: var(--accent);
 }
-.doc .stat > p:last-child {
+.doc .stat > p:nth-child(2) {
   font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--ink-faint);
   margin: 0;
+}
+/* Optional third paragraph = delta pill, colored by data-trend */
+.doc .stat > p:nth-child(3) {
+  display: inline-block;
+  margin: 0.5rem auto 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 0.12em 0.6em;
+  border-radius: 999px;
+  background: var(--gray-bg);
+  color: var(--gray);
+}
+.doc .stat[data-trend="good"] > p:nth-child(3) {
+  background: var(--tip-bg);
+  color: var(--tip);
+}
+.doc .stat[data-trend="bad"] > p:nth-child(3) {
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 .doc .stat[data-accent="green"] > p:first-child {
   color: var(--tip);
@@ -593,6 +613,196 @@ body {
 }
 .doc .stat[data-accent="purple"] > p:first-child {
   color: var(--purple);
+}
+
+/* ---- Presentation graphics: timeline, steps, pyramid --------------------- */
+
+/* Timeline / roadmap — vertical rail with colored dots */
+.doc .timeline {
+  position: relative;
+  margin: 1.75rem 0;
+}
+.doc .timeline::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--rule-strong);
+}
+.doc .timeline-item {
+  position: relative;
+  padding-left: 2rem;
+  padding-bottom: 1.35rem;
+  min-width: 0;
+}
+.doc .timeline-item:last-child {
+  padding-bottom: 0;
+}
+.doc .timeline-item::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.4rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--paper);
+}
+.doc .timeline-item > p:first-child {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  margin: 0 0 0.15rem;
+}
+.doc .timeline-item > h3 {
+  margin: 0 0 0.3rem;
+  font-size: 1.05rem;
+}
+.doc .timeline-item > *:last-child {
+  margin-bottom: 0;
+}
+.doc .timeline-item[data-accent="green"]::before {
+  background: var(--tip);
+}
+.doc .timeline-item[data-accent="green"] > p:first-child {
+  color: var(--tip);
+}
+.doc .timeline-item[data-accent="yellow"]::before {
+  background: var(--warn);
+}
+.doc .timeline-item[data-accent="yellow"] > p:first-child {
+  color: var(--warn);
+}
+.doc .timeline-item[data-accent="red"]::before {
+  background: var(--danger);
+}
+.doc .timeline-item[data-accent="red"] > p:first-child {
+  color: var(--danger);
+}
+.doc .timeline-item[data-accent="purple"]::before {
+  background: var(--purple);
+}
+.doc .timeline-item[data-accent="purple"] > p:first-child {
+  color: var(--purple);
+}
+
+/* Steps / process — numbered cards flowing left to right */
+.doc .steps {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin: 1.75rem 0;
+  counter-reset: step;
+}
+.doc .step {
+  position: relative;
+  counter-increment: step;
+  padding: 1.1rem 1.15rem;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: 0 1px 2px rgba(20, 22, 30, 0.04),
+    0 10px 24px -18px rgba(20, 22, 30, 0.25);
+  min-width: 0;
+}
+.doc .step::before {
+  content: counter(step);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+}
+.doc .step:not(:last-child)::after {
+  content: "›";
+  position: absolute;
+  right: -0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--rule-strong);
+  font-size: 1.5rem;
+  line-height: 1;
+  z-index: 1;
+}
+.doc .step > h3 {
+  margin: 0 0 0.3rem;
+  font-size: 1.02rem;
+}
+.doc .step > p {
+  font-size: 0.92rem;
+  margin: 0 0 0.5rem;
+}
+.doc .step > *:last-child {
+  margin-bottom: 0;
+}
+.doc .step[data-accent="green"]::before {
+  background: var(--tip);
+}
+.doc .step[data-accent="yellow"]::before {
+  background: var(--warn);
+}
+.doc .step[data-accent="red"]::before {
+  background: var(--danger);
+}
+.doc .step[data-accent="purple"]::before {
+  background: var(--purple);
+}
+
+/* Pyramid / hierarchy — tiers widen from apex to base, auto-tinted by depth */
+.doc .pyramid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 1.75rem 0;
+}
+.doc .pyramid-tier {
+  width: 100%;
+  text-align: center;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--accent);
+  min-width: 0;
+}
+.doc .pyramid-tier > p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+.doc .pyramid-tier > p:first-child {
+  font-weight: 700;
+}
+.doc .pyramid-tier:nth-child(1) {
+  width: 46%;
+  background: var(--accent);
+}
+.doc .pyramid-tier:nth-child(2) {
+  width: 61%;
+  background: color-mix(in srgb, var(--accent) 84%, #fff);
+}
+.doc .pyramid-tier:nth-child(3) {
+  width: 76%;
+  background: color-mix(in srgb, var(--accent) 70%, #fff);
+}
+.doc .pyramid-tier:nth-child(4) {
+  width: 88%;
+  background: color-mix(in srgb, var(--accent) 60%, #fff);
+}
+.doc .pyramid-tier:nth-child(5) {
+  width: 100%;
+  background: color-mix(in srgb, var(--accent) 52%, #fff);
 }
 
 /* Legacy safety net: layout blocks nested inside a card/column (older docs)
@@ -611,10 +821,115 @@ body {
 @media (max-width: 40rem) {
   .doc .card-grid,
   .doc .stat-row,
-  .doc .columns {
+  .doc .columns,
+  .doc .steps {
     grid-template-columns: 1fr;
     grid-auto-flow: row;
   }
+  .doc .step:not(:last-child)::after {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   Themes (PLAN.md STEP 2b)
+   The document lives in `.doc-shell[data-theme="…"]`. `:root` above is the
+   "editorial" baseline; each theme below only re-points design tokens (and a
+   few structural rules) on that subtree, so the same content restyles — and
+   reprints — with zero content change. App chrome sits outside the subtree and
+   keeps the default accent.
+   ========================================================================= */
+
+/* --- Corporate: confident blue, structured, business-ready --------------- */
+.doc-shell[data-theme="corporate"] {
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --ink: #0f172a;
+  --ink-soft: #334155;
+  --ink-faint: #64748b;
+  --rule: #e2e8f0;
+  --rule-strong: #cbd5e1;
+  --note: #2563eb;
+  --note-bg: #eff6ff;
+}
+.doc-shell[data-theme="corporate"] .doc-sheet {
+  border-top: 5px solid var(--accent);
+}
+.doc-shell[data-theme="corporate"] .doc h1 {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.doc-shell[data-theme="corporate"] .doc h2 {
+  color: var(--accent);
+}
+.doc-shell[data-theme="corporate"] .doc thead th {
+  background: var(--accent);
+}
+
+/* --- Minimal: monochrome, airy, understated ------------------------------ */
+.doc-shell[data-theme="minimal"] {
+  --accent: #111827;
+  --accent-soft: #f3f4f6;
+  --ink: #111827;
+  --ink-soft: #4b5563;
+  --ink-faint: #9ca3af;
+  --rule: #ececec;
+  --rule-strong: #dcdcdc;
+  --radius: 4px;
+}
+.doc-shell[data-theme="minimal"] .doc h1 {
+  font-weight: 700;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.75rem;
+}
+.doc-shell[data-theme="minimal"] .doc thead th {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.doc-shell[data-theme="minimal"] .doc .card,
+.doc-shell[data-theme="minimal"] .doc .stat {
+  background: var(--paper);
+  box-shadow: none;
+  border-radius: 6px;
+}
+.doc-shell[data-theme="minimal"] .doc .card {
+  border-top-width: 1px;
+}
+
+/* --- Vivid: colorful, rounded, web-native (breaks the paper look) -------- */
+.doc-shell[data-theme="vivid"] {
+  --accent: #7c3aed;
+  --accent-soft: #f3e8ff;
+  --purple: #7c3aed;
+  --purple-bg: #f3e8ff;
+  --radius: 16px;
+  --paper-shell: #faf5ff;
+  background: linear-gradient(180deg, #faf5ff 0%, #eef2ff 100%);
+  border-radius: 24px;
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+.doc-shell[data-theme="vivid"] .doc-sheet {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px -24px rgba(124, 58, 237, 0.4);
+}
+.doc-shell[data-theme="vivid"] .doc h1 {
+  border-bottom: none;
+  padding-bottom: 0;
+  background: linear-gradient(90deg, #7c3aed, #db2777);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.doc-shell[data-theme="vivid"] .doc h2 {
+  color: var(--accent);
+}
+.doc-shell[data-theme="vivid"] .doc .card {
+  border-radius: 18px;
+}
+.doc-shell[data-theme="vivid"] .doc thead th {
+  background: var(--accent);
 }
 
 /* ---- Editor chrome ------------------------------------------------------- */
@@ -687,6 +1002,33 @@ body {
   padding: 0;
   font-weight: 700;
 }
+.tb-theme {
+  align-items: center;
+  gap: 0.45rem;
+}
+.tb-theme-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+}
+.tb-select {
+  font: inherit;
+  font-size: 0.8rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.tb-select:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .tb-note {
   color: var(--note);
 }
@@ -744,10 +1086,29 @@ body {
   background: var(--accent);
   cursor: col-resize;
 }
+/* Gapcursor: lets the caret land beside isolating layout blocks so they can be
+   navigated to and deleted (Delete/Backspace). */
 .doc-editor .ProseMirror-gapcursor {
   display: none;
   pointer-events: none;
   position: absolute;
+}
+.doc-editor .ProseMirror-gapcursor::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: -2px;
+  width: 1.5rem;
+  border-top: 2px solid var(--accent);
+  animation: pm-gapcursor-blink 1.1s steps(2, start) infinite;
+}
+.doc-editor.ProseMirror-focused .ProseMirror-gapcursor {
+  display: block;
+}
+@keyframes pm-gapcursor-blink {
+  to {
+    visibility: hidden;
+  }
 }
 
 /* ---- Home hero (prompt-to-document) -------------------------------------- */
@@ -1230,7 +1591,10 @@ body {
   .doc .card,
   .doc .stat-row,
   .doc .card-grid,
-  .doc .mermaid-figure {
+  .doc .mermaid-figure,
+  .doc .timeline-item,
+  .doc .step,
+  .doc .pyramid {
     break-inside: avoid;
   }
   .doc a {
