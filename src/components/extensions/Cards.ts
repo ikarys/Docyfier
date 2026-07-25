@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { iconAttribute, renderWithIcon } from "./icon";
 import { deleteLayoutBlockOnBackspace } from "./layoutDelete";
 
 export type CardAccent =
@@ -97,6 +98,7 @@ export const Card = Node.create({
         parseHTML: (el) => el.getAttribute("data-accent") ?? "none",
         renderHTML: (attrs) => ({ "data-accent": attrs.accent }),
       },
+      ...iconAttribute,
     };
   },
 
@@ -104,11 +106,12 @@ export const Card = Node.create({
     return [{ tag: "div[data-card]" }];
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return [
+  renderHTML({ node, HTMLAttributes }) {
+    return renderWithIcon(
       "div",
+      node.attrs,
       mergeAttributes(HTMLAttributes, { "data-card": "", class: "card" }),
-      0,
-    ];
+      "card-body",
+    );
   },
 });

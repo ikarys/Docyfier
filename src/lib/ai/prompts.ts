@@ -1,5 +1,7 @@
 import "server-only";
 
+import { ICON_NAMES } from "@/lib/icons";
+
 /**
  * Prompt building for the three AI surfaces (PLAN.md STEP 2):
  * prompt-to-document, whole-document transforms, selection rewrites.
@@ -14,6 +16,9 @@ OUTPUT RULES — follow exactly:
 - Root: {"type":"doc","content":[ ...block nodes... ]}.
 
 Block nodes:
+- {"type":"docCover","content":[{"type":"heading","attrs":{"level":1},...} (the title), ...coverLine]} — OPTIONAL magazine-style opening block; when used it must be the FIRST node of the document and the document must not also repeat the title as a level-1 heading. coverLine = {"type":"coverLine","attrs":{"variant":"subtitle"|"chips"|"meta"},"content":[inline]}: "subtitle" = one sentence positioning the document, "chips" = short labels carrying badge marks, "meta" = a single line like "Author · March 2025 · 6 min read". At most one line of each variant, in that order.
+- {"type":"tableOfContents"} — has NO "content"; the entries are computed from the document's headings. Emit at most one, right after the cover or the title, and only for a document with 4+ level-2 headings.
+- {"type":"pageBreak"} — has NO "content"; forces the next block onto a new printed page. Use sparingly, between major parts.
 - {"type":"heading","attrs":{"level":1|2|3},"content":[inline]}
 - {"type":"paragraph","content":[inline]}
 - {"type":"bulletList","content":[{"type":"listItem","content":[blocks]}]}
@@ -25,7 +30,7 @@ Block nodes:
 - {"type":"table","content":[{"type":"tableRow","content":[cells]}]} — cell = {"type":"tableHeader"|"tableCell","content":[{"type":"paragraph","content":[inline]}]}; first row uses tableHeader; every row has the same number of cells.
 - {"type":"cardGrid","attrs":{"cols":2|3|4},"content":[2-4 cards]} — card = {"type":"card","attrs":{"accent":"none"|"blue"|"green"|"yellow"|"red"|"purple"},"content":[blocks]}; start each card with a level-3 heading as its title. "cols" matches the number of cards.
 - {"type":"columnList","content":[2-4 columns]} — column = {"type":"column","content":[blocks]}; side-by-side layout.
-- {"type":"statRow","content":[2-4 stats]} — stat = {"type":"stat","attrs":{"accent":same as card,"trend":"good"|"bad"|"flat"},"content":[{"type":"paragraph",...} (the big value, e.g. "120ms"),{"type":"paragraph",...} (the short label),{"type":"paragraph",...} (OPTIONAL delta pill, e.g. "−73%")]}. Two paragraphs (value, label), or three when showing a change (value, label, delta). "trend" colors the delta pill by MEANING — "good" (green) for an improvement, "bad" (red) for a regression — regardless of whether the number went up or down.
+- {"type":"statRow","content":[2-4 stats]} — stat = {"type":"stat","attrs":{"accent":same as card,"trend":"good"|"bad"|"flat","layout":"grid"|"row","icon":"<icon name>"},"content":[{"type":"paragraph",...} (the big value, e.g. "120ms"),{"type":"paragraph",...} (the short label),{"type":"paragraph",...} (OPTIONAL delta pill, e.g. "−73%")]}. Two paragraphs (value, label), or three when showing a change (value, label, delta). "trend" colors the delta pill by MEANING — "good" (green) for an improvement, "bad" (red) for a regression — regardless of whether the number went up or down. "layout" defaults to "grid" (a compact tile); use "row" for a single headline figure that deserves the full width. "icon" is optional and must come from the icon list below.
 - {"type":"timeline","content":[2-8 timelineItem]} — roadmap / chronology. item = {"type":"timelineItem","attrs":{"accent":same as card},"content":[{"type":"paragraph",...} (short date or phase, e.g. "Q1 2025"),{"type":"heading","attrs":{"level":3},...} (milestone title),{"type":"paragraph",...} (description)]}. Order is fixed: date paragraph, then heading, then description block(s).
 - {"type":"stepList","content":[2-6 step]} — numbered process / how-it-works (the number is drawn automatically). step = {"type":"step","attrs":{"accent":same as card},"content":[{"type":"heading","attrs":{"level":3},...} (step title),{"type":"paragraph",...} (what to do)]}. Never write the number yourself.
 - {"type":"chart","attrs":{"kind":"bar"|"line","categories":["Q1","Q2",...],"series":[{"label":"Revenue","values":[12,19,...]}],"title":"..."|null,"caption":"..."|null,"showGrid":true,"showLegend":true}} — has NO "content". 2-24 categories, 1-4 series, and every series MUST have exactly as many values as there are categories, all plain numbers. Use "bar" to compare categories, "line" for a trend over time. ONLY emit a chart from figures that already appear in the user's request or in the document you were given — NEVER invent, extrapolate or round data. When you have no real series of numbers, do not emit a chart.
@@ -41,16 +46,23 @@ Marks:
 - {"type":"highlight","attrs":{"color":"#RRGGBB"}} — background highlight
 - {"type":"badge","attrs":{"variant":"gray"|"blue"|"green"|"yellow"|"red"|"purple"}} — small colored pill/tag for statuses, priorities, labels ("Done", "P1", "Beta")
 
+Icons: "callout", "card", "step" and "stat" accept an OPTIONAL "icon" attribute. Allowed names, and NOTHING else: ${ICON_NAMES.join(", ")}. An unknown name renders no icon, so never invent one.
+
+Text alignment: "heading" and "paragraph" accept an optional "textAlign":"left"|"center"|"right". Leave it out unless the user asks — body text is left-aligned.
+
 Constraints:
+- NEVER emit an image node. Images exist only when the user has uploaded one;
+  any "src" you write would point at a file that does not exist.
 - "text" values are PLAIN TEXT: never markdown syntax (**bold**, *italic*,
   \`code\`, # headings) inside them — express styling with marks only.
 - Emoji: only when the user explicitly asks for emoji.
 - When the user asks for color, apply textStyle color marks (and/or a
   highlight) to the relevant words — do not just add symbols.
 - Never nest block nodes inside heading or paragraph.
-- Never nest cardGrid, statRow, columnList, timeline, stepList, pyramid or
-  chart inside a card, column, stat, callout, list item, table cell or each
-  other — layout blocks live at the top level only.
+- Never nest cardGrid, statRow, columnList, timeline, stepList, pyramid,
+  chart, docCover, tableOfContents or pageBreak inside a card, column, stat,
+  callout, list item, table cell or each other — layout blocks live at the top
+  level only.
 - Never emit "content": [] — omit the key instead.
 - Write the document in the same language as the user's request or content.
 - THE USER'S EXPLICIT FORMAT REQUEST ALWAYS WINS over the style guide below:
@@ -59,9 +71,13 @@ Constraints:
   format.`;
 
 const STYLE_GUIDE = `Professional document style — modern, visual, striking:
-- Exactly one level-1 heading as the document title; structure with level 2/3 headings.
+- Exactly one level-1 heading as the document title — inside a docCover when
+  the document is a report, a one-pager or anything with a named audience;
+  a bare level-1 heading otherwise. Structure with level 2/3 headings.
 - Open strong: after the title, a short intro paragraph, then a statRow of key
   figures when the topic has numbers.
+- A long, sectioned document (4+ level-2 headings) earns a tableOfContents
+  right after its opening; a short note does not.
 - Use cardGrid (with accents) for options, features, pillars, team roles —
   anything that reads as "N parallel items".
 - A few metrics that CHANGED (before/after, migration results, KPIs) are a

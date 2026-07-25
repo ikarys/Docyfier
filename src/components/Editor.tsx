@@ -21,10 +21,16 @@ import { Timeline, TimelineItem } from "./extensions/Timeline";
 import { StepList, Step } from "./extensions/Steps";
 import { Pyramid, PyramidTier } from "./extensions/Pyramid";
 import { ChartNode } from "./ChartView";
+import { ImageNode } from "./ImageView";
+import { TocNode } from "./TocView";
+import { DocCover, CoverLine } from "./extensions/Cover";
+import { PageBreak } from "./extensions/PageBreak";
+import { TextAlign } from "@tiptap/extension-text-align";
 import { SlashCommand } from "./extensions/SlashCommand";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import { saveDocumentAction, setDocumentThemeAction } from "@/app/actions";
 import { toPlainJSON } from "@/lib/doc/plain";
+import { imageFilesOf, insertUploadedImages } from "@/lib/doc/upload";
 import {
   THEMES,
   resolveTokens,
@@ -163,7 +169,9 @@ export function DocumentEditor({
   // extension instance every render, which made useEditor think the config
   // changed and re-apply editor options on every save-state re-render.
   const extensions = useRef([
-    StarterKit,
+    // Link ships in StarterKit v3; inside the editor a click must place the
+    // caret, not navigate away from the document being written.
+    StarterKit.configure({ link: { openOnClick: false } }),
     Callout,
     Table.configure({ resizable: true }),
     TableRow,
@@ -186,6 +194,12 @@ export function DocumentEditor({
     Pyramid,
     PyramidTier,
     ChartNode,
+    ImageNode,
+    TocNode,
+    DocCover,
+    CoverLine,
+    PageBreak,
+    TextAlign.configure({ types: ["heading", "paragraph"] }),
     SlashCommand,
     Placeholder.configure({
       placeholder: "Write your document, or press the toolbar to add structure…",
@@ -198,6 +212,23 @@ export function DocumentEditor({
     content: initialContent,
     editorProps: {
       attributes: { class: "doc doc-editor" },
+      // Images arrive by paste or drop, are uploaded, then inserted by URL.
+      // Returning true swallows the event so ProseMirror does not also insert
+      // the browser's own (base64 or file://) representation.
+      handlePaste: (view, event) => {
+        const files = imageFilesOf(event.clipboardData?.files ?? null);
+        if (files.length === 0) return false;
+        void insertUploadedImages(view, files, view.state.selection.from);
+        return true;
+      },
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved) return false;
+        const files = imageFilesOf(event.dataTransfer?.files ?? null);
+        if (files.length === 0) return false;
+        const at = view.posAtCoords({ left: event.clientX, top: event.clientY });
+        void insertUploadedImages(view, files, at?.pos ?? view.state.selection.from);
+        return true;
+      },
     },
     onUpdate: ({ editor }) => scheduleSave(editor),
   });

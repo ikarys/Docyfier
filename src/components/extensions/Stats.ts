@@ -1,5 +1,6 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import type { CardAccent } from "./Cards";
+import { iconAttribute, renderWithBody } from "./icon";
 import { deleteLayoutBlockOnBackspace } from "./layoutDelete";
 
 declare module "@tiptap/core" {
@@ -64,6 +65,7 @@ export const StatRow = Node.create({
 });
 
 export type StatTrend = "good" | "bad" | "flat";
+export type StatLayout = "grid" | "row";
 
 export const Stat = Node.create({
   name: "stat",
@@ -85,6 +87,14 @@ export const Stat = Node.create({
         parseHTML: (el) => el.getAttribute("data-trend") ?? "flat",
         renderHTML: (attrs) => ({ "data-trend": attrs.trend }),
       },
+      // "grid" is the compact tile in a row of figures; "row" is the
+      // full-width dashboard card — same content, same order, wider layout.
+      layout: {
+        default: "grid" as StatLayout,
+        parseHTML: (el) => el.getAttribute("data-layout") ?? "grid",
+        renderHTML: (attrs) => ({ "data-layout": attrs.layout }),
+      },
+      ...iconAttribute,
     };
   },
 
@@ -92,11 +102,15 @@ export const Stat = Node.create({
     return [{ tag: "div[data-stat]" }];
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return [
+  // Unlike callout/card/step, a stat always wraps its content: both layouts
+  // position the value, label and delta as a group next to an optional icon,
+  // so one predictable DOM shape is worth more than a minimal one.
+  renderHTML({ node, HTMLAttributes }) {
+    return renderWithBody(
       "div",
+      node.attrs,
       mergeAttributes(HTMLAttributes, { "data-stat": "", class: "stat" }),
-      0,
-    ];
+      "stat-body",
+    );
   },
 });

@@ -2,6 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import type { Editor, Range } from "@tiptap/core";
+import { imageFilesOf, insertUploadedImages } from "@/lib/doc/upload";
 
 export interface SlashItem {
   title: string;
@@ -163,6 +164,36 @@ export const SLASH_ITEMS: SlashItem[] = [
       editor.chain().focus().deleteRange(range).insertChart("line").run(),
   },
   {
+    title: "Cover",
+    icon: "▤",
+    keywords: ["cover", "title", "couverture", "titre", "header"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertCover().run(),
+  },
+  {
+    title: "Table of contents",
+    icon: "☰",
+    keywords: ["toc", "contents", "sommaire", "table des matieres", "plan"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertTableOfContents().run(),
+  },
+  {
+    title: "Image",
+    icon: "🖼",
+    keywords: ["image", "picture", "photo", "illustration"],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      pickImage(editor);
+    },
+  },
+  {
+    title: "Page break",
+    icon: "⤓",
+    keywords: ["page", "break", "saut de page", "pagination"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setPageBreak().run(),
+  },
+  {
     title: "Divider",
     icon: "—",
     keywords: ["divider", "hr", "rule", "separateur", "ligne"],
@@ -170,6 +201,20 @@ export const SLASH_ITEMS: SlashItem[] = [
       editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
   },
 ];
+
+/** Open the OS file picker and insert whatever image comes back. */
+function pickImage(editor: Editor): void {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.onchange = () => {
+    const files = imageFilesOf(input.files);
+    if (files.length > 0) {
+      void insertUploadedImages(editor.view, files, editor.state.selection.from);
+    }
+  };
+  input.click();
+}
 
 export function filterSlashItems(query: string): SlashItem[] {
   const q = query.trim().toLowerCase();

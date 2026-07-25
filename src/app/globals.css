@@ -777,7 +777,7 @@ body {
   border: 1px solid var(--rule);
   min-width: 0;
 }
-.doc .stat > p:first-child {
+.doc .stat-body > p:first-child {
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -785,7 +785,7 @@ body {
   margin: 0 0 0.25rem;
   color: var(--accent);
 }
-.doc .stat > p:nth-child(2) {
+.doc .stat-body > p:nth-child(2) {
   font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -794,7 +794,7 @@ body {
   margin: 0;
 }
 /* Optional third paragraph = delta pill, colored by data-trend */
-.doc .stat > p:nth-child(3) {
+.doc .stat-body > p:nth-child(3) {
   display: inline-block;
   margin: 0.5rem auto 0;
   font-size: 0.72rem;
@@ -805,24 +805,24 @@ body {
   background: var(--gray-bg);
   color: var(--gray);
 }
-.doc .stat[data-trend="good"] > p:nth-child(3) {
+.doc .stat[data-trend="good"] .stat-body > p:nth-child(3) {
   background: var(--tip-bg);
   color: var(--tip);
 }
-.doc .stat[data-trend="bad"] > p:nth-child(3) {
+.doc .stat[data-trend="bad"] .stat-body > p:nth-child(3) {
   background: var(--danger-bg);
   color: var(--danger);
 }
-.doc .stat[data-accent="green"] > p:first-child {
+.doc .stat[data-accent="green"] .stat-body > p:first-child {
   color: var(--tip);
 }
-.doc .stat[data-accent="yellow"] > p:first-child {
+.doc .stat[data-accent="yellow"] .stat-body > p:first-child {
   color: var(--warn);
 }
-.doc .stat[data-accent="red"] > p:first-child {
+.doc .stat[data-accent="red"] .stat-body > p:first-child {
   color: var(--danger);
 }
-.doc .stat[data-accent="purple"] > p:first-child {
+.doc .stat[data-accent="purple"] .stat-body > p:first-child {
   color: var(--purple);
 }
 
@@ -1040,6 +1040,288 @@ body {
   .doc .step:not(:last-child)::after {
     display: none;
   }
+}
+
+/* ---- Block icons (STEP U6) ------------------------------------------------
+   One stroked glyph inheriting the block's accent. The `*-body` wrappers only
+   exist when a block carries an icon (see extensions/icon.ts), so every rule
+   here is additive: an icon-less block keeps its pre-U6 layout untouched.
+   ========================================================================= */
+
+.doc .block-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.doc .callout[data-icon],
+.doc .card[data-icon],
+.doc .step[data-icon] {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.doc .callout-body,
+.doc .card-body,
+.doc .step-body {
+  flex: 1;
+  min-width: 0;
+}
+.doc .callout-body > *:first-child,
+.doc .card-body > *:first-child,
+.doc .step-body > *:first-child {
+  margin-top: 0;
+}
+.doc .callout-body > *:last-child,
+.doc .card-body > *:last-child,
+.doc .step-body > *:last-child {
+  margin-bottom: 0;
+}
+.doc .callout[data-icon] > .block-icon {
+  color: var(--note);
+  margin-top: 0.15rem;
+}
+.doc .callout[data-variant="tip"] > .block-icon {
+  color: var(--tip);
+}
+.doc .callout[data-variant="warn"] > .block-icon {
+  color: var(--warn);
+}
+.doc .callout[data-variant="danger"] > .block-icon {
+  color: var(--danger);
+}
+.doc .card[data-icon] > .block-icon {
+  color: var(--card-c);
+  margin-top: 0.15rem;
+}
+.doc .card-body > p {
+  font-size: 0.92rem;
+  margin: 0 0 0.6rem;
+}
+.doc .step-body > h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+.doc .step-body > p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+/* Dashboard stat card: same content, wider layout (STEP U6) */
+.doc .stat-row:has(.stat[data-layout="row"]) {
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+}
+.doc .stat[data-layout="row"] {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  text-align: left;
+  padding: 1.15rem 1.4rem;
+}
+.doc .stat[data-layout="row"] > .block-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--accent);
+}
+.doc .stat[data-layout="row"] .stat-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+/* The label is authored second (value, label, delta) but reads first. */
+.doc .stat[data-layout="row"] .stat-body > p:nth-child(2) {
+  order: -1;
+  margin-bottom: 0.15rem;
+}
+.doc .stat[data-layout="row"] .stat-body > p:first-child {
+  font-size: 2.6rem;
+}
+.doc .stat[data-layout="row"] .stat-body > p:nth-child(3) {
+  margin: 0.35rem 0 0;
+  align-self: flex-start;
+}
+.doc .stat[data-layout="row"][data-accent="green"] > .block-icon {
+  color: var(--tip);
+}
+.doc .stat[data-layout="row"][data-accent="yellow"] > .block-icon {
+  color: var(--warn);
+}
+.doc .stat[data-layout="row"][data-accent="red"] > .block-icon {
+  color: var(--danger);
+}
+.doc .stat[data-layout="row"][data-accent="purple"] > .block-icon {
+  color: var(--purple);
+}
+
+/* ---- Cover, table of contents, images, page break (STEP U2) -------------- */
+
+.doc .doc-cover {
+  margin: 0 0 calc(2.5rem * var(--doc-space));
+  padding: calc(2.5rem * var(--doc-space)) calc(2rem * var(--doc-space));
+  border-radius: var(--radius);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 14%, var(--paper)),
+    color-mix(in srgb, var(--accent) 4%, var(--paper))
+  );
+  border: 1px solid var(--accent-soft);
+}
+.doc .doc-cover h1 {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin: 0 0 0.75rem;
+  color: var(--accent);
+}
+.doc .cover-line {
+  margin: 0 0 0.5rem;
+}
+.doc .cover-line:last-child {
+  margin-bottom: 0;
+}
+.doc .cover-line[data-variant="subtitle"] {
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.doc .cover-line[data-variant="chips"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+.doc .cover-line[data-variant="meta"] {
+  margin-top: 1.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+
+.doc .doc-toc {
+  margin: calc(1.75rem * var(--doc-space)) 0;
+  padding: 1.1rem 1.4rem;
+  border-left: 3px solid var(--accent);
+  background: var(--paper-shell);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.doc .toc-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+.doc .toc-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+.doc .toc-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: toc;
+}
+.doc .toc-list li {
+  margin: 0.15rem 0;
+}
+.doc .toc-list li[data-level="2"] {
+  padding-left: 0.9rem;
+}
+.doc .toc-list li[data-level="3"] {
+  padding-left: 1.8rem;
+  font-size: 0.9rem;
+}
+.doc .toc-link {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-align: left;
+}
+.doc .toc-link:hover {
+  color: var(--accent);
+}
+
+.doc .doc-image {
+  margin: calc(1.75rem * var(--doc-space)) 0;
+  text-align: center;
+  position: relative;
+}
+.doc .doc-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+}
+.doc-editor .doc-image[data-selected="true"] img {
+  outline: 3px solid var(--accent-soft);
+}
+.image-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px -14px rgba(20, 22, 30, 0.4);
+}
+.image-size {
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: none;
+  background: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.image-size.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+.image-alt {
+  font: inherit;
+  font-size: 0.72rem;
+  width: 8rem;
+  border: none;
+  border-left: 1px solid var(--rule);
+  padding: 0.2rem 0.5rem;
+  outline: none;
+  background: none;
+  color: var(--ink-soft);
+}
+
+.doc .page-break {
+  height: 0;
+  margin: calc(2rem * var(--doc-space)) 0;
+  border-top: 2px dashed var(--rule-strong);
+  position: relative;
+}
+.doc .page-break::after {
+  content: "Page break";
+  position: absolute;
+  top: -0.65rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 0.5rem;
+  background: var(--paper);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.doc-editor .page-break.ProseMirror-selectednode {
+  border-top-color: var(--accent);
 }
 
 /* ============================================================================
@@ -2082,15 +2364,36 @@ body {
   }
   .doc pre,
   .doc table,
+  .doc tr,
   .doc blockquote,
+  .doc .callout,
   .doc .card,
+  .doc .stat,
   .doc .stat-row,
   .doc .card-grid,
   .doc .chart,
   .doc .timeline-item,
   .doc .step,
-  .doc .pyramid {
+  .doc .pyramid,
+  .doc .doc-cover,
+  .doc .doc-toc,
+  .doc .doc-image {
     break-inside: avoid;
+  }
+  /* Editing affordances that live inside the document, not in `.no-print`. */
+  .doc .image-bar,
+  .doc .chart-panel {
+    display: none !important;
+  }
+  /* The break itself must print — its dashed rule and label must not. */
+  .doc .page-break {
+    break-after: page;
+    border-top: none;
+    height: 0;
+    margin: 0;
+  }
+  .doc .page-break::after {
+    display: none;
   }
   .doc a {
     border-bottom: none;

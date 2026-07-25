@@ -17,6 +17,11 @@ import { Timeline, TimelineItem } from "@/components/extensions/Timeline";
 import { StepList, Step } from "@/components/extensions/Steps";
 import { Pyramid, PyramidTier } from "@/components/extensions/Pyramid";
 import { Chart } from "@/components/extensions/Chart";
+import { DocCover, CoverLine } from "@/components/extensions/Cover";
+import { TableOfContents } from "@/components/extensions/Toc";
+import { PageBreak } from "@/components/extensions/PageBreak";
+import { DocImage } from "@/components/extensions/DocImage";
+import { TextAlign } from "@tiptap/extension-text-align";
 import { chartError } from "@/lib/doc/chart";
 
 /**
@@ -49,6 +54,12 @@ const schema = getSchema([
   Pyramid,
   PyramidTier,
   Chart,
+  DocCover,
+  CoverLine,
+  TableOfContents,
+  PageBreak,
+  DocImage,
+  TextAlign.configure({ types: ["heading", "paragraph"] }),
 ]);
 
 /** Throws with a descriptive message when `json` is not a valid document. */

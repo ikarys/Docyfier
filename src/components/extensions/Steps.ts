@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { iconAttribute, renderWithIcon } from "./icon";
 import type { CardAccent } from "./Cards";
 import { deleteLayoutBlockOnBackspace } from "./layoutDelete";
 
@@ -77,6 +78,7 @@ export const Step = Node.create({
         parseHTML: (el) => el.getAttribute("data-accent") ?? "blue",
         renderHTML: (attrs) => ({ "data-accent": attrs.accent }),
       },
+      ...iconAttribute,
     };
   },
 
@@ -84,11 +86,12 @@ export const Step = Node.create({
     return [{ tag: "div[data-step]" }];
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return [
+  renderHTML({ node, HTMLAttributes }) {
+    return renderWithIcon(
       "div",
+      node.attrs,
       mergeAttributes(HTMLAttributes, { "data-step": "", class: "step" }),
-      0,
-    ];
+      "step-body",
+    );
   },
 });

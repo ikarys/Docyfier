@@ -1,6 +1,7 @@
 // Import from @tiptap/core (not /react) so the extension is also usable
 // server-side for headless schema validation of AI output.
 import { Node, mergeAttributes } from "@tiptap/core";
+import { iconAttribute, renderWithIcon } from "./icon";
 
 export type CalloutVariant = "note" | "tip" | "warn" | "danger";
 
@@ -32,6 +33,7 @@ export const Callout = Node.create({
         parseHTML: (el) => el.getAttribute("data-variant") ?? "note",
         renderHTML: (attrs) => ({ "data-variant": attrs.variant }),
       },
+      ...iconAttribute,
     };
   },
 
@@ -39,12 +41,13 @@ export const Callout = Node.create({
     return [{ tag: "div[data-callout]" }];
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return [
+  renderHTML({ node, HTMLAttributes }) {
+    return renderWithIcon(
       "div",
+      node.attrs,
       mergeAttributes(HTMLAttributes, { "data-callout": "", class: "callout" }),
-      0,
-    ];
+      "callout-body",
+    );
   },
 
   addCommands() {
