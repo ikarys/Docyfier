@@ -42,6 +42,16 @@
 
   --radius: 10px;
   --shell-max: 56rem;
+
+  /* Theme tokens (PLAN.md STEP U3). The editor overwrites these inline on
+     `.doc-shell` from `resolveTokens()`; the values here are the fallback used
+     by app chrome and by any document rendered without a theme. */
+  --doc-accent: #3b5bdb;
+  --doc-font-heading: var(--font-sans);
+  --doc-font-body: var(--font-sans);
+  --doc-radius: 10px;
+  /* Multiplier on the document's vertical rhythm — the "density" token. */
+  --doc-space: 1;
 }
 
 * {
@@ -126,6 +136,18 @@ body {
   max-width: var(--shell-max);
   margin: 2.5rem auto;
   padding: 0 1.25rem;
+
+  /* Everything colored by the document derives from the accent token, so an
+     override in the Design panel repaints the whole subtree — including the
+     "note" callout and the chart series — with no content change. */
+  --accent: var(--doc-accent);
+  --accent-soft: color-mix(in srgb, var(--doc-accent) 14%, var(--paper));
+  --note: var(--doc-accent);
+  --note-bg: color-mix(in srgb, var(--doc-accent) 9%, var(--paper));
+  --radius: var(--doc-radius);
+  /* Density moves block spacing a lot and leading only a little: a compact
+     document should be tighter, not cramped to read. */
+  --doc-lead: calc(1.72 * (0.85 + 0.15 * var(--doc-space)));
 }
 
 .doc-sheet {
@@ -134,15 +156,23 @@ body {
   border-radius: var(--radius);
   box-shadow: 0 1px 2px rgba(20, 22, 30, 0.04),
     0 12px 32px -12px rgba(20, 22, 30, 0.12);
-  padding: 4rem 4.5rem;
+  padding: calc(4rem * var(--doc-space)) calc(4.5rem * var(--doc-space));
 }
 
 /* ---- Document typography (the "pretty" layer) ---------------------------- */
 
 .doc {
   color: var(--ink);
+  font-family: var(--doc-font-body);
   font-size: 1.02rem;
-  line-height: 1.72;
+  line-height: var(--doc-lead, 1.72);
+}
+
+.doc h1,
+.doc h2,
+.doc h3,
+.doc h4 {
+  font-family: var(--doc-font-heading);
 }
 
 .doc > *:first-child {
@@ -154,21 +184,21 @@ body {
   line-height: 1.15;
   font-weight: 800;
   letter-spacing: -0.022em;
-  margin: 0 0 1.75rem;
-  padding-bottom: 1rem;
+  margin: 0 0 calc(1.75rem * var(--doc-space));
+  padding-bottom: calc(1rem * var(--doc-space));
   border-bottom: 3px solid var(--ink);
 }
 .doc h2 {
   font-size: 1.55rem;
   font-weight: 750;
   letter-spacing: -0.015em;
-  margin: 2.75rem 0 1rem;
+  margin: calc(2.75rem * var(--doc-space)) 0 calc(1rem * var(--doc-space));
   padding-top: 0.25rem;
 }
 .doc h3 {
   font-size: 1.2rem;
   font-weight: 700;
-  margin: 2rem 0 0.75rem;
+  margin: calc(2rem * var(--doc-space)) 0 calc(0.75rem * var(--doc-space));
   color: var(--ink);
 }
 .doc h4 {
@@ -177,11 +207,11 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ink-soft);
-  margin: 1.75rem 0 0.5rem;
+  margin: calc(1.75rem * var(--doc-space)) 0 calc(0.5rem * var(--doc-space));
 }
 
 .doc p {
-  margin: 0 0 1.1rem;
+  margin: 0 0 calc(1.1rem * var(--doc-space));
 }
 
 .doc a {
@@ -200,7 +230,7 @@ body {
 
 .doc ul,
 .doc ol {
-  margin: 0 0 1.1rem;
+  margin: 0 0 calc(1.1rem * var(--doc-space));
   padding-left: 1.4rem;
 }
 .doc li {
@@ -213,14 +243,14 @@ body {
 .doc hr {
   border: none;
   border-top: 1px solid var(--rule);
-  margin: 2.5rem 0;
+  margin: calc(2.5rem * var(--doc-space)) 0;
 }
 
 /* Tables */
 .doc table {
   width: 100%;
   border-collapse: collapse;
-  margin: 1.5rem 0;
+  margin: calc(1.5rem * var(--doc-space)) 0;
   font-size: 0.94rem;
   overflow: hidden;
   border-radius: 8px;
@@ -267,7 +297,7 @@ body {
   padding: 1.15rem 1.3rem;
   border-radius: 10px;
   overflow-x: auto;
-  margin: 1.5rem 0;
+  margin: calc(1.5rem * var(--doc-space)) 0;
   font-size: 0.85rem;
   line-height: 1.6;
 }
@@ -281,7 +311,7 @@ body {
 
 /* Blockquote → callout. A leading "**Label** :" is styled by the renderer. */
 .doc blockquote {
-  margin: 1.5rem 0;
+  margin: calc(1.5rem * var(--doc-space)) 0;
   padding: 1rem 1.25rem;
   border-left: 4px solid var(--note);
   background: var(--note-bg);
@@ -1013,25 +1043,22 @@ body {
 }
 
 /* ============================================================================
-   Themes (PLAN.md STEP 2b)
-   The document lives in `.doc-shell[data-theme="…"]`. `:root` above is the
-   "editorial" baseline; each theme below only re-points design tokens (and a
-   few structural rules) on that subtree, so the same content restyles — and
-   reprints — with zero content change. App chrome sits outside the subtree and
-   keeps the default accent.
+   Themes (PLAN.md STEP 2b, tokenized in STEP U3)
+   The document lives in `.doc-shell[data-theme="…"]`, whose accent, fonts,
+   radius and density arrive as inline CSS variables from `resolveTokens()`.
+   The rules below carry only what a token cannot express — ink/rule palettes
+   and structural signatures (underlines, gradients, card weight). Anything
+   colored here goes through `var(--accent)` so a custom accent still wins.
+   App chrome sits outside the subtree and keeps the default accent.
    ========================================================================= */
 
 /* --- Corporate: confident blue, structured, business-ready --------------- */
 .doc-shell[data-theme="corporate"] {
-  --accent: #2563eb;
-  --accent-soft: #dbeafe;
   --ink: #0f172a;
   --ink-soft: #334155;
   --ink-faint: #64748b;
   --rule: #e2e8f0;
   --rule-strong: #cbd5e1;
-  --note: #2563eb;
-  --note-bg: #eff6ff;
 }
 .doc-shell[data-theme="corporate"] .doc-sheet {
   border-top: 5px solid var(--accent);
@@ -1049,14 +1076,11 @@ body {
 
 /* --- Minimal: monochrome, airy, understated ------------------------------ */
 .doc-shell[data-theme="minimal"] {
-  --accent: #111827;
-  --accent-soft: #f3f4f6;
   --ink: #111827;
   --ink-soft: #4b5563;
   --ink-faint: #9ca3af;
   --rule: #ececec;
   --rule-strong: #dcdcdc;
-  --radius: 4px;
 }
 .doc-shell[data-theme="minimal"] .doc h1 {
   font-weight: 700;
@@ -1071,7 +1095,6 @@ body {
 .doc-shell[data-theme="minimal"] .doc .stat {
   background: var(--paper);
   box-shadow: none;
-  border-radius: 6px;
 }
 .doc-shell[data-theme="minimal"] .doc .card {
   border-top-width: 1px;
@@ -1079,35 +1102,34 @@ body {
 
 /* --- Vivid: colorful, rounded, web-native (breaks the paper look) -------- */
 .doc-shell[data-theme="vivid"] {
-  --accent: #7c3aed;
-  --accent-soft: #f3e8ff;
-  --purple: #7c3aed;
-  --purple-bg: #f3e8ff;
-  --radius: 16px;
-  --paper-shell: #faf5ff;
-  background: linear-gradient(180deg, #faf5ff 0%, #eef2ff 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 7%, #fff) 0%,
+    color-mix(in srgb, var(--accent) 12%, #fff) 100%
+  );
   border-radius: 24px;
   padding-top: 1.5rem;
   padding-bottom: 1.5rem;
 }
 .doc-shell[data-theme="vivid"] .doc-sheet {
   border: none;
-  border-radius: 20px;
-  box-shadow: 0 20px 60px -24px rgba(124, 58, 237, 0.4);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: 0 20px 60px -24px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 .doc-shell[data-theme="vivid"] .doc h1 {
   border-bottom: none;
   padding-bottom: 0;
-  background: linear-gradient(90deg, #7c3aed, #db2777);
+  background: linear-gradient(
+    90deg,
+    var(--accent),
+    color-mix(in srgb, var(--accent) 45%, #db2777)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .doc-shell[data-theme="vivid"] .doc h2 {
   color: var(--accent);
-}
-.doc-shell[data-theme="vivid"] .doc .card {
-  border-radius: 18px;
 }
 .doc-shell[data-theme="vivid"] .doc thead th {
   background: var(--accent);
@@ -1393,6 +1415,11 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.chip.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
 
 .spinner {
   width: 0.9em;
@@ -1552,6 +1579,111 @@ body {
 .ai-send {
   padding: 0.4rem 0.7rem;
   border-radius: 8px;
+}
+
+/* ---- Design panel (STEP U3) ----------------------------------------------- */
+
+.design-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.design-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.design-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.preset-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+.preset-card {
+  font: inherit;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 9px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-align: left;
+}
+.preset-card:hover {
+  border-color: var(--accent);
+}
+.preset-card.is-active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--ink);
+}
+.preset-swatch {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.preset-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.design-reset {
+  align-self: flex-start;
+}
+.accent-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.accent-dot {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: 0 0 0 1px var(--rule-strong);
+  cursor: pointer;
+  padding: 0;
+}
+.accent-dot.is-active {
+  border-color: var(--paper);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.accent-picker {
+  width: 2.2rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  background: var(--paper);
+  cursor: pointer;
+}
+.design-select {
+  width: 100%;
+}
+.design-radio-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.design-hint {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--ink-faint);
 }
 
 /* ---- Selection bubble menu ------------------------------------------------ */

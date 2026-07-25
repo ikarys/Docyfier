@@ -3,7 +3,7 @@ import { mkdir, readFile, readdir, rename, writeFile, unlink } from "node:fs/pro
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { JSONContent } from "@tiptap/react";
-import { DEFAULT_THEME, normalizeTheme } from "@/lib/themes";
+import { DEFAULT_PRESET, normalizeTheme, type DocumentTheme } from "@/lib/themes";
 
 /**
  * File-backed document store. Documents are ProseMirror JSON — the product's
@@ -15,8 +15,10 @@ export interface DocumentRecord {
   id: string;
   title: string;
   content: JSONContent;
-  /** Presentation theme id (see src/lib/themes.ts). Content stays untouched. */
-  theme: string;
+  /** Presentation theme (see src/lib/themes.ts). Content stays untouched.
+   * Documents written before STEP U3 hold a bare preset id; `normalizeTheme`
+   * upgrades them on read. */
+  theme: DocumentTheme;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,7 +93,8 @@ export async function getDocument(id: string): Promise<DocumentRecord | null> {
   try {
     const raw = await readFile(filePath(dir, id), "utf8");
     const doc = JSON.parse(raw) as DocumentRecord;
-    // Older documents predate themes: fall back to the default on read.
+    // Older documents predate themes, or store the pre-U3 string form: both
+    // normalize to a full DocumentTheme here, never at the render site.
     doc.theme = normalizeTheme(doc.theme);
     return doc;
   } catch {
@@ -108,7 +111,7 @@ export async function createDocument(
     id: randomUUID(),
     title: deriveTitle(content),
     content,
-    theme: DEFAULT_THEME,
+    theme: { preset: DEFAULT_PRESET },
     createdAt: now,
     updatedAt: now,
   };
@@ -136,7 +139,7 @@ export async function updateDocument(
 /** Update only the presentation theme, leaving content untouched. */
 export async function setDocumentTheme(
   id: string,
-  theme: string,
+  theme: unknown,
 ): Promise<DocumentRecord | null> {
   const existing = await getDocument(id);
   if (!existing) return null;

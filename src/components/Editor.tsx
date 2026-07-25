@@ -25,8 +25,14 @@ import { SlashCommand } from "./extensions/SlashCommand";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import { saveDocumentAction, setDocumentThemeAction } from "@/app/actions";
 import { toPlainJSON } from "@/lib/doc/plain";
-import { THEMES } from "@/lib/themes";
+import {
+  THEMES,
+  resolveTokens,
+  tokenStyle,
+  type DocumentTheme,
+} from "@/lib/themes";
 import { AiPanel } from "./AiPanel";
+import { DesignPanel } from "./DesignPanel";
 import { SelectionAiMenu } from "./SelectionAiMenu";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -58,15 +64,18 @@ export function DocumentEditor({
 }: {
   id: string;
   initialContent: JSONContent;
-  initialTheme: string;
+  initialTheme: DocumentTheme;
   initialUpdatedAt: string;
 }) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [panelOpen, setPanelOpen] = useState(true);
+  /** Only one side panel at a time — they share the same slot. */
+  const [panel, setPanel] = useState<"ai" | "design" | null>("ai");
   const [theme, setTheme] = useState(initialTheme);
   /** Position of the top-level block currently under the drag handle. */
   const [hoveredBlock, setHoveredBlock] = useState<{ pos: number; size: number } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Theme writes are debounced too: the accent color input fires per pixel. */
+  const themeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Latest editor JSON not yet known to be on the server; null when in sync. */
   const pending = useRef<JSONContent | null>(null);
   /** Server `updatedAt` of the last write we know landed. */
@@ -128,9 +137,12 @@ export function DocumentEditor({
   );
 
   const changeTheme = useCallback(
-    (next: string) => {
+    (next: DocumentTheme) => {
       setTheme(next);
-      void setDocumentThemeAction(id, next);
+      if (themeTimer.current) clearTimeout(themeTimer.current);
+      themeTimer.current = setTimeout(() => {
+        void setDocumentThemeAction(id, next);
+      }, 400);
     },
     [id],
   );
@@ -247,14 +259,18 @@ export function DocumentEditor({
       <MenuBar
         editor={editor}
         saveState={saveState}
-        panelOpen={panelOpen}
-        onTogglePanel={() => setPanelOpen((v) => !v)}
+        panel={panel}
+        onTogglePanel={(which) => setPanel((p) => (p === which ? null : which))}
         theme={theme}
         onChangeTheme={changeTheme}
         onSaveNow={saveNow}
       />
-      <div className="editor-body" data-panel={panelOpen}>
-        <main className="doc-shell" data-theme={theme}>
+      <div className="editor-body" data-panel={panel !== null}>
+        <main
+          className="doc-shell"
+          data-theme={theme.preset}
+          style={tokenStyle(resolveTokens(theme))}
+        >
           <article className="doc-sheet">
             <EditorContent editor={editor} />
             <SelectionAiMenu editor={editor} />
@@ -289,11 +305,18 @@ export function DocumentEditor({
             </DragHandle>
           </article>
         </main>
-        {panelOpen && (
+        {panel === "ai" && (
           <AiPanel
             editor={editor}
             onApply={applyDocument}
-            onClose={() => setPanelOpen(false)}
+            onClose={() => setPanel(null)}
+          />
+        )}
+        {panel === "design" && (
+          <DesignPanel
+            theme={theme}
+            onChange={changeTheme}
+            onClose={() => setPanel(null)}
           />
         )}
       </div>
@@ -304,7 +327,7 @@ export function DocumentEditor({
 function MenuBar({
   editor,
   saveState,
-  panelOpen,
+  panel,
   onTogglePanel,
   theme,
   onChangeTheme,
@@ -312,10 +335,10 @@ function MenuBar({
 }: {
   editor: Editor;
   saveState: SaveState;
-  panelOpen: boolean;
-  onTogglePanel: () => void;
-  theme: string;
-  onChangeTheme: (theme: string) => void;
+  panel: "ai" | "design" | null;
+  onTogglePanel: (which: "ai" | "design") => void;
+  theme: DocumentTheme;
+  onChangeTheme: (theme: DocumentTheme) => void;
   onSaveNow: () => void;
 }) {
   const [helpOpen, setHelpOpen] = useState(false);
@@ -482,8 +505,8 @@ function MenuBar({
         <select
           id="theme-select"
           className="tb-select"
-          value={theme}
-          onChange={(e) => onChangeTheme(e.target.value)}
+          value={theme.preset}
+          onChange={(e) => onChangeTheme({ ...theme, preset: e.target.value })}
           title="Document theme"
         >
           {THEMES.map((t) => (
@@ -502,8 +525,15 @@ function MenuBar({
         ?
       </button>
       <button
-        className={panelOpen ? "tb-btn tb-ai is-active" : "tb-btn tb-ai"}
-        onClick={onTogglePanel}
+        className={panel === "design" ? "tb-btn tb-ai is-active" : "tb-btn tb-ai"}
+        onClick={() => onTogglePanel("design")}
+        title="Design panel — accent, fonts, density"
+      >
+        ◐ Design
+      </button>
+      <button
+        className={panel === "ai" ? "tb-btn is-active" : "tb-btn"}
+        onClick={() => onTogglePanel("ai")}
         title="AI assistant panel"
       >
         ✦ Assistant

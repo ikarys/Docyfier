@@ -9,6 +9,7 @@ import {
   setDocumentTheme,
   updateDocument,
 } from "@/lib/store";
+import type { DocumentTheme } from "@/lib/themes";
 
 /** Create a blank document and open it in the editor. */
 export async function newDocumentAction(): Promise<void> {
@@ -31,10 +32,13 @@ export async function saveDocumentAction(
   return { title: updated.title, updatedAt: updated.updatedAt };
 }
 
-/** Persist the document's presentation theme (content untouched). */
+/** Persist the document's presentation theme (content untouched).
+ *
+ * `theme` is validated by `normalizeTheme` inside the store, so a stale client
+ * sending the legacy string form — or garbage — still lands a valid theme. */
 export async function setDocumentThemeAction(
   id: string,
-  theme: string,
+  theme: DocumentTheme,
 ): Promise<boolean> {
   const updated = await setDocumentTheme(id, theme);
   return updated !== null;
