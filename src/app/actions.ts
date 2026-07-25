@@ -17,14 +17,17 @@ export async function newDocumentAction(): Promise<void> {
   redirect(`/doc/${doc.id}`);
 }
 
-/** Persist editor content. Returns the derived title and save time for the UI. */
+/** Persist editor content. Returns the derived title and save time for the UI.
+ *
+ * No `revalidatePath` here: the document list is `force-dynamic`, so it already
+ * reads fresh on every visit, while revalidating from an autosave made Next
+ * re-render and ship the current document page back on every keystroke. */
 export async function saveDocumentAction(
   id: string,
   content: JSONContent,
 ): Promise<{ title: string; updatedAt: string } | null> {
   const updated = await updateDocument(id, content);
   if (!updated) return null;
-  revalidatePath("/");
   return { title: updated.title, updatedAt: updated.updatedAt };
 }
 

@@ -41,6 +41,7 @@ export default async function DocumentPage({
         id={doc.id}
         initialContent={doc.content}
         initialTheme={doc.theme}
+        initialUpdatedAt={doc.updatedAt}
       />
     </>
   );

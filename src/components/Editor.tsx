@@ -23,20 +23,42 @@ import { Pyramid, PyramidTier } from "./extensions/Pyramid";
 import { SlashCommand } from "./extensions/SlashCommand";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import { saveDocumentAction, setDocumentThemeAction } from "@/app/actions";
+import { toPlainJSON } from "@/lib/doc/plain";
 import { THEMES } from "@/lib/themes";
 import { AiPanel } from "./AiPanel";
 import { SelectionAiMenu } from "./SelectionAiMenu";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
+/** A local copy of unsaved edits, keyed by document.
+ *
+ * `base` is the server `updatedAt` the draft was typed on top of: if the server
+ * has moved past it the write landed and the draft is stale. Reloading the tab
+ * kills any in-flight save, so this synchronous copy is what makes a refresh
+ * during the autosave debounce non-destructive. */
+type Draft = { base: string; content: JSONContent };
+
+const DRAFT_PREFIX = "docyfier:draft:";
+
+function readDraft(id: string): Draft | null {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_PREFIX + id);
+    return raw ? (JSON.parse(raw) as Draft) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function DocumentEditor({
   id,
   initialContent,
   initialTheme,
+  initialUpdatedAt,
 }: {
   id: string;
   initialContent: JSONContent;
   initialTheme: string;
+  initialUpdatedAt: string;
 }) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [panelOpen, setPanelOpen] = useState(true);
@@ -44,8 +66,32 @@ export function DocumentEditor({
   /** Position of the top-level block currently under the drag handle. */
   const [hoveredBlock, setHoveredBlock] = useState<{ pos: number; size: number } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** Latest editor JSON awaiting a debounced write; null when nothing pending. */
+  /** Latest editor JSON not yet known to be on the server; null when in sync. */
   const pending = useRef<JSONContent | null>(null);
+  /** Server `updatedAt` of the last write we know landed. */
+  const baseVersion = useRef(initialUpdatedAt);
+
+  const writeDraft = useCallback(
+    (content: JSONContent) => {
+      try {
+        window.localStorage.setItem(
+          DRAFT_PREFIX + id,
+          JSON.stringify({ base: baseVersion.current, content } satisfies Draft),
+        );
+      } catch {
+        // Quota or private mode: the server save is still the real path.
+      }
+    },
+    [id],
+  );
+
+  const clearDraft = useCallback(() => {
+    try {
+      window.localStorage.removeItem(DRAFT_PREFIX + id);
+    } catch {
+      // ignore
+    }
+  }, [id]);
 
   /** Write any pending content immediately, cancelling the debounce. */
   const flushSave = useCallback(() => {
@@ -53,11 +99,24 @@ export function DocumentEditor({
     timer.current = null;
     const content = pending.current;
     if (content === null) return;
-    pending.current = null;
-    void saveDocumentAction(id, content).then((res) =>
-      setSaveState(res ? "saved" : "error"),
-    );
-  }, [id]);
+    setSaveState("saving");
+    // `pending` is cleared only once the server confirms, so a failed or
+    // interrupted save leaves the content queued instead of dropping it.
+    void saveDocumentAction(id, content)
+      .then((res) => {
+        if (!res) {
+          setSaveState("error");
+          return;
+        }
+        baseVersion.current = res.updatedAt;
+        setSaveState("saved");
+        if (pending.current === content) {
+          pending.current = null;
+          clearDraft();
+        }
+      })
+      .catch(() => setSaveState("error"));
+  }, [id, clearDraft]);
 
   // Stable identity: DragHandle re-registers its ProseMirror plugin whenever
   // this callback's reference changes, so an inline arrow here would loop.
@@ -78,43 +137,50 @@ export function DocumentEditor({
   const scheduleSave = useCallback(
     (editor: Editor) => {
       setSaveState("saving");
-      pending.current = editor.getJSON();
+      const content = toPlainJSON(editor.getJSON());
+      pending.current = content;
+      writeDraft(content);
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => flushSave(), 700);
     },
-    [flushSave],
+    [flushSave, writeDraft],
   );
+
+  // Stable identity: inline `.configure(...)` calls would otherwise return a new
+  // extension instance every render, which made useEditor think the config
+  // changed and re-apply editor options on every save-state re-render.
+  const extensions = useRef([
+    StarterKit,
+    Callout,
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableHeader,
+    TableCell,
+    TextStyle,
+    Color,
+    Highlight.configure({ multicolor: true }),
+    Badge,
+    CardGrid,
+    Card,
+    ColumnList,
+    Column,
+    StatRow,
+    Stat,
+    Timeline,
+    TimelineItem,
+    StepList,
+    Step,
+    Pyramid,
+    PyramidTier,
+    SlashCommand,
+    Placeholder.configure({
+      placeholder: "Write your document, or press the toolbar to add structure…",
+    }),
+  ]).current;
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit,
-      Callout,
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      TextStyle,
-      Color,
-      Highlight.configure({ multicolor: true }),
-      Badge,
-      CardGrid,
-      Card,
-      ColumnList,
-      Column,
-      StatRow,
-      Stat,
-      Timeline,
-      TimelineItem,
-      StepList,
-      Step,
-      Pyramid,
-      PyramidTier,
-      SlashCommand,
-      Placeholder.configure({
-        placeholder: "Write your document, or press the toolbar to add structure…",
-      }),
-    ],
+    extensions,
     content: initialContent,
     editorProps: {
       attributes: { class: "doc doc-editor" },
@@ -122,25 +188,56 @@ export function DocumentEditor({
     onUpdate: ({ editor }) => scheduleSave(editor),
   });
 
-  // Flush on unmount (in-app navigation) and on tab hide so edits made in the
-  // debounce window aren't lost when the user leaves the document.
+  // Flush on unmount (in-app navigation), on tab hide, and on pagehide — a
+  // reload or tab close fires `pagehide` but neither `visibilitychange` on all
+  // browsers nor React cleanup, and it kills the in-flight request either way.
   useEffect(() => {
-    const onHide = () => {
+    const onVisibility = () => {
       if (document.visibilityState === "hidden") flushSave();
     };
-    document.addEventListener("visibilitychange", onHide);
+    const onPageHide = () => flushSave();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
     return () => {
-      document.removeEventListener("visibilitychange", onHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
       flushSave();
     };
   }, [flushSave]);
 
+  // Recover edits that never reached the server (reload mid-debounce, offline,
+  // crashed tab). The draft only wins while the server is still on the version
+  // it was typed against; anything older is a landed save and gets dropped.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (!editor || restored.current) return;
+    restored.current = true;
+    const draft = readDraft(id);
+    if (!draft) return;
+    if (draft.base !== baseVersion.current) {
+      clearDraft();
+      return;
+    }
+    editor.commands.setContent(draft.content, { emitUpdate: false });
+    pending.current = draft.content;
+    flushSave();
+  }, [editor, id, clearDraft, flushSave]);
+
   if (!editor) return null;
 
-  /** Replace the whole document with AI output and persist it. */
+  /** Save the current editor content right away, bypassing the debounce. */
+  const saveNow = () => {
+    const content = toPlainJSON(editor.getJSON());
+    pending.current = content;
+    writeDraft(content);
+    flushSave();
+  };
+
+  /** Replace the whole document with AI output and persist it right away —
+   * a one-shot replacement has no reason to wait out the typing debounce. */
   const applyDocument = (content: DocJSON) => {
     editor.commands.setContent(content, { emitUpdate: false });
-    scheduleSave(editor);
+    saveNow();
   };
 
   return (
@@ -152,6 +249,7 @@ export function DocumentEditor({
         onTogglePanel={() => setPanelOpen((v) => !v)}
         theme={theme}
         onChangeTheme={changeTheme}
+        onSaveNow={saveNow}
       />
       <div className="editor-body" data-panel={panelOpen}>
         <main className="doc-shell" data-theme={theme}>
@@ -208,6 +306,7 @@ function MenuBar({
   onTogglePanel,
   theme,
   onChangeTheme,
+  onSaveNow,
 }: {
   editor: Editor;
   saveState: SaveState;
@@ -215,6 +314,7 @@ function MenuBar({
   onTogglePanel: () => void;
   theme: string;
   onChangeTheme: (theme: string) => void;
+  onSaveNow: () => void;
 }) {
   const [helpOpen, setHelpOpen] = useState(false);
   const active = (name: string, attrs?: Record<string, unknown>) =>
@@ -405,6 +505,9 @@ function MenuBar({
         title="AI assistant panel"
       >
         ✦ Assistant
+      </button>
+      <button className="tb-btn" onClick={onSaveNow} title="Save now">
+        Save
       </button>
       <span className="save-status" data-state={saveState}>
         {saveState === "saving"

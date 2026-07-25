@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { transformDocumentAction } from "@/app/ai-actions";
+import { toPlainJSON } from "@/lib/doc/plain";
 
 interface PanelItem {
   role: "user" | "ai";
@@ -51,7 +52,7 @@ export function AiPanel({
     if (busy) return;
     setBusy(true);
     push({ role: "user", text: label ?? instruction });
-    const before = editor.getJSON();
+    const before = toPlainJSON(editor.getJSON());
     const res = await transformDocumentAction(before, instruction);
     if (!res.ok) {
       push({ role: "ai", text: res.error, error: true });

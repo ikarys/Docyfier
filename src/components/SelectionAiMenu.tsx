@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { JSONContent } from "@tiptap/core";
 import { rewriteSelectionAction, type SelectionInput } from "@/app/ai-actions";
+import { toPlainJSON } from "@/lib/doc/plain";
 
 const QUICK_ACTIONS: { label: string; instruction: string }[] = [
   { label: "Rephrase", instruction: "Rephrase this to read better." },
@@ -139,7 +140,7 @@ export function SelectionAiMenu({ editor }: { editor: Editor }) {
         }
         return true;
       });
-      input = { mode: "blocks", blocks, instruction };
+      input = { mode: "blocks", blocks: toPlainJSON(blocks), instruction };
     }
 
     const res = await rewriteSelectionAction(input);

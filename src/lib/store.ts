@@ -1,5 +1,5 @@
 import "server-only";
-import { mkdir, readFile, readdir, writeFile, unlink } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { JSONContent } from "@tiptap/react";
@@ -39,6 +39,15 @@ async function ensureDir(): Promise<string> {
 
 function filePath(dir: string, id: string): string {
   return path.join(dir, `${id}.json`);
+}
+
+/** Write via a temp file + rename so an interrupted save can never leave a
+ * half-written document on disk (autosave writes often, including on unload). */
+async function writeRecord(dir: string, doc: DocumentRecord): Promise<void> {
+  const target = filePath(dir, doc.id);
+  const tmp = `${target}.${randomUUID()}.tmp`;
+  await writeFile(tmp, JSON.stringify(doc, null, 2), "utf8");
+  await rename(tmp, target);
 }
 
 /** A document is empty of typed text but always has a valid doc shape. */
@@ -103,7 +112,7 @@ export async function createDocument(
     createdAt: now,
     updatedAt: now,
   };
-  await writeFile(filePath(dir, doc.id), JSON.stringify(doc, null, 2), "utf8");
+  await writeRecord(dir, doc);
   return doc;
 }
 
@@ -120,7 +129,7 @@ export async function updateDocument(
     title: deriveTitle(content),
     updatedAt: new Date().toISOString(),
   };
-  await writeFile(filePath(dir, id), JSON.stringify(updated, null, 2), "utf8");
+  await writeRecord(dir, updated);
   return updated;
 }
 
@@ -137,7 +146,7 @@ export async function setDocumentTheme(
     theme: normalizeTheme(theme),
     updatedAt: new Date().toISOString(),
   };
-  await writeFile(filePath(dir, id), JSON.stringify(updated, null, 2), "utf8");
+  await writeRecord(dir, updated);
   return updated;
 }
 
