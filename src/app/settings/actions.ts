@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getAiSettings, saveAiSettings } from "@/lib/settings";
 import {
   listModels,
+  pingChatCompletion,
   clearDetectedModels,
   ModelsEndpointError,
   type ModelInfo,
@@ -58,6 +59,29 @@ export async function listModelsAction(
       ok: false,
       error: err instanceof Error ? err.message : "Connection failed",
       status: err instanceof ModelsEndpointError ? err.status : undefined,
+    };
+  }
+}
+
+export type TestChatResult = { ok: true } | { ok: false; error: string };
+
+/** Validate a server + model via a minimal chat completion ("test connection"
+ * for servers without a /models endpoint). */
+export async function testChatAction(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+): Promise<TestChatResult> {
+  if (!model.trim()) {
+    return { ok: false, error: "Enter a model id to test." };
+  }
+  try {
+    await pingChatCompletion(baseUrl.trim(), apiKey.trim(), model.trim());
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Chat test failed",
     };
   }
 }

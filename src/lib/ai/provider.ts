@@ -42,6 +42,43 @@ export async function listModels(
     .map((m) => ({ id: m.id }));
 }
 
+/**
+ * Validate a server by sending a minimal chat completion. Unlike listModels,
+ * this works on proxies without a /models endpoint (e.g. cline.bot) and proves
+ * the base URL, API key and model id all actually work end-to-end. Throws on
+ * any failure. Tolerates the "data" envelope some proxies wrap responses in.
+ */
+export async function pingChatCompletion(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+): Promise<void> {
+  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: "ping" }],
+      max_tokens: 1,
+      stream: false,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) {
+    throw new Error(`LLM server responded ${res.status} on /chat/completions`);
+  }
+  const body = (await res.json()) as {
+    choices?: unknown;
+    data?: { choices?: unknown };
+  };
+  if (body.choices === undefined && body.data?.choices === undefined) {
+    throw new Error("Unexpected chat-completion response (no choices)");
+  }
+}
+
 /** Auto-detected model id, cached per base URL. */
 const detectedModel = new Map<string, string>();
 
@@ -53,7 +90,20 @@ export function clearDetectedModels(): void {
 async function resolveModelId(baseUrl: string, apiKey: string): Promise<string> {
   const cached = detectedModel.get(baseUrl);
   if (cached) return cached;
-  const models = await listModels(baseUrl, apiKey);
+  let models: ModelInfo[];
+  try {
+    models = await listModels(baseUrl, apiKey);
+  } catch (err) {
+    // No /models endpoint (e.g. cline.bot, many proxies): auto-detect is
+    // impossible, so tell the user to pin a model id rather than leaking the
+    // raw "404 on /models".
+    if (err instanceof ModelsEndpointError) {
+      throw new Error(
+        `This LLM server has no model list (/models → ${err.status}), so no model could be auto-detected. Open Settings, enter a Model id, and Save.`,
+      );
+    }
+    throw err;
+  }
   const id = models[0]?.id;
   if (!id) throw new Error("No model loaded on the LLM server");
   detectedModel.set(baseUrl, id);

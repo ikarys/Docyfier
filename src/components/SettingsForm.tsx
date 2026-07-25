@@ -4,13 +4,14 @@ import { useActionState, useEffect, useState } from "react";
 import {
   saveAiSettingsAction,
   listModelsAction,
+  testChatAction,
 } from "@/app/settings/actions";
 import type { AiSettings } from "@/lib/settings-types";
 
 type Probe =
   | { state: "idle" }
   | { state: "loading" }
-  | { state: "ok"; models: string[] }
+  | { state: "ok"; models: string[]; via?: "chat" }
   | { state: "error"; message: string; status?: number };
 
 /** AI model configuration: endpoint, model picker, optional API key. */
@@ -25,17 +26,41 @@ export function SettingsForm({ initial }: { initial: AiSettings }) {
   const [probe, setProbe] = useState<Probe>({ state: "idle" });
   const [manualModel, setManualModel] = useState(false);
 
-  const test = async (url = baseUrl, key = apiKey) => {
+  const test = async (url = baseUrl, key = apiKey, useManual = manualModel) => {
     setProbe({ state: "loading" });
+
+    // Manual model id: /models is irrelevant (proxy may not expose it), so
+    // validate the real path — a minimal chat completion.
+    if (useManual) {
+      if (!model.trim()) {
+        setProbe({ state: "error", message: "Enter a model id to test." });
+        return;
+      }
+      const res = await testChatAction(url, key, model);
+      setProbe(
+        res.ok
+          ? { state: "ok", models: [model], via: "chat" }
+          : { state: "error", message: res.error },
+      );
+      return;
+    }
+
     const res = await listModelsAction(url, key);
     if (res.ok) {
       setProbe({ state: "ok", models: res.models.map((m) => m.id) });
-    } else {
-      setProbe({ state: "error", message: res.error, status: res.status });
-      // Server has no /models endpoint (e.g. some OpenAI-compatible proxies):
-      // there's nothing to pick from, so switch to manual entry.
-      if (res.status === 404) setManualModel(true);
+      return;
     }
+    // Server has no /models endpoint (e.g. some OpenAI-compatible proxies):
+    // switch to manual entry, and if a model id is set, prove it via chat
+    // instead of surfacing the misleading 404.
+    if (res.status === 404) {
+      setManualModel(true);
+      if (model.trim()) {
+        void test(url, key, true);
+        return;
+      }
+    }
+    setProbe({ state: "error", message: res.error, status: res.status });
   };
 
   // Probe the configured server once on mount to populate the model picker.
@@ -136,8 +161,11 @@ export function SettingsForm({ initial }: { initial: AiSettings }) {
         </label>
         {probe.state === "ok" && (
           <span className="field-help field-ok">
-            ✓ Connected — {probe.models.length} model
-            {probe.models.length === 1 ? "" : "s"} available
+            {probe.via === "chat"
+              ? "✓ Connected — model responded"
+              : `✓ Connected — ${probe.models.length} model${
+                  probe.models.length === 1 ? "" : "s"
+                } available`}
           </span>
         )}
         {probe.state === "error" && (
