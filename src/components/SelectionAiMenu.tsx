@@ -13,6 +13,91 @@ const QUICK_ACTIONS: { label: string; instruction: string }[] = [
   { label: "Formal", instruction: "Rewrite this in a more formal, professional tone." },
 ];
 
+const TEXT_COLORS = ["#3b5bdb", "#1f9d6b", "#c23b3b", "#b4690e", "#7048e8"];
+const HIGHLIGHT_COLORS = ["#fff3bf", "#e9f7f0", "#fbecec", "#eef2fe", "#f3f0ff"];
+
+/** Bold/italic/strike/code/badge + color swatches — the old toolbar's inline
+ * formatting group, moved onto the selection so it's reachable without the
+ * toolbar (PLAN.md STEP U1). */
+function FormattingRow({ editor }: { editor: Editor }) {
+  const active = (name: string, attrs?: Record<string, unknown>) =>
+    editor.isActive(name, attrs) ? "ai-bubble-btn is-active" : "ai-bubble-btn";
+
+  return (
+    <div className="ai-bubble-row ai-bubble-format">
+      <button
+        className={active("bold")}
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        title="Bold"
+      >
+        <strong>B</strong>
+      </button>
+      <button
+        className={active("italic")}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        title="Italic"
+      >
+        <em>I</em>
+      </button>
+      <button
+        className={active("strike")}
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+        title="Strikethrough"
+      >
+        <s>S</s>
+      </button>
+      <button
+        className={active("code")}
+        onClick={() => editor.chain().focus().toggleCode().run()}
+        title="Inline code"
+      >
+        {"</>"}
+      </button>
+      <button
+        className={active("badge")}
+        onClick={() => editor.chain().focus().toggleBadge("blue").run()}
+        title="Badge / pill"
+      >
+        ◆
+      </button>
+      <span className="ai-bubble-divider" aria-hidden />
+      {TEXT_COLORS.map((color) => (
+        <button
+          key={color}
+          className="ai-bubble-swatch"
+          style={{ background: color }}
+          onClick={() => editor.chain().focus().setColor(color).run()}
+          title={`Text color ${color}`}
+        />
+      ))}
+      <button
+        className="ai-bubble-swatch ai-bubble-swatch-clear"
+        onClick={() => editor.chain().focus().unsetColor().run()}
+        title="Clear text color"
+      >
+        ✕
+      </button>
+      <span className="ai-bubble-divider" aria-hidden />
+      {HIGHLIGHT_COLORS.map((color) => (
+        <button
+          key={color}
+          className="ai-bubble-swatch"
+          style={{ background: color }}
+          onClick={() => editor.chain().focus().toggleHighlight({ color }).run()}
+          title={`Highlight ${color}`}
+        />
+      ))}
+      <button
+        className="ai-bubble-swatch ai-bubble-swatch-clear"
+        onClick={() => editor.chain().focus().unsetHighlight().run()}
+        title="Clear highlight"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 /**
  * Surface 3 — floating menu over the current selection. Quick rewrite actions
  * plus a free prompt applied only to the selected range. Single-block
@@ -90,6 +175,7 @@ export function SelectionAiMenu({ editor }: { editor: Editor }) {
         </div>
       ) : (
         <>
+          <FormattingRow editor={editor} />
           <div className="ai-bubble-row">
             {QUICK_ACTIONS.map((qa) => (
               <button

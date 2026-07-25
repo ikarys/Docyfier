@@ -11,7 +11,8 @@ import { Placeholder } from "@tiptap/extension-placeholder";
 import { TextStyle, Color } from "@tiptap/extension-text-style";
 import { Highlight } from "@tiptap/extension-highlight";
 import type { JSONContent as DocJSON } from "@tiptap/core";
-import { Callout, type CalloutVariant } from "./extensions/Callout";
+import type { Node as PMNode } from "@tiptap/pm/model";
+import { Callout } from "./extensions/Callout";
 import { Badge } from "./extensions/Badge";
 import { CardGrid, Card } from "./extensions/Cards";
 import { ColumnList, Column } from "./extensions/Columns";
@@ -19,19 +20,14 @@ import { StatRow, Stat } from "./extensions/Stats";
 import { Timeline, TimelineItem } from "./extensions/Timeline";
 import { StepList, Step } from "./extensions/Steps";
 import { Pyramid, PyramidTier } from "./extensions/Pyramid";
+import { SlashCommand } from "./extensions/SlashCommand";
+import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import { saveDocumentAction, setDocumentThemeAction } from "@/app/actions";
 import { THEMES } from "@/lib/themes";
 import { AiPanel } from "./AiPanel";
 import { SelectionAiMenu } from "./SelectionAiMenu";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
-
-const VARIANTS: { key: CalloutVariant; label: string }[] = [
-  { key: "note", label: "Note" },
-  { key: "tip", label: "Tip" },
-  { key: "warn", label: "Warn" },
-  { key: "danger", label: "Danger" },
-];
 
 export function DocumentEditor({
   id,
@@ -45,6 +41,8 @@ export function DocumentEditor({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [panelOpen, setPanelOpen] = useState(true);
   const [theme, setTheme] = useState(initialTheme);
+  /** Position of the top-level block currently under the drag handle. */
+  const [hoveredBlock, setHoveredBlock] = useState<{ pos: number; size: number } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Latest editor JSON awaiting a debounced write; null when nothing pending. */
   const pending = useRef<JSONContent | null>(null);
@@ -60,6 +58,14 @@ export function DocumentEditor({
       setSaveState(res ? "saved" : "error"),
     );
   }, [id]);
+
+  // Stable identity: DragHandle re-registers its ProseMirror plugin whenever
+  // this callback's reference changes, so an inline arrow here would loop.
+  const onDragNodeChange = useCallback(
+    ({ node, pos }: { node: PMNode | null; pos: number }) =>
+      setHoveredBlock(node ? { pos, size: node.nodeSize } : null),
+    [],
+  );
 
   const changeTheme = useCallback(
     (next: string) => {
@@ -104,6 +110,7 @@ export function DocumentEditor({
       Step,
       Pyramid,
       PyramidTier,
+      SlashCommand,
       Placeholder.configure({
         placeholder: "Write your document, or press the toolbar to add structure…",
       }),
@@ -151,6 +158,35 @@ export function DocumentEditor({
           <article className="doc-sheet">
             <EditorContent editor={editor} />
             <SelectionAiMenu editor={editor} />
+            <DragHandle
+              editor={editor}
+              className="drag-handle no-print"
+              onNodeChange={onDragNodeChange}
+            >
+              <div className="drag-handle-controls">
+                <button
+                  type="button"
+                  className="drag-handle-btn"
+                  title="Insert block below"
+                  onClick={() => {
+                    if (!hoveredBlock) return;
+                    const insertPos = hoveredBlock.pos + hoveredBlock.size;
+                    editor
+                      .chain()
+                      .focus()
+                      .insertContentAt(insertPos, { type: "paragraph" })
+                      .setTextSelection(insertPos + 1)
+                      .insertContent("/")
+                      .run();
+                  }}
+                >
+                  +
+                </button>
+                <span className="drag-handle-grip" title="Drag to reorder">
+                  ⋮⋮
+                </span>
+              </div>
+            </DragHandle>
           </article>
         </main>
         {panelOpen && (
@@ -180,6 +216,7 @@ function MenuBar({
   theme: string;
   onChangeTheme: (theme: string) => void;
 }) {
+  const [helpOpen, setHelpOpen] = useState(false);
   const active = (name: string, attrs?: Record<string, unknown>) =>
     editor.isActive(name, attrs) ? "tb-btn is-active" : "tb-btn";
 
@@ -271,66 +308,34 @@ function MenuBar({
         </button>
       </div>
 
-      <div className="tb-group">
-        <button
-          className={active("callout")}
-          onClick={() => editor.chain().focus().toggleCallout("note").run()}
-          title="Callout"
-        >
-          Callout
-        </button>
-        {VARIANTS.map((v) => (
+      {editor.isActive("table") && (
+        <div className="tb-group">
           <button
-            key={v.key}
-            className={`tb-swatch tb-${v.key}`}
-            disabled={!editor.isActive("callout")}
-            onClick={() => editor.chain().focus().setCalloutVariant(v.key).run()}
-            title={`Callout: ${v.label}`}
+            className="tb-btn"
+            onClick={() => editor.chain().focus().addColumnAfter().run()}
+            disabled={!editor.can().addColumnAfter()}
+            title="Add column"
           >
-            {v.label[0]}
+            +Col
           </button>
-        ))}
-      </div>
-
-      <div className="tb-group">
-        <button
-          className="tb-btn"
-          onClick={() =>
-            editor
-              .chain()
-              .focus()
-              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-              .run()
-          }
-          title="Insert table"
-        >
-          ▦ Table
-        </button>
-        <button
-          className="tb-btn"
-          onClick={() => editor.chain().focus().addColumnAfter().run()}
-          disabled={!editor.can().addColumnAfter()}
-          title="Add column"
-        >
-          +Col
-        </button>
-        <button
-          className="tb-btn"
-          onClick={() => editor.chain().focus().addRowAfter().run()}
-          disabled={!editor.can().addRowAfter()}
-          title="Add row"
-        >
-          +Row
-        </button>
-        <button
-          className="tb-btn"
-          onClick={() => editor.chain().focus().deleteTable().run()}
-          disabled={!editor.can().deleteTable()}
-          title="Delete table"
-        >
-          ✕Tbl
-        </button>
-      </div>
+          <button
+            className="tb-btn"
+            onClick={() => editor.chain().focus().addRowAfter().run()}
+            disabled={!editor.can().addRowAfter()}
+            title="Add row"
+          >
+            +Row
+          </button>
+          <button
+            className="tb-btn"
+            onClick={() => editor.chain().focus().deleteTable().run()}
+            disabled={!editor.can().deleteTable()}
+            title="Delete table"
+          >
+            ✕Tbl
+          </button>
+        </div>
+      )}
 
       <div className="tb-group">
         <button
@@ -339,48 +344,6 @@ function MenuBar({
           title="Badge / pill on selection"
         >
           Pill
-        </button>
-        <button
-          className="tb-btn"
-          onClick={() => editor.chain().focus().insertCardGrid(3).run()}
-          title="Insert card grid"
-        >
-          ▤ Cards
-        </button>
-        <button
-          className="tb-btn"
-          onClick={() => editor.chain().focus().insertColumns(2).run()}
-          title="Insert columns"
-        >
-          ◫ Cols
-        </button>
-        <button
-          className="tb-btn"
-          onClick={() => editor.chain().focus().insertStatRow(3).run()}
-          title="Insert key figures"
-        >
-          № Stats
-        </button>
-        <button
-          className="tb-btn"
-          onClick={() => editor.chain().focus().insertTimeline(3).run()}
-          title="Insert timeline / roadmap"
-        >
-          ┋ Timeline
-        </button>
-        <button
-          className="tb-btn"
-          onClick={() => editor.chain().focus().insertSteps(3).run()}
-          title="Insert process steps"
-        >
-          ➊ Steps
-        </button>
-        <button
-          className="tb-btn"
-          onClick={() => editor.chain().focus().insertPyramid(3).run()}
-          title="Insert pyramid / hierarchy"
-        >
-          ▲ Pyramid
         </button>
       </div>
 
@@ -430,6 +393,13 @@ function MenuBar({
       </div>
 
       <button
+        className="tb-btn"
+        onClick={() => setHelpOpen(true)}
+        title="Keyboard shortcuts"
+      >
+        ?
+      </button>
+      <button
         className={panelOpen ? "tb-btn tb-ai is-active" : "tb-btn tb-ai"}
         onClick={onTogglePanel}
         title="AI assistant panel"
@@ -445,6 +415,48 @@ function MenuBar({
               ? "Save failed"
               : ""}
       </span>
+      {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
+    </div>
+  );
+}
+
+const SHORTCUTS: { keys: string; label: string }[] = [
+  { keys: "/", label: "Insert a block (headings, tables, cards…)" },
+  { keys: "Mod-B", label: "Bold" },
+  { keys: "Mod-I", label: "Italic" },
+  { keys: "Mod-Shift-S", label: "Strikethrough" },
+  { keys: "Mod-E", label: "Inline code" },
+  { keys: "Mod-Alt-1/2/3", label: "Heading 1 / 2 / 3" },
+  { keys: "Mod-Shift-8", label: "Bullet list" },
+  { keys: "Mod-Shift-7", label: "Numbered list" },
+  { keys: "Mod-Shift-B", label: "Quote" },
+  { keys: "Mod-Alt-C", label: "Code block" },
+  { keys: "Mod-Z", label: "Undo" },
+  { keys: "Mod-Shift-Z", label: "Redo" },
+];
+
+/** Static overlay listing keyboard shortcuts (Tiptap defaults + the "/" slash menu). */
+function ShortcutHelp({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="help-overlay no-print" onClick={onClose}>
+      <div className="help-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="help-panel-header">
+          <h2>Keyboard shortcuts</h2>
+          <button className="tb-btn" onClick={onClose} title="Close">
+            ✕
+          </button>
+        </div>
+        <dl className="help-list">
+          {SHORTCUTS.map((s) => (
+            <div key={s.keys} className="help-row">
+              <dt>
+                <kbd>{s.keys}</kbd>
+              </dt>
+              <dd>{s.label}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </div>
   );
 }
