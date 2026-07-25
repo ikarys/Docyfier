@@ -149,6 +149,20 @@ export const SLASH_ITEMS: SlashItem[] = [
       editor.chain().focus().deleteRange(range).insertPyramid(3).run(),
   },
   {
+    title: "Bar chart",
+    icon: "▊",
+    keywords: ["chart", "bar", "graph", "graphique", "barres", "histogramme"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertChart("bar").run(),
+  },
+  {
+    title: "Line chart",
+    icon: "📈",
+    keywords: ["chart", "line", "trend", "graphique", "courbe", "ligne", "tendance"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertChart("line").run(),
+  },
+  {
     title: "Divider",
     icon: "—",
     keywords: ["divider", "hr", "rule", "separateur", "ligne"],

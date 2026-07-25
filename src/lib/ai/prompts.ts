@@ -28,6 +28,7 @@ Block nodes:
 - {"type":"statRow","content":[2-4 stats]} — stat = {"type":"stat","attrs":{"accent":same as card,"trend":"good"|"bad"|"flat"},"content":[{"type":"paragraph",...} (the big value, e.g. "120ms"),{"type":"paragraph",...} (the short label),{"type":"paragraph",...} (OPTIONAL delta pill, e.g. "−73%")]}. Two paragraphs (value, label), or three when showing a change (value, label, delta). "trend" colors the delta pill by MEANING — "good" (green) for an improvement, "bad" (red) for a regression — regardless of whether the number went up or down.
 - {"type":"timeline","content":[2-8 timelineItem]} — roadmap / chronology. item = {"type":"timelineItem","attrs":{"accent":same as card},"content":[{"type":"paragraph",...} (short date or phase, e.g. "Q1 2025"),{"type":"heading","attrs":{"level":3},...} (milestone title),{"type":"paragraph",...} (description)]}. Order is fixed: date paragraph, then heading, then description block(s).
 - {"type":"stepList","content":[2-6 step]} — numbered process / how-it-works (the number is drawn automatically). step = {"type":"step","attrs":{"accent":same as card},"content":[{"type":"heading","attrs":{"level":3},...} (step title),{"type":"paragraph",...} (what to do)]}. Never write the number yourself.
+- {"type":"chart","attrs":{"kind":"bar"|"line","categories":["Q1","Q2",...],"series":[{"label":"Revenue","values":[12,19,...]}],"title":"..."|null,"caption":"..."|null,"showGrid":true,"showLegend":true}} — has NO "content". 2-24 categories, 1-4 series, and every series MUST have exactly as many values as there are categories, all plain numbers. Use "bar" to compare categories, "line" for a trend over time. ONLY emit a chart from figures that already appear in the user's request or in the document you were given — NEVER invent, extrapolate or round data. When you have no real series of numbers, do not emit a chart.
 - {"type":"pyramid","content":[2-5 pyramidTier]} — hierarchy from narrow apex (first) to wide base (last): priorities, levels, vision→execution. tier = {"type":"pyramidTier","content":[{"type":"paragraph",...} (short label; optional second paragraph for a detail)]}. First tier = top of the pyramid.
 
 Inline nodes (only inside heading/paragraph and table-cell paragraphs):
@@ -47,9 +48,9 @@ Constraints:
 - When the user asks for color, apply textStyle color marks (and/or a
   highlight) to the relevant words — do not just add symbols.
 - Never nest block nodes inside heading or paragraph.
-- Never nest cardGrid, statRow, columnList, timeline, stepList or pyramid
-  inside a card, column, stat, callout, list item, table cell or each other —
-  layout blocks live at the top level only.
+- Never nest cardGrid, statRow, columnList, timeline, stepList, pyramid or
+  chart inside a card, column, stat, callout, list item, table cell or each
+  other — layout blocks live at the top level only.
 - Never emit "content": [] — omit the key instead.
 - Write the document in the same language as the user's request or content.
 - THE USER'S EXPLICIT FORMAT REQUEST ALWAYS WINS over the style guide below:
@@ -73,6 +74,10 @@ const STYLE_GUIDE = `Professional document style — modern, visual, striking:
   "At risk" yellow badge, "Blocked" red badge, "P1" red badge, "Beta" purple.
 - Use columnList for two QUALITATIVE things side by side (pros/cons, two
   approaches). For numeric before/after, prefer a statRow of deltas.
+- A series of numbers ACROSS categories or over time (monthly revenue, adoption
+  per feature, weekly volume) is a chart. A handful of standalone KPIs stays a
+  statRow — three big numbers are not a chart. Charts need real data: if the
+  source has none, write prose instead of inventing figures.
 - Use timeline for anything chronological or phased (roadmap, plan, history),
   stepList for a sequential process or method ("how it works"), and pyramid for
   a ranked hierarchy (priorities, levels). Prefer these over a plain list when
@@ -95,7 +100,8 @@ export const TRANSFORM_SYSTEM = `${FORMAT_CONTRACT}
 
 ${STYLE_GUIDE}
 
-Task: you receive the current document as JSON plus an instruction. Return the FULL updated document. Apply the instruction; keep everything the instruction does not concern unchanged (same nodes, same text).`;
+Task: you receive the current document as JSON plus an instruction. Return the FULL updated document. Apply the instruction; keep everything the instruction does not concern unchanged (same nodes, same text).
+When the instruction is about design ("make it pretty", "improve the design", "beautify", "modernize"), do not just tweak colors or spacing — actively RESTRUCTURE per the style guide above: convert plain tables of standalone metrics into a statRow, convert parallel items into a cardGrid, chronological content into a timeline, sequential steps into a stepList. Re-examine every section for a richer fitting block; a document that comes out with the same node types it went in has not been made pretty.`;
 
 export const SELECTION_BLOCKS_SYSTEM = `${FORMAT_CONTRACT}
 

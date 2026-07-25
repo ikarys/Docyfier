@@ -16,6 +16,8 @@ import { StatRow, Stat } from "@/components/extensions/Stats";
 import { Timeline, TimelineItem } from "@/components/extensions/Timeline";
 import { StepList, Step } from "@/components/extensions/Steps";
 import { Pyramid, PyramidTier } from "@/components/extensions/Pyramid";
+import { Chart } from "@/components/extensions/Chart";
+import { chartError } from "@/lib/doc/chart";
 
 /**
  * Headless ProseMirror schema mirroring the editor's extensions
@@ -46,6 +48,7 @@ const schema = getSchema([
   Step,
   Pyramid,
   PyramidTier,
+  Chart,
 ]);
 
 /** Throws with a descriptive message when `json` is not a valid document. */
@@ -58,5 +61,14 @@ export function validateDocJson(json: unknown): JSONContent {
   }
   const node = PMNode.fromJSON(schema, json);
   node.check();
+  // ProseMirror only checks node/mark shape; chart attrs carry their own rules
+  // (series/category lengths, numeric values) that must fail loudly here so the
+  // AI retry loop can fix them instead of persisting an unrenderable block.
+  node.descendants((child) => {
+    if (child.type.name !== "chart") return true;
+    const error = chartError(child.attrs);
+    if (error) throw new Error(error);
+    return false;
+  });
   return json as JSONContent;
 }

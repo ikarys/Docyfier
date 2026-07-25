@@ -312,19 +312,200 @@ body {
   background: var(--danger-bg);
 }
 
-/* Mermaid diagrams render into a centered figure */
-.doc .mermaid-figure {
+/* ---- Charts (STEP U6) ----------------------------------------------------
+   Series colors are theme tokens, never hardcoded hex: switching the document
+   theme restyles every chart with zero content change. */
+.doc .chart {
+  --chart-1: var(--accent);
+  --chart-2: var(--tip);
+  --chart-3: var(--purple);
+  --chart-4: var(--warn);
   margin: 1.75rem 0;
-  padding: 1.25rem;
+  padding: 1.25rem 1.25rem 0.9rem;
   background: #fafbfd;
   border: 1px solid var(--rule);
-  border-radius: 10px;
+  border-radius: var(--radius);
+}
+.doc-editor .chart[data-selected="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.doc .chart-title {
+  font-weight: 650;
+  font-size: 1rem;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+}
+.doc .chart-caption {
+  font-size: 0.84rem;
+  color: var(--ink-faint);
+  margin-top: 0.5rem;
+}
+.doc .chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.doc .chart-grid {
+  stroke: var(--rule);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+.doc .chart-axis {
+  stroke: var(--rule-strong);
+  stroke-width: 1;
+}
+.doc .chart-tick,
+.doc .chart-cat {
+  font-size: 11px;
+  fill: var(--ink-faint);
+  font-family: var(--font-sans);
+}
+.doc .chart-tick {
+  text-anchor: end;
+}
+.doc .chart-cat {
+  text-anchor: middle;
+}
+.doc .chart-line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.doc .chart-svg [data-series="0"] .chart-bar,
+.doc .chart-svg [data-series="0"] .chart-dot {
+  fill: var(--chart-1);
+}
+.doc .chart-svg [data-series="1"] .chart-bar,
+.doc .chart-svg [data-series="1"] .chart-dot {
+  fill: var(--chart-2);
+}
+.doc .chart-svg [data-series="2"] .chart-bar,
+.doc .chart-svg [data-series="2"] .chart-dot {
+  fill: var(--chart-3);
+}
+.doc .chart-svg [data-series="3"] .chart-bar,
+.doc .chart-svg [data-series="3"] .chart-dot {
+  fill: var(--chart-4);
+}
+.doc .chart-svg [data-series="0"] .chart-line {
+  stroke: var(--chart-1);
+}
+.doc .chart-svg [data-series="1"] .chart-line {
+  stroke: var(--chart-2);
+}
+.doc .chart-svg [data-series="2"] .chart-line {
+  stroke: var(--chart-3);
+}
+.doc .chart-svg [data-series="3"] .chart-line {
+  stroke: var(--chart-4);
+}
+.doc .chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+}
+.doc .chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+.doc .chart-legend li::marker {
+  content: "";
+}
+.chart-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 3px;
+  flex: none;
+  background: var(--chart-1);
+}
+.chart-swatch[data-series="1"] {
+  background: var(--chart-2);
+}
+.chart-swatch[data-series="2"] {
+  background: var(--chart-3);
+}
+.chart-swatch[data-series="3"] {
+  background: var(--chart-4);
+}
+.doc .chart-error {
+  padding: 1.5rem;
   text-align: center;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+/* Chart data editor, visible only while the block is selected */
+.chart-panel {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--rule-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.chart-panel-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.chart-check {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.chart-input {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.4rem;
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.chart-panel-row .chart-input {
+  width: auto;
+  flex: 1 1 8rem;
+}
+.chart-input:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
+}
+.chart-num {
+  text-align: right;
+}
+.chart-grid-scroll {
   overflow-x: auto;
 }
-.doc .mermaid-figure svg {
-  max-width: 100%;
-  height: auto;
+.chart-table {
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.chart-table th,
+.chart-table td {
+  padding: 0.15rem;
+  border: none;
+  min-width: 5.5rem;
+}
+.chart-table tbody th {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 9rem;
 }
 
 /* ---- Document picker ----------------------------------------------------- */
@@ -1773,7 +1954,7 @@ body {
   .doc .card,
   .doc .stat-row,
   .doc .card-grid,
-  .doc .mermaid-figure,
+  .doc .chart,
   .doc .timeline-item,
   .doc .step,
   .doc .pyramid {

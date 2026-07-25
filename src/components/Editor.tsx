@@ -20,6 +20,7 @@ import { StatRow, Stat } from "./extensions/Stats";
 import { Timeline, TimelineItem } from "./extensions/Timeline";
 import { StepList, Step } from "./extensions/Steps";
 import { Pyramid, PyramidTier } from "./extensions/Pyramid";
+import { ChartNode } from "./ChartView";
 import { SlashCommand } from "./extensions/SlashCommand";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import { saveDocumentAction, setDocumentThemeAction } from "@/app/actions";
@@ -172,6 +173,7 @@ export function DocumentEditor({
     Step,
     Pyramid,
     PyramidTier,
+    ChartNode,
     SlashCommand,
     Placeholder.configure({
       placeholder: "Write your document, or press the toolbar to add structure…",
