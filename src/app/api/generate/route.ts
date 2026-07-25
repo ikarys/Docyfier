@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { streamText, APICallError, type TextStreamPart, type ToolSet } from "ai";
 import { languageModel } from "@/lib/ai/provider";
 import { GENERATE_SYSTEM } from "@/lib/ai/prompts";
 import { validateDocJson } from "@/lib/ai/doc-schema";
@@ -19,6 +19,13 @@ import { getAiSettings } from "@/lib/settings";
 const line = (value: unknown) => `${JSON.stringify(value)}\n`;
 
 function message(err: unknown): string {
+  // A provider error arrives as an APICallError whose own message is generic;
+  // the body is where the reason actually is (rate limit, bad model id…).
+  if (APICallError.isInstance(err)) {
+    console.error("[ai] APICallError from", err.url, "status", err.statusCode);
+    const body = err.responseBody?.slice(0, 400);
+    return body ? `${err.message} — ${body}` : err.message;
+  }
   return err instanceof Error ? err.message : "AI request failed";
 }
 
@@ -39,26 +46,50 @@ export async function POST(req: Request): Promise<Response> {
     return Response.json({ error: "Missing prompt" }, { status: 400 });
   }
 
-  let chunks: AsyncIterator<string>;
-  let first: IteratorResult<string>;
+  type Part = TextStreamPart<ToolSet>;
+  let parts: AsyncIterator<Part>;
+  let firstText: string | null = null;
+  let openError: unknown = null;
+
   try {
     const model = await languageModel();
     const { maxOutputTokens } = await getAiSettings();
-    const result = streamText({
+    // `fullStream`, not `textStream`: the SDK reports provider failures as an
+    // `error` part rather than by throwing, so a rate-limited or misconfigured
+    // server would otherwise look like a perfectly successful empty document.
+    parts = streamText({
       model,
       system: GENERATE_SYSTEM,
       prompt,
       temperature: 0.7,
       maxOutputTokens,
-    });
-    chunks = result.textStream[Symbol.asyncIterator]();
-    // Pull the first chunk here, before committing to a 200: an unreachable
-    // server or a provider that refuses streaming must surface as a failed
-    // request the client can retry without streaming.
-    first = await chunks.next();
+    }).fullStream[Symbol.asyncIterator]();
+
+    // Read up to the first token before committing to a 200: whatever goes
+    // wrong this early must surface as a failed request, so the client can
+    // retry through the non-streaming path instead of showing half a document.
+    for (;;) {
+      const next = await parts.next();
+      if (next.done) break;
+      if (next.value.type === "text-delta") {
+        firstText = next.value.text;
+        break;
+      }
+      if (next.value.type === "error") {
+        openError = next.value.error;
+        break;
+      }
+    }
   } catch (err) {
-    console.error("[ai] streaming generate failed:", err);
-    return Response.json({ error: message(err) }, { status: 502 });
+    openError = err;
+  }
+
+  if (firstText === null) {
+    console.error("[ai] streaming generate failed:", openError);
+    return Response.json(
+      { error: openError ? message(openError) : "The AI returned nothing." },
+      { status: 502 },
+    );
   }
 
   const scanner = new BlockScanner();
@@ -82,15 +113,32 @@ export async function POST(req: Request): Promise<Response> {
       };
 
       try {
-        for (
-          let next = first;
-          !next.done;
-          next = await chunks.next()
-        ) {
-          for (const raw of scanner.push(next.value)) emit(raw);
-          if (scanner.finished) break;
+        let failure: string | null = null;
+        for (const raw of scanner.push(firstText)) emit(raw);
+
+        while (!scanner.finished) {
+          const next = await parts.next();
+          if (next.done) break;
+          if (next.value.type === "text-delta") {
+            for (const raw of scanner.push(next.value.text)) emit(raw);
+          } else if (next.value.type === "error") {
+            failure = message(next.value.error);
+            break;
+          } else if (
+            next.value.type === "finish" &&
+            next.value.finishReason === "length"
+          ) {
+            failure = "The document was cut short — raise Max output tokens in Settings.";
+          }
         }
-        controller.enqueue(encoder.encode(line({ done: true, blocks, skipped })));
+
+        controller.enqueue(
+          encoder.encode(
+            failure
+              ? line({ error: failure, blocks })
+              : line({ done: true, blocks, skipped }),
+          ),
+        );
       } catch (err) {
         console.error("[ai] streaming generate interrupted:", err);
         controller.enqueue(encoder.encode(line({ error: message(err), blocks })));
