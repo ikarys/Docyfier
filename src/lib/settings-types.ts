@@ -8,4 +8,7 @@ export interface AiSettings {
   apiKey: string;
   /** Max tokens the model may generate per response (whole-document edits need room). */
   maxOutputTokens: number;
+  /** Ask the provider for JSON-schema-constrained output instead of parsing
+   * fences and prose out of free text. Only some servers implement it. */
+  structuredOutput: boolean;
 }

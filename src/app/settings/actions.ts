@@ -41,6 +41,7 @@ export async function saveAiSettingsAction(
     model: String(formData.get("model") ?? "").trim(),
     apiKey: String(formData.get("apiKey") ?? "").trim(),
     maxOutputTokens,
+    structuredOutput: formData.get("structuredOutput") === "on",
   });
   clearDetectedModels();
   revalidatePath("/settings");

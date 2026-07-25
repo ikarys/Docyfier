@@ -16,6 +16,7 @@ const DEFAULTS: AiSettings = {
   model: "",
   apiKey: "",
   maxOutputTokens: 32768,
+  structuredOutput: false,
 };
 
 function settingsFile(): string {
@@ -32,6 +33,8 @@ function envDefaults(): AiSettings {
     apiKey: process.env.DOCYFIER_LLM_API_KEY ?? DEFAULTS.apiKey,
     maxOutputTokens:
       Number.isInteger(envMax) && envMax > 0 ? envMax : DEFAULTS.maxOutputTokens,
+    structuredOutput:
+      process.env.DOCYFIER_LLM_STRUCTURED === "1" || DEFAULTS.structuredOutput,
   };
 }
 
@@ -48,6 +51,7 @@ export async function getAiSettings(): Promise<AiSettings> {
         Number.isInteger(saved.maxOutputTokens) && (saved.maxOutputTokens as number) > 0
           ? (saved.maxOutputTokens as number)
           : fallback.maxOutputTokens,
+      structuredOutput: saved.structuredOutput ?? fallback.structuredOutput,
     };
   } catch {
     return fallback;

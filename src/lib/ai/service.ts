@@ -1,5 +1,5 @@
 import "server-only";
-import { generateText, APICallError } from "ai";
+import { generateText, generateObject, jsonSchema, APICallError, type Schema } from "ai";
 import type { JSONContent } from "@tiptap/core";
 import { languageModel, llmBaseUrl } from "./provider";
 import { getAiSettings } from "@/lib/settings";
@@ -142,6 +142,60 @@ function normalizeToDoc(json: unknown): unknown {
 }
 
 /**
+ * Deliberately permissive: it only pins the doc envelope, which is what models
+ * get wrong when they answer with a fence or a bare block. Node shapes stay
+ * free — `validateDocJson` is the real contract, and encoding the whole editor
+ * schema here would be a second source of truth to keep in sync.
+ */
+const DOC_ENVELOPE = jsonSchema<{ type: string; content: unknown[] }>({
+  type: "object",
+  properties: {
+    type: { type: "string", enum: ["doc"] },
+    content: { type: "array", items: { type: "object" } },
+  },
+  required: ["type", "content"],
+});
+
+/**
+ * One model answer as a JSON value. Uses the provider's JSON-schema mode when
+ * the setting is on and a schema fits the surface; any failure there falls back
+ * to the fence/prose-tolerant text path, so enabling the option can never make
+ * a working provider stop working.
+ */
+async function produceJson(
+  system: string,
+  prompt: string,
+  temperature: number,
+  schema?: Schema<unknown>,
+): Promise<unknown> {
+  const { maxOutputTokens, structuredOutput } = await getAiSettings();
+  if (schema && structuredOutput) {
+    try {
+      const { object } = await generateObject({
+        model: await languageModel(),
+        schema,
+        system,
+        prompt,
+        temperature,
+        maxOutputTokens,
+      });
+      return object;
+    } catch (err) {
+      console.error("[ai] structured output failed, using the text path:", err);
+    }
+  }
+
+  const { text, truncated } = await complete(system, prompt, temperature);
+  if (truncated) {
+    // Retrying cannot help: the answer does not fit the output budget.
+    throw new Error(
+      "The document is too large for a whole-document edit — select the section to change and use the selection menu instead.",
+    );
+  }
+  return extractJson(text);
+}
+
+/**
  * Ask for JSON and hand it to `parse`, retrying once with the parse error when
  * the model gets it wrong. Every JSON-producing surface goes through here, so
  * "invalid output → retry, never a broken editor" holds for documents, blocks
@@ -152,19 +206,14 @@ async function completeJson<T>(
   prompt: string,
   temperature: number,
   parse: (json: unknown) => T,
+  schema?: Schema<unknown>,
 ): Promise<T> {
   let lastError = "";
   for (let attempt = 0; attempt < 2; attempt++) {
     const input = attempt === 0 ? prompt : retryPrompt(prompt, lastError);
-    const { text: raw, truncated } = await complete(system, input, temperature);
-    if (truncated) {
-      // Retrying cannot help: the answer does not fit the output budget.
-      throw new Error(
-        "The document is too large for a whole-document edit — select the section to change and use the selection menu instead.",
-      );
-    }
+    const json = await produceJson(system, input, temperature, schema);
     try {
-      return parse(extractJson(raw));
+      return parse(json);
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
     }
@@ -177,8 +226,13 @@ function completeDoc(
   prompt: string,
   temperature: number,
 ): Promise<JSONContent> {
-  return completeJson(system, prompt, temperature, (json) =>
-    validateDocJson(sanitizeMarkdownArtifacts(normalizeToDoc(json) as LooseNode)),
+  return completeJson(
+    system,
+    prompt,
+    temperature,
+    (json) =>
+      validateDocJson(sanitizeMarkdownArtifacts(normalizeToDoc(json) as LooseNode)),
+    DOC_ENVELOPE,
   );
 }
 
