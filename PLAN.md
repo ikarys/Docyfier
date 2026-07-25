@@ -5,8 +5,8 @@ original P\* where justified; the "Was → Now" column tracks every change.
 
 **MVP = STEPS 0–4.** Everything after is post-MVP.
 
-The UX & rendering upgrade STEPS **U1–U5** ([Part C](#part-c--ux--rendering-upgrade-steps-u1u5))
-slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 → U5.
+The UX & rendering upgrade STEPS **U1–U6** ([Part C](#part-c--ux--rendering-upgrade-steps-u1u6))
+slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 → U5 → U6.
 
 ## Part A — Prioritized needs
 
@@ -16,7 +16,7 @@ slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 
 | 2 | Modern, intuitive web UI usable by non-technical users | P0 | P0 | Core value |
 | 3 | AI writing help: generation, summaries, rephrasing | P0 | P0 | Core value |
 | 4 | Modern, polished formatting: tables, columns, headers, colors, callouts | P0 | P0 | Core differentiator |
-| 5 | Charts & diagrams blocks | P0 (implicit in #4) | **P1** | Split out: a large sub-project; MVP ships text/table/layout formatting first |
+| 5 | Charts & diagrams blocks | P0 (implicit in #4) | **P1** | Split out: a large sub-project; MVP ships text/table/layout formatting first. Charts pulled forward into [STEP U6](#step-u6--data-viz-blocks--rich-cover); diagrams stay in STEP 10 |
 | 6 | Quick retouches / fast edits of generated content | P0 | P0 | Core value; trust requires easy correction |
 | 7 | Export Markdown + PDF | P1 | **P0** | Without export, documents are trapped in the tool; PDF is the #1 professional sharing format |
 | 8 | Export docx, slides, Confluence | P1 | P1 | Post-MVP; docx/slides fidelity is genuinely hard |
@@ -171,18 +171,20 @@ theming stays in STEP 9.
 - Cloud storage (#18); Confluence/Jira/Notion/Drive read-create-update, no
   delete, enterprise permission inheritance (#21).
 - Version history UI (#20); advanced search (#19).
-- Charts & diagrams blocks (#5) — may be pulled earlier if demand shows up.
+- Diagrams blocks (#5, the flow/architecture half) — charts were pulled forward
+  into [STEP U6](#step-u6--data-viz-blocks--rich-cover).
 
 **Exit criteria:** per integration: connect, list, import, push update without leaving the app.
 
-## Part C — UX & rendering upgrade STEPS (U1–U5)
+## Part C — UX & rendering upgrade STEPS (U1–U6)
 
 Motivation: the current editor produces correct but classic documents; the UX is
 toolbar-only; themes are four fixed presets; whole-document AI transforms are
 slow and token-hungry. These STEPS modernize the editing UX (U1), make AI fast
 and safe (U4), make themes customizable (U3), enrich rendering (U2) and add
-templates (U5). They slot between STEP 2b and STEP 3 and pull parts of STEP 9
-forward. Recommended order: **U1 → U4 → U3 → U2 → U5**.
+templates (U5) and add data-viz blocks (U6). They slot between STEP 2b and
+STEP 3 and pull parts of STEP 9 and STEP 10 forward.
+Recommended order: **U1 → U4 → U3 → U2 → U5 → U6**.
 
 ### Ground rules for implementers (read before any U-STEP)
 
@@ -403,3 +405,80 @@ Acceptance:
 - [ ] All templates pass schema validation automatically (assertion fails the build if one is broken)
 - [ ] Search filters as you type; rename sticks after reload and survives content edits; duplicate creates an independent copy
 - [ ] Delete requires confirmation and cannot be triggered by a single stray click
+
+### STEP U6 — Data-viz blocks & rich cover
+
+**Goal:** a generated report can carry its numbers visually — charts, a magazine
+cover, dashboard-grade stat cards — without leaving the block model.
+
+**Why now:** need #5 was parked in STEP 10 "may be pulled earlier if demand shows
+up". Reference documents produced by Dust (`app.dust.tt/share/frame/…`) show the
+gap is charts, cover and icons — everything else in them (stat rows, numbered
+recommendation cards, side-bar callouts, colored inline figures) is already
+expressible with the blocks shipped in STEP 2b/U1.
+
+**Non-goal — do not copy Dust's model.** Dust emits an interactive React app
+(tabbed frames, live components). Docyfier emits a document: typed blocks,
+schema-validated, WYSIWYG-editable, printable. Tabs and generated code are out
+of scope; the catalogue of blocks is what grows.
+
+Instructions:
+
+1. **`chart` node.** New `src/components/extensions/Chart.ts`, following the
+   `Cards.ts` pattern. `group: "block"`, `atom: true`, `isolating: true` — the
+   data lives in attrs, so there is no editable child content to reconcile.
+   Attrs: `kind` (`"bar" | "line"`), `categories` (`string[]`), `series`
+   (`{ label: string; values: number[] }[]`), `title?`, `caption?`,
+   `showGrid` (default `true`), `showLegend` (default `true`).
+   Constraints enforced in the node's `addAttributes` parsing **and** mirrored
+   in `doc-schema.ts`: 1–4 series, 2–24 categories, every `series.values`
+   exactly as long as `categories`, all values finite. Invalid data must fail
+   validation so the AI retries instead of rendering a broken chart.
+2. **Chart rendering.** React NodeView emitting **inline SVG** — no chart
+   library, no canvas. Responsive `viewBox`, series colors taken from the U3
+   theme tokens (never hardcoded hex, same rule `beautify.ts` already enforces
+   on headings). Axis ticks computed from the data range, rounded to a readable
+   step. `break-inside: avoid` in print. Verify in print preview: SVG is exactly
+   what makes charts printable, and the acceptance box below is not optional.
+3. **Chart editing.** Selecting the block shows a small panel (plain React, in
+   `globals.css` style): kind toggle, title/caption fields, and a compact
+   editable grid for categories + series values. No drag-to-edit, no live
+   resize — typed values only.
+4. **AI contract.** `prompts.ts`: the model may emit `chart` **only** from
+   figures present in the user's prompt or in the document being transformed —
+   never invented data, same spirit as the "no fabricated image `src`" rule in
+   U2. Two-column tables whose values are all figures should keep upgrading to
+   `statRow` (existing `beautify.ts` rule); a chart is for a series over
+   categories, not for 3 KPIs.
+5. **Cover enrichment.** Extend the `docCover` node from U2 (do not add a second
+   cover node): optional chips row (reuses the `badge` mark styling), optional
+   meta line (author · date · reading time). Reading time stays a plain typed
+   string — no word-count magic.
+6. **Dashboard stat variant.** Extend the existing `stat` node with
+   `layout: "grid" | "row"` (default `"grid"`, today's behaviour) and an
+   optional `icon`. `"row"` renders the full-width card seen in the reference:
+   icon, uppercase label, XXL value, colored delta line driven by the existing
+   `trend` attr.
+7. **Inline icon set.** `src/lib/icons.ts`: a closed map of ~24 inline SVG paths
+   (chart, clock, check, alert, users, target…). Referenced by name from the
+   `icon` attrs of `callout`, `card`, `step` and `stat`. Unknown name → no icon,
+   never a crash. No icon package.
+8. **Dead dependency cleanup.** `mermaid`, `react-markdown`, `rehype-highlight`,
+   `rehype-raw` and `remark-gfm` are in `package.json` and imported nowhere in
+   `src/`. Remove them in this STEP (mermaid in particular must not be mistaken
+   for the charts path — its async render and rigid `xychart` are wrong for
+   print and for schema validation).
+
+Reminder: `chart` is a new node type — register it in **all three** places
+(`Editor.tsx`, `doc-schema.ts`, `prompts.ts`), per the Part C ground rules.
+
+Acceptance:
+
+- [ ] `/chart` inserts a bar chart with placeholder data; switching to line keeps the data
+- [ ] Editing a value in the panel re-renders the SVG and survives reload (attrs persisted)
+- [ ] A chart with mismatched series/category lengths is rejected by `validateDocJson` (AI retries, no broken block)
+- [ ] Chart colors follow the document theme; switching theme restyles the chart with zero content change
+- [ ] Print preview: chart renders at full fidelity and is never split across two pages
+- [ ] Cover with chips + meta line, and a `layout: "row"` stat card, match the reference layouts
+- [ ] "Make it pretty" on a document containing a figures table adds a chart **only** when the numbers already exist in the document
+- [ ] `npm ls` shows the five dead dependencies gone and the app still builds
