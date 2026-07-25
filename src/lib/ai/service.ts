@@ -4,6 +4,7 @@ import type { JSONContent } from "@tiptap/core";
 import { languageModel, llmBaseUrl } from "./provider";
 import { getAiSettings } from "@/lib/settings";
 import { validateDocJson } from "./doc-schema";
+import { beautify } from "@/lib/doc/beautify";
 import {
   GENERATE_SYSTEM,
   TRANSFORM_SYSTEM,
@@ -164,9 +165,22 @@ async function completeDoc(
   throw new Error(`The AI returned an invalid document (${lastError})`);
 }
 
+/**
+ * Deterministic formatting pass over model output. Guarantees the structural
+ * upgrades the model applies inconsistently; falls back to the raw doc if the
+ * upgrade somehow produced schema-invalid JSON.
+ */
+function polish(doc: JSONContent): JSONContent {
+  try {
+    return validateDocJson(beautify(doc));
+  } catch {
+    return doc;
+  }
+}
+
 /** Surface 1 — prompt-to-document. */
 export async function generateDocument(prompt: string): Promise<JSONContent> {
-  return completeDoc(GENERATE_SYSTEM, prompt, 0.7);
+  return polish(await completeDoc(GENERATE_SYSTEM, prompt, 0.7));
 }
 
 /** Surface 2 — whole-document transform (side panel, "make it pretty"). */
@@ -174,7 +188,9 @@ export async function transformDocument(
   doc: JSONContent,
   instruction: string,
 ): Promise<JSONContent> {
-  return completeDoc(TRANSFORM_SYSTEM, transformPrompt(doc, instruction), 0.3);
+  return polish(
+    await completeDoc(TRANSFORM_SYSTEM, transformPrompt(doc, instruction), 0.3),
+  );
 }
 
 /** Surface 3a — multi-block selection rewrite; returns replacement blocks. */
