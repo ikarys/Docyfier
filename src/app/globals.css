@@ -777,6 +777,14 @@ body {
   border: 1px solid var(--rule);
   min-width: 0;
 }
+/* A stat composes its three paragraphs itself — value, label, delta — so a
+   per-paragraph text alignment does not "align text", it dislocates the card.
+   The TextAlign extension writes an inline style, which outranks any selector:
+   `!important` is the only way to keep the component's own layout authoritative.
+   Free-form containers (card, step, cover) keep honouring alignment. */
+.doc .stat-body > p {
+  text-align: inherit !important;
+}
 .doc .stat-body > p:first-child {
   font-size: 2rem;
   font-weight: 800;
