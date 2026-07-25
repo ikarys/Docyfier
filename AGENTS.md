@@ -23,7 +23,7 @@ schema-validated ProseMirror JSON. No auth or multi-tenant yet.
 Documents are ProseMirror JSON stored on disk (`src/lib/store.ts`), standing in
 for the future database. The earlier markdown-file model was dropped: users arrive
 with no source. Stack validated: Next.js + TypeScript + Tailwind v4 + Tiptap.
-Node is pinned via `mise.toml`. Next: themes (STEP 2b in [PLAN.md](PLAN.md)).
+Node is pinned via `.nvmrc` (nvm). Next: themes (STEP 2b in [PLAN.md](PLAN.md)).
 
 ## Working conventions
 

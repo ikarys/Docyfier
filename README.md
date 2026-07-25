@@ -64,16 +64,17 @@ that arrives in a later STEP; its on-disk shape is deliberately DB-shaped.
 
 ## Requirements
 
-- Node `24.18.0` (pinned in `mise.toml`; `mise install`).
+- Node `24.18.0` (pinned in `.nvmrc`; `nvm use`).
 
 ## Getting started
 
 ```bash
-just setup     # mise install + npm install
+nvm use        # switch to pinned Node version
+just setup     # npm install
 just dev       # http://localhost:3000
 ```
 
-Or without `just`: `mise install && npm install && npm run dev`.
+Or without `just`: `nvm use && npm install && npm run dev`.
 
 ## Tasks (Justfile)
 
