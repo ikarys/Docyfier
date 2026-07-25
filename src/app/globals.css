@@ -2076,6 +2076,63 @@ body {
   font-size: 0.6rem;
 }
 
+/* ---- AI diff review (STEP U4) ---------------------------------------------
+   Markers are ProseMirror decorations on top-level blocks, so they never touch
+   the saved JSON. Colors come from the theme, never hardcoded hex. */
+
+.ai-diff-block {
+  position: relative;
+  border-radius: 4px;
+}
+
+.ai-diff-block::before {
+  content: "";
+  position: absolute;
+  top: -0.15rem;
+  bottom: -0.15rem;
+  left: -0.85rem;
+  width: 3px;
+  border-radius: 2px;
+}
+
+.ai-diff-changed {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.ai-diff-changed::before {
+  background: var(--accent);
+}
+
+.ai-diff-inserted {
+  background: color-mix(in srgb, var(--tip) 7%, transparent);
+}
+
+.ai-diff-inserted::before {
+  background: var(--tip);
+}
+
+.ai-diff-bar {
+  position: fixed;
+  bottom: 1.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  box-shadow: 0 14px 34px -14px rgba(20, 22, 30, 0.32);
+}
+
+.ai-diff-bar-label {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  padding-left: 0.3rem;
+}
+
 /* ---- Shortcut help overlay -------------------------------------------------- */
 
 .help-overlay {
@@ -2341,6 +2398,13 @@ body {
   }
   .app-header,
   .no-print {
+    display: none !important;
+  }
+  /* A pending AI review is editor state, not part of the document. */
+  .ai-diff-block {
+    background: none !important;
+  }
+  .ai-diff-block::before {
     display: none !important;
   }
   .doc-shell {

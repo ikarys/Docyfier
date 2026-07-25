@@ -27,9 +27,11 @@ import { DocCover, CoverLine } from "./extensions/Cover";
 import { PageBreak } from "./extensions/PageBreak";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { SlashCommand } from "./extensions/SlashCommand";
+import { AiDiff } from "./extensions/AiDiff";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import { saveDocumentAction, setDocumentThemeAction } from "@/app/actions";
 import { toPlainJSON } from "@/lib/doc/plain";
+import { changedBlocks } from "@/lib/doc/diff";
 import { imageFilesOf, insertUploadedImages } from "@/lib/doc/upload";
 import {
   THEMES,
@@ -38,6 +40,7 @@ import {
   type DocumentTheme,
 } from "@/lib/themes";
 import { AiPanel } from "./AiPanel";
+import { AiDiffBar } from "./AiDiffBar";
 import { DesignPanel } from "./DesignPanel";
 import { SelectionAiMenu } from "./SelectionAiMenu";
 
@@ -77,6 +80,10 @@ export function DocumentEditor({
   /** Only one side panel at a time — they share the same slot. */
   const [panel, setPanel] = useState<"ai" | "design" | null>("ai");
   const [theme, setTheme] = useState(initialTheme);
+  /** Number of blocks an AI edit changed, while its review bar is open. */
+  const [aiChanged, setAiChanged] = useState<number | null>(null);
+  /** The document as it stood before that edit — what Reject restores. */
+  const aiSnapshot = useRef<JSONContent | null>(null);
   /** Position of the top-level block currently under the drag handle. */
   const [hoveredBlock, setHoveredBlock] = useState<{ pos: number; size: number } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -201,6 +208,7 @@ export function DocumentEditor({
     PageBreak,
     TextAlign.configure({ types: ["heading", "paragraph"] }),
     SlashCommand,
+    AiDiff,
     Placeholder.configure({
       placeholder: "Write your document, or press the toolbar to add structure…",
     }),
@@ -278,10 +286,41 @@ export function DocumentEditor({
     flushSave();
   };
 
-  /** Replace the whole document with AI output and persist it right away —
-   * a one-shot replacement has no reason to wait out the typing debounce. */
-  const applyDocument = (content: DocJSON) => {
-    editor.commands.setContent(content, { emitUpdate: false });
+  /**
+   * Run an AI edit, then open the review bar over the blocks it touched.
+   *
+   * The result is saved immediately, as every AI apply was before: a review
+   * that held the change in memory would lose it on a reload, and Reject
+   * restores the snapshot exactly either way.
+   */
+  const runAiEdit = (apply: () => void) => {
+    const before = toPlainJSON(editor.getJSON());
+    apply();
+    const marks = changedBlocks(before, toPlainJSON(editor.getJSON()));
+    const changed = marks.filter((m) => m !== "same").length;
+    saveNow();
+    if (changed === 0) return;
+    aiSnapshot.current = before;
+    editor.commands.setAiDiff(marks);
+    setAiChanged(changed);
+  };
+
+  /** Replace the whole document with AI output, under review. */
+  const applyDocument = (content: DocJSON) =>
+    runAiEdit(() => editor.commands.setContent(content, { emitUpdate: false }));
+
+  const acceptAiEdit = () => {
+    editor.commands.clearAiDiff();
+    aiSnapshot.current = null;
+    setAiChanged(null);
+  };
+
+  const rejectAiEdit = () => {
+    const snapshot = aiSnapshot.current;
+    if (snapshot) editor.commands.setContent(snapshot, { emitUpdate: false });
+    editor.commands.clearAiDiff();
+    aiSnapshot.current = null;
+    setAiChanged(null);
     saveNow();
   };
 
@@ -304,7 +343,7 @@ export function DocumentEditor({
         >
           <article className="doc-sheet">
             <EditorContent editor={editor} />
-            <SelectionAiMenu editor={editor} />
+            <SelectionAiMenu editor={editor} onAiEdit={runAiEdit} />
             <DragHandle
               editor={editor}
               className="drag-handle no-print"
@@ -351,6 +390,13 @@ export function DocumentEditor({
           />
         )}
       </div>
+      {aiChanged !== null && (
+        <AiDiffBar
+          count={aiChanged}
+          onAccept={acceptAiEdit}
+          onReject={rejectAiEdit}
+        />
+      )}
     </div>
   );
 }

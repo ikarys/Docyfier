@@ -152,7 +152,14 @@ function FormattingRow({ editor }: { editor: Editor }) {
  * selections round-trip as plain text; multi-block selections are replaced
  * as whole blocks (schema-validated server-side).
  */
-export function SelectionAiMenu({ editor }: { editor: Editor }) {
+export function SelectionAiMenu({
+  editor,
+  onAiEdit,
+}: {
+  editor: Editor;
+  /** Runs a whole-block replacement under the document's AI review bar. */
+  onAiEdit: (apply: () => void) => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
@@ -194,9 +201,13 @@ export function SelectionAiMenu({ editor }: { editor: Editor }) {
     if (!res.ok) {
       setError(res.error);
     } else if (res.mode === "text") {
+      // An inline fragment swap is small and locally visible; Tiptap undo is
+      // review enough. Only whole-block replacements go through the diff bar.
       editor.chain().focus().insertContentAt(range, res.text).run();
     } else {
-      editor.chain().focus().insertContentAt(range, res.blocks).run();
+      onAiEdit(() => {
+        editor.chain().focus().insertContentAt(range, res.blocks).run();
+      });
     }
     setBusy(false);
   };
