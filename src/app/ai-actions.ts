@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import type { JSONContent } from "@tiptap/core";
-import { createDocument } from "@/lib/store";
+import { createDocument, updateDocument } from "@/lib/store";
 import {
   generateDocument,
   transformDocument,
@@ -14,7 +13,9 @@ import {
 
 /** Server actions for the three AI surfaces (PLAN.md STEP 2). */
 
-export type GenerateState = { error: string } | null;
+export type GenerateResult =
+  | { ok: true; content: JSONContent }
+  | { ok: false; error: string };
 
 export type TransformResult =
   | { ok: true; outcome: TransformOutcome }
@@ -33,24 +34,35 @@ function message(err: unknown): string {
   return err instanceof Error ? err.message : "AI request failed";
 }
 
-/** Surface 1 — generate a document from a prompt, then open it. */
-export async function generateDocumentAction(
-  _prev: GenerateState,
-  formData: FormData,
-): Promise<GenerateState> {
-  const prompt = String(formData.get("prompt") ?? "").trim();
-  if (!prompt) return { error: "Describe the document you want first." };
-
-  let content: JSONContent;
-  try {
-    content = await generateDocument(prompt);
-  } catch (err) {
-    return { error: message(err) };
-  }
-
-  const doc = await createDocument(content);
+/**
+ * Surface 1, step 1 — the document the generation will stream into.
+ *
+ * Created empty and up front so the user lands in the editor immediately; the
+ * editor deletes it again if the stream dies before producing anything.
+ */
+export async function startGeneratedDocumentAction(): Promise<string> {
+  const doc = await createDocument();
   revalidatePath("/");
-  redirect(`/doc/${doc.id}`);
+  return doc.id;
+}
+
+/**
+ * Surface 1, fallback — blocking generation into an existing document, for
+ * providers whose streaming the route handler could not open.
+ */
+export async function fillDocumentAction(
+  id: string,
+  prompt: string,
+): Promise<GenerateResult> {
+  const trimmed = prompt.trim();
+  if (!trimmed) return { ok: false, error: "Describe the document you want first." };
+  try {
+    const content = await generateDocument(trimmed);
+    await updateDocument(id, content);
+    return { ok: true, content };
+  } catch (err) {
+    return { ok: false, error: message(err) };
+  }
 }
 
 /** Surface 2 — whole-document transform from the side panel. */

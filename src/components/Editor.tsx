@@ -29,9 +29,19 @@ import { TextAlign } from "@tiptap/extension-text-align";
 import { SlashCommand } from "./extensions/SlashCommand";
 import { AiDiff } from "./extensions/AiDiff";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
-import { saveDocumentAction, setDocumentThemeAction } from "@/app/actions";
+import {
+  deleteDocumentAction,
+  saveDocumentAction,
+  setDocumentThemeAction,
+} from "@/app/actions";
+import { fillDocumentAction } from "@/app/ai-actions";
 import { toPlainJSON } from "@/lib/doc/plain";
 import { changedBlocks } from "@/lib/doc/diff";
+import {
+  ndjsonLines,
+  stashGenerateError,
+  takePrompt,
+} from "@/lib/doc/generate-client";
 import { imageFilesOf, insertUploadedImages } from "@/lib/doc/upload";
 import {
   THEMES,
@@ -82,6 +92,11 @@ export function DocumentEditor({
   const [theme, setTheme] = useState(initialTheme);
   /** Number of blocks an AI edit changed, while its review bar is open. */
   const [aiChanged, setAiChanged] = useState<number | null>(null);
+  /** Blocks received so far while a generation streams in; null when idle. */
+  const [streamed, setStreamed] = useState<number | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+  /** Autosave stands down while blocks stream: one write at the end instead. */
+  const streaming = useRef(false);
   /** The document as it stood before that edit — what Reject restores. */
   const aiSnapshot = useRef<JSONContent | null>(null);
   /** Position of the top-level block currently under the drag handle. */
@@ -162,6 +177,7 @@ export function DocumentEditor({
 
   const scheduleSave = useCallback(
     (editor: Editor) => {
+      if (streaming.current) return;
       setSaveState("saving");
       const content = toPlainJSON(editor.getJSON());
       pending.current = content;
@@ -258,6 +274,15 @@ export function DocumentEditor({
     };
   }, [flushSave]);
 
+  /** Save the current editor content right away, bypassing the debounce. */
+  const saveNow = useCallback(() => {
+    if (!editor) return;
+    const content = toPlainJSON(editor.getJSON());
+    pending.current = content;
+    writeDraft(content);
+    flushSave();
+  }, [editor, writeDraft, flushSave]);
+
   // Recover edits that never reached the server (reload mid-debounce, offline,
   // crashed tab). The draft only wins while the server is still on the version
   // it was typed against; anything older is a landed save and gets dropped.
@@ -276,15 +301,82 @@ export function DocumentEditor({
     flushSave();
   }, [editor, id, clearDraft, flushSave]);
 
-  if (!editor) return null;
+  // Prompt-to-document (STEP U4): the home hero created this document empty and
+  // left the prompt behind. Stream the blocks in as the model writes them.
+  const generated = useRef(false);
+  useEffect(() => {
+    if (!editor || generated.current) return;
+    generated.current = true;
+    const prompt = takePrompt(id);
+    if (!prompt) return;
 
-  /** Save the current editor content right away, bypassing the debounce. */
-  const saveNow = () => {
-    const content = toPlainJSON(editor.getJSON());
-    pending.current = content;
-    writeDraft(content);
-    flushSave();
-  };
+    let cancelled = false;
+    let count = 0;
+
+    const append = (block: JSONContent) => {
+      // The first block takes the place of the empty document's paragraph.
+      if (count === 0) {
+        editor.commands.setContent({ type: "doc", content: [block] }, { emitUpdate: false });
+      } else {
+        editor.commands.insertContentAt(editor.state.doc.content.size, block);
+      }
+      count++;
+      setStreamed(count);
+    };
+
+    const run = async () => {
+      streaming.current = true;
+      setStreamed(0);
+      let failure: string | null = null;
+      try {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
+        if (!res.ok || !res.body) {
+          // Provider cannot stream: same generation, one blocking call.
+          const fallback = await fillDocumentAction(id, prompt);
+          if (fallback.ok) {
+            editor.commands.setContent(fallback.content, { emitUpdate: false });
+            count = fallback.content.content?.length ?? 1;
+            setStreamed(count);
+          } else {
+            failure = fallback.error;
+          }
+        } else {
+          for await (const entry of ndjsonLines(res.body)) {
+            if (cancelled) return;
+            if (entry.block) append(entry.block as JSONContent);
+            else if (typeof entry.error === "string") failure = entry.error;
+          }
+        }
+      } catch (err) {
+        failure = err instanceof Error ? err.message : "Generation failed";
+      }
+
+      streaming.current = false;
+      setStreamed(null);
+      if (cancelled) return;
+
+      if (count > 0) {
+        saveNow();
+        if (failure) setGenError(failure);
+        return;
+      }
+      // Nothing was produced: the empty document would only be litter.
+      stashGenerateError(failure ?? "The AI returned an empty document.");
+      await deleteDocumentAction(id);
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+      streaming.current = false;
+    };
+  }, [editor, id, saveNow]);
+
+  if (!editor) return null;
 
   /**
    * Run an AI edit, then open the review bar over the blocks it touched.
@@ -342,6 +434,14 @@ export function DocumentEditor({
           style={tokenStyle(resolveTokens(theme))}
         >
           <article className="doc-sheet">
+            {streamed === 0 && (
+              <div className="gen-skeleton no-print" aria-label="Generating…">
+                <span className="gen-skeleton-line gen-skeleton-title" />
+                <span className="gen-skeleton-line" />
+                <span className="gen-skeleton-line" />
+                <span className="gen-skeleton-line gen-skeleton-short" />
+              </div>
+            )}
             <EditorContent editor={editor} />
             <SelectionAiMenu editor={editor} onAiEdit={runAiEdit} />
             <DragHandle
@@ -396,6 +496,14 @@ export function DocumentEditor({
           onAccept={acceptAiEdit}
           onReject={rejectAiEdit}
         />
+      )}
+      {genError && (
+        <div className="gen-error-bar no-print" role="alert">
+          <span className="ai-diff-bar-label">{genError}</span>
+          <button className="btn" onClick={() => setGenError(null)}>
+            Dismiss
+          </button>
+        </div>
       )}
     </div>
   );

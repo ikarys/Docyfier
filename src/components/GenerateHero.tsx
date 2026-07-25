@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
-import { generateDocumentAction } from "@/app/ai-actions";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { startGeneratedDocumentAction } from "@/app/ai-actions";
 import { newDocumentAction } from "@/app/actions";
+import { stashPrompt, takeGenerateError } from "@/lib/doc/generate-client";
 
 const EXAMPLES = [
   "A one-page status report for a cloud migration: summary, progress, risks, next steps",
@@ -10,12 +12,43 @@ const EXAMPLES = [
   "A decision memo comparing three CRM vendors, with a comparison table",
 ];
 
-/** Home hero — surface 1: describe a document, the AI drafts and formats it. */
+/**
+ * Home hero — surface 1: describe a document, the AI drafts and formats it.
+ *
+ * Since STEP U4 the generation runs in the editor and streams block by block:
+ * this only creates the empty document, hands the prompt over and navigates.
+ */
 export function GenerateHero() {
-  const [state, formAction, pending] = useActionState(
-    generateDocumentAction,
-    null,
-  );
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // A generation that died before writing anything deletes its document and
+  // sends the user back here with the reason.
+  useEffect(() => setError(takeGenerateError()), []);
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (pending) return;
+    const field = event.currentTarget.elements.namedItem(
+      "prompt",
+    ) as HTMLTextAreaElement | null;
+    const prompt = field?.value.trim() ?? "";
+    if (!prompt) {
+      setError("Describe the document you want first.");
+      return;
+    }
+    setPending(true);
+    setError(null);
+    try {
+      const id = await startGeneratedDocumentAction();
+      stashPrompt(id, prompt);
+      router.push(`/doc/${id}`);
+    } catch {
+      setError("Could not start a new document.");
+      setPending(false);
+    }
+  };
 
   return (
     <section className="hero">
@@ -26,7 +59,7 @@ export function GenerateHero() {
         Describe your document — Docyfier drafts it, structured and formatted.
       </p>
 
-      <form action={formAction} className="hero-card" data-pending={pending}>
+      <form onSubmit={submit} className="hero-card" data-pending={pending}>
         <textarea
           name="prompt"
           rows={3}
@@ -40,9 +73,9 @@ export function GenerateHero() {
           }}
         />
         <div className="hero-actions">
-          {state?.error ? (
+          {error ? (
             <span className="hero-error" role="alert">
-              {state.error}
+              {error}
             </span>
           ) : (
             <span className="hero-hint">⌘⏎ to generate</span>
