@@ -51,6 +51,8 @@ export type IconName = keyof typeof ICONS;
 
 export const ICON_NAMES = Object.keys(ICONS) as IconName[];
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
 /** The path data for `name`, or null when the name is not in the set. */
 export function iconPath(name: unknown): string | null {
   return typeof name === "string" && name in ICONS
@@ -66,8 +68,12 @@ export function iconPath(name: unknown): string | null {
 export function iconSpec(name: unknown): unknown[] | null {
   const d = iconPath(name);
   if (!d) return null;
+  // ProseMirror creates elements with `createElement` unless the tag name is
+  // prefixed with a namespace, which yields an inert HTMLUnknownElement for
+  // <svg> — the icon exists in the DOM and draws nothing. Children inherit the
+  // namespace, so only the root tag needs it.
   return [
-    "svg",
+    `${SVG_NS} svg`,
     {
       class: "block-icon",
       viewBox: "0 0 24 24",

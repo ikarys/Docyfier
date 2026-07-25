@@ -1258,6 +1258,9 @@ body {
   max-width: 100%;
   height: auto;
   border-radius: var(--radius);
+  /* Tailwind's preflight makes images block-level, so `text-align: center`
+     on the figure does not center them — auto margins do. */
+  margin-inline: auto;
 }
 .doc-editor .doc-image[data-selected="true"] img {
   outline: 3px solid var(--accent-soft);
