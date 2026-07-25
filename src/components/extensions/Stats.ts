@@ -87,8 +87,9 @@ export const Stat = Node.create({
         parseHTML: (el) => el.getAttribute("data-trend") ?? "flat",
         renderHTML: (attrs) => ({ "data-trend": attrs.trend }),
       },
-      // "grid" is the compact tile in a row of figures; "row" is the
-      // full-width dashboard card — same content, same order, wider layout.
+      // "grid" stacks icon/value/label centered; "row" lays the card out
+      // horizontally — icon beside the figure, label above it, left-aligned.
+      // Both keep their place in the statRow; only the card differs.
       layout: {
         default: "grid" as StatLayout,
         parseHTML: (el) => el.getAttribute("data-layout") ?? "grid",
