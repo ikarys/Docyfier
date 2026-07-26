@@ -2525,3 +2525,204 @@ body {
     color: var(--ink);
   }
 }
+
+/* ---- Document list controls (STEP U5) ------------------------------------ */
+
+.doc-search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+.doc-search input {
+  font: inherit;
+  font-size: 0.92rem;
+  flex: 1;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  outline: none;
+}
+.doc-search input:focus {
+  border-color: var(--accent);
+}
+.doc-search-count {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.doc-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.doc-confirm {
+  font-size: 0.82rem;
+  color: var(--danger);
+  white-space: nowrap;
+}
+.doc-rename {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+.doc-rename input {
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  outline: none;
+}
+
+/* ---- Template gallery (STEP U5) ------------------------------------------ */
+
+.tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+.tpl-card {
+  display: flex;
+}
+.tpl-card button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.9rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.tpl-card button:hover {
+  border-color: var(--accent);
+  box-shadow: 0 10px 26px -16px rgba(59, 91, 219, 0.55);
+  transform: translateY(-1px);
+}
+.tpl-card-label {
+  font-weight: 650;
+}
+.tpl-card-desc {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  line-height: 1.35;
+}
+
+/* A thumbnail is a stack of block silhouettes — no live editor render. */
+.tpl-thumb {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  height: 6.5rem;
+  padding: 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper-shell);
+  overflow: hidden;
+}
+.tpl-block {
+  display: block;
+  border-radius: 2px;
+  background: var(--rule-strong);
+}
+.tpl-block-title {
+  height: 0.55rem;
+  width: 55%;
+  background: var(--ink-soft);
+}
+.tpl-block-cover {
+  height: 1.5rem;
+  border-radius: 4px;
+  background: linear-gradient(
+    120deg,
+    var(--accent),
+    color-mix(in srgb, var(--accent) 45%, var(--paper))
+  );
+}
+.tpl-block-text {
+  height: 0.9rem;
+  background: repeating-linear-gradient(
+    var(--rule-strong) 0 0.16rem,
+    transparent 0.16rem 0.37rem
+  );
+}
+.tpl-block-callout {
+  height: 0.7rem;
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 2px 2px 0;
+}
+.tpl-block-stats,
+.tpl-block-cards {
+  height: 1.1rem;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--rule-strong) 0 30%,
+    transparent 30% 35%
+  );
+}
+.tpl-block-cards {
+  height: 1.4rem;
+}
+.tpl-block-table {
+  height: 1.4rem;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--rule-strong) 0 1px,
+      transparent 1px 33%
+    ),
+    repeating-linear-gradient(
+      var(--rule-strong) 0 1px,
+      transparent 1px 0.45rem
+    );
+}
+.tpl-block-timeline,
+.tpl-block-steps {
+  height: 1.4rem;
+  background:
+    linear-gradient(var(--accent), var(--accent)) 0.15rem 0 / 2px 100% no-repeat,
+    repeating-linear-gradient(
+      transparent 0 0.15rem,
+      var(--rule-strong) 0.15rem 0.32rem,
+      transparent 0.32rem 0.7rem
+    );
+  background-position-x: 0.15rem, 0.6rem;
+}
+.tpl-block-chart {
+  height: 1.6rem;
+  background:
+    linear-gradient(var(--accent), var(--accent)) 5% 100% / 12% 55% no-repeat,
+    linear-gradient(var(--accent), var(--accent)) 27% 100% / 12% 85% no-repeat,
+    linear-gradient(var(--accent), var(--accent)) 49% 100% / 12% 40% no-repeat,
+    linear-gradient(var(--accent), var(--accent)) 71% 100% / 12% 70% no-repeat;
+  background-color: transparent;
+}
+.tpl-thumb-blank {
+  align-items: center;
+  justify-content: center;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      var(--rule) 0 6px,
+      transparent 6px 12px
+    ),
+    var(--paper);
+}

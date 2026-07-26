@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startGeneratedDocumentAction } from "@/app/ai-actions";
-import { newDocumentAction } from "@/app/actions";
 import { stashPrompt, takeGenerateError } from "@/lib/doc/generate-client";
 
 const EXAMPLES = [
@@ -112,11 +112,11 @@ export function GenerateHero() {
         ))}
       </div>
 
-      <form action={newDocumentAction} className="hero-blank">
-        <button className="btn-ghost" type="submit" disabled={pending}>
-          or start from a blank page →
-        </button>
-      </form>
+      <div className="hero-blank">
+        <Link className="btn-ghost" href="/new">
+          or start from a template →
+        </Link>
+      </div>
     </section>
   );
 }
