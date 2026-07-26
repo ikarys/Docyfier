@@ -12,3 +12,30 @@ export interface AiSettings {
    * fences and prose out of free text. Only some servers implement it. */
   structuredOutput: boolean;
 }
+
+/** Where documents live. `files` is the default on-disk store (STEP 0). */
+export type StorageDriver = "files" | "postgres" | "mysql";
+
+export const STORAGE_DRIVERS: StorageDriver[] = ["files", "postgres", "mysql"];
+
+export const DEFAULT_PORTS: Record<StorageDriver, number> = {
+  files: 0,
+  postgres: 5432,
+  mysql: 3306,
+};
+
+/** Connection settings for the document store. Always file-backed themselves:
+ * they cannot be read from the database they configure. */
+export interface StorageSettings {
+  driver: StorageDriver;
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+  ssl: boolean;
+}
+
+export function isStorageDriver(value: unknown): value is StorageDriver {
+  return STORAGE_DRIVERS.includes(value as StorageDriver);
+}

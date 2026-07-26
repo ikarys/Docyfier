@@ -2,16 +2,22 @@ import "server-only";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AiSettings } from "./settings-types";
+import {
+  DEFAULT_PORTS,
+  isStorageDriver,
+  type AiSettings,
+  type StorageSettings,
+} from "./settings-types";
 
 /**
- * App settings, file-backed like the document store (stands in for the future
- * database). Resolution order for each value: settings file > env > default.
+ * App settings, file-backed even when documents live in a database: the
+ * connection settings cannot be read from the database they configure.
+ * Resolution order for each value: settings file > env > default.
  */
 
-export type { AiSettings };
+export type { AiSettings, StorageSettings };
 
-const DEFAULTS: AiSettings = {
+const AI_DEFAULTS: AiSettings = {
   baseUrl: "http://localhost:1234/v1",
   model: "",
   apiKey: "",
@@ -19,47 +25,112 @@ const DEFAULTS: AiSettings = {
   structuredOutput: false,
 };
 
+const STORAGE_DEFAULTS: StorageSettings = {
+  driver: "files",
+  host: "localhost",
+  port: DEFAULT_PORTS.postgres,
+  user: "",
+  password: "",
+  database: "",
+  ssl: false,
+};
+
+/** On-disk shape: AI keys stayed flat when storage settings were added, so
+ * files written before this STEP keep loading unchanged. */
+type SettingsFile = Partial<AiSettings> & { storage?: Partial<StorageSettings> };
+
 function settingsFile(): string {
   const dir =
     process.env.DOCYFIER_DATA_DIR ?? path.join(process.cwd(), "data", "documents");
   return path.join(path.dirname(dir), "settings.json");
 }
 
-function envDefaults(): AiSettings {
+async function readSettingsFile(): Promise<SettingsFile> {
+  try {
+    return JSON.parse(await readFile(settingsFile(), "utf8")) as SettingsFile;
+  } catch {
+    return {};
+  }
+}
+
+/** Merge a partial update into the file. Sections must not clobber each other:
+ * saving AI settings has to leave `storage` intact, and vice versa. */
+async function writeSettingsFile(patch: SettingsFile): Promise<void> {
+  const file = settingsFile();
+  const merged = { ...(await readSettingsFile()), ...patch };
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, JSON.stringify(merged, null, 2), "utf8");
+}
+
+function aiEnvDefaults(): AiSettings {
   const envMax = Number(process.env.DOCYFIER_LLM_MAX_TOKENS);
   return {
-    baseUrl: process.env.DOCYFIER_LLM_BASE_URL ?? DEFAULTS.baseUrl,
-    model: process.env.DOCYFIER_LLM_MODEL ?? DEFAULTS.model,
-    apiKey: process.env.DOCYFIER_LLM_API_KEY ?? DEFAULTS.apiKey,
+    baseUrl: process.env.DOCYFIER_LLM_BASE_URL ?? AI_DEFAULTS.baseUrl,
+    model: process.env.DOCYFIER_LLM_MODEL ?? AI_DEFAULTS.model,
+    apiKey: process.env.DOCYFIER_LLM_API_KEY ?? AI_DEFAULTS.apiKey,
     maxOutputTokens:
-      Number.isInteger(envMax) && envMax > 0 ? envMax : DEFAULTS.maxOutputTokens,
+      Number.isInteger(envMax) && envMax > 0 ? envMax : AI_DEFAULTS.maxOutputTokens,
     structuredOutput:
-      process.env.DOCYFIER_LLM_STRUCTURED === "1" || DEFAULTS.structuredOutput,
+      process.env.DOCYFIER_LLM_STRUCTURED === "1" || AI_DEFAULTS.structuredOutput,
+  };
+}
+
+function storageEnvDefaults(): StorageSettings {
+  const driver = isStorageDriver(process.env.DOCYFIER_DB_DRIVER)
+    ? process.env.DOCYFIER_DB_DRIVER
+    : STORAGE_DEFAULTS.driver;
+  const envPort = Number(process.env.DOCYFIER_DB_PORT);
+  return {
+    driver,
+    host: process.env.DOCYFIER_DB_HOST ?? STORAGE_DEFAULTS.host,
+    port:
+      Number.isInteger(envPort) && envPort > 0
+        ? envPort
+        : (DEFAULT_PORTS[driver] || STORAGE_DEFAULTS.port),
+    user: process.env.DOCYFIER_DB_USER ?? STORAGE_DEFAULTS.user,
+    password: process.env.DOCYFIER_DB_PASSWORD ?? STORAGE_DEFAULTS.password,
+    database: process.env.DOCYFIER_DB_NAME ?? STORAGE_DEFAULTS.database,
+    ssl: process.env.DOCYFIER_DB_SSL === "1" || STORAGE_DEFAULTS.ssl,
   };
 }
 
 export async function getAiSettings(): Promise<AiSettings> {
-  const fallback = envDefaults();
-  try {
-    const raw = await readFile(settingsFile(), "utf8");
-    const saved = JSON.parse(raw) as Partial<AiSettings>;
-    return {
-      baseUrl: saved.baseUrl?.trim() || fallback.baseUrl,
-      model: saved.model?.trim() ?? fallback.model,
-      apiKey: saved.apiKey ?? fallback.apiKey,
-      maxOutputTokens:
-        Number.isInteger(saved.maxOutputTokens) && (saved.maxOutputTokens as number) > 0
-          ? (saved.maxOutputTokens as number)
-          : fallback.maxOutputTokens,
-      structuredOutput: saved.structuredOutput ?? fallback.structuredOutput,
-    };
-  } catch {
-    return fallback;
-  }
+  const fallback = aiEnvDefaults();
+  const saved = await readSettingsFile();
+  return {
+    baseUrl: saved.baseUrl?.trim() || fallback.baseUrl,
+    model: saved.model?.trim() ?? fallback.model,
+    apiKey: saved.apiKey ?? fallback.apiKey,
+    maxOutputTokens:
+      Number.isInteger(saved.maxOutputTokens) && (saved.maxOutputTokens as number) > 0
+        ? (saved.maxOutputTokens as number)
+        : fallback.maxOutputTokens,
+    structuredOutput: saved.structuredOutput ?? fallback.structuredOutput,
+  };
 }
 
 export async function saveAiSettings(settings: AiSettings): Promise<void> {
-  const file = settingsFile();
-  await mkdir(path.dirname(file), { recursive: true });
-  await writeFile(file, JSON.stringify(settings, null, 2), "utf8");
+  await writeSettingsFile(settings);
+}
+
+export async function getStorageSettings(): Promise<StorageSettings> {
+  const fallback = storageEnvDefaults();
+  const saved = (await readSettingsFile()).storage ?? {};
+  const driver = isStorageDriver(saved.driver) ? saved.driver : fallback.driver;
+  return {
+    driver,
+    host: saved.host?.trim() || fallback.host,
+    port:
+      Number.isInteger(saved.port) && (saved.port as number) > 0
+        ? (saved.port as number)
+        : (DEFAULT_PORTS[driver] || fallback.port),
+    user: saved.user ?? fallback.user,
+    password: saved.password ?? fallback.password,
+    database: saved.database?.trim() || fallback.database,
+    ssl: saved.ssl ?? fallback.ssl,
+  };
+}
+
+export async function saveStorageSettings(storage: StorageSettings): Promise<void> {
+  await writeSettingsFile({ storage });
 }
