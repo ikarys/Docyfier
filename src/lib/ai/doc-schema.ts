@@ -30,7 +30,7 @@ import { chartError } from "@/lib/doc/chart";
  * it server-side before it is ever injected into the editor — invalid JSON
  * triggers a retry, never a broken document.
  */
-const schema = getSchema([
+export const editorSchema = getSchema([
   StarterKit,
   Callout,
   Table,
@@ -70,7 +70,7 @@ export function validateDocJson(json: unknown): JSONContent {
   if ((json as { type?: unknown }).type !== "doc") {
     throw new Error('Root node must be {"type": "doc", ...}');
   }
-  const node = PMNode.fromJSON(schema, json);
+  const node = PMNode.fromJSON(editorSchema, json);
   node.check();
   // ProseMirror only checks node/mark shape; chart attrs carry their own rules
   // (series/category lengths, numeric values) that must fail loudly here so the
