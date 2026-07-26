@@ -4,6 +4,7 @@
 set dotenv-load := true
 
 port := "3000"
+image := "docyfier:latest"
 
 # List available recipes
 default:
@@ -27,6 +28,10 @@ start port=port:
 
 # Build then serve the production bundle
 serve port=port: build (start port)
+
+# Build the Docker image (tagged {{image}})
+docker-build tag=image:
+    docker build -t {{tag}} .
 
 # Type-check without emitting
 typecheck:
