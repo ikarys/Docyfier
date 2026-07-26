@@ -43,7 +43,8 @@ slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 
 - Validate the stack proposal:
   - Next.js + TypeScript + Tailwind + shadcn/ui (modern UI, fast iteration)
   - Tiptap (ProseMirror) block editor (rich structured editing)
-  - PostgreSQL (documents, later orgs/users)
+  - PostgreSQL (documents, later orgs/users) — MySQL is supported as an
+    alternative from STEP 4; the storage backend is selectable at runtime
   - Vercel AI SDK as the LLM abstraction — provider-agnostic day 1, keeps
     BYO-LLM (#12) cheap later
   - PDF export via headless Chromium rendering of the styled document
@@ -124,9 +125,17 @@ theming stays in STEP 9.
 **Goal:** a real, deployable mono-user product.
 
 - Document list, save/load, autosave.
+- **Selectable storage backend:** the file store that stood in for the database
+  since STEP 0 becomes one driver among three — files (default), PostgreSQL,
+  MySQL — chosen from the Settings page, no rebuild. Connection settings stay
+  file-backed: they cannot live in the database they configure.
+- **Explicit import** of file-backed documents into the chosen database
+  (skip-if-present, never destructive), so switching driver does not hide
+  existing work.
 - Single-user authentication (no orgs, no roles).
 
-**Out of scope:** multi-tenant anything (#10, #11).
+**Out of scope:** multi-tenant anything (#10, #11); schema migration tooling —
+the single `documents` table is created idempotently on connect.
 **Exit criteria:** **MVP complete** — a user signs in, creates, formats, saves, and exports documents on a deployed instance.
 
 ### STEP 5 — Import & more exports

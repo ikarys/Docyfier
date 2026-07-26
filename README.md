@@ -68,9 +68,34 @@ server-side (invalid output → one retry) before it touches the document.
 
 ## Storage
 
-Documents are stored as JSON files under `data/documents/` (gitignored). Override
-the location with `DOCYFIER_DATA_DIR`. This fs store stands in for the database
-that arrives in a later STEP; its on-disk shape is deliberately DB-shaped.
+Documents live in one of three backends, chosen under **Document storage** on
+the Settings page — no rebuild, no restart:
+
+| Backend | Where | Notes |
+|---|---|---|
+| Files (default) | JSON files under `data/documents/` (gitignored) | Override the location with `DOCYFIER_DATA_DIR` |
+| PostgreSQL | `documents` table | Needs an existing database; the table is created on first connection |
+| MySQL | `documents` table | Same |
+
+The connection settings themselves always stay in `data/settings.json` — they
+cannot be read from the database they configure. Saving a database
+configuration is refused if the connection fails, so a typo cannot take the app
+down. After switching to a database, **Import documents from files** copies the
+documents still on disk into it (skipping ids already present, never deleting
+the source files).
+
+Env vars, same resolution order as above (Settings page > environment >
+defaults):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DOCYFIER_DB_DRIVER` | `files` | `files`, `postgres` or `mysql` |
+| `DOCYFIER_DB_HOST` | `localhost` | Database host |
+| `DOCYFIER_DB_PORT` | `5432` / `3306` | Defaults to the driver's port |
+| `DOCYFIER_DB_USER` | — | Database user |
+| `DOCYFIER_DB_PASSWORD` | — | Database password |
+| `DOCYFIER_DB_NAME` | — | Database name |
+| `DOCYFIER_DB_SSL` | `0` | `1` connects over TLS (certificates verified) |
 
 ## Requirements
 
