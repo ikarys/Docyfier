@@ -2715,6 +2715,22 @@ body {
     linear-gradient(var(--accent), var(--accent)) 71% 100% / 12% 70% no-repeat;
   background-color: transparent;
 }
+.tpl-card-import {
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.tpl-card-error {
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+.tpl-thumb-import {
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: var(--accent);
+  border-style: dashed;
+  border-color: var(--rule-strong);
+}
 .tpl-thumb-blank {
   align-items: center;
   justify-content: center;

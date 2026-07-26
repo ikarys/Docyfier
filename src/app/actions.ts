@@ -11,6 +11,7 @@ import {
   setDocumentTheme,
   updateDocument,
 } from "@/lib/store";
+import { docFromFile, titleFromFilename } from "@/lib/doc/import";
 import { findTemplate } from "@/lib/templates";
 import type { DocumentTheme } from "@/lib/themes";
 
@@ -60,6 +61,40 @@ export async function setDocumentThemeAction(
 ): Promise<boolean> {
   const updated = await setDocumentTheme(id, theme);
   return updated !== null;
+}
+
+export type ImportState = { error: string } | null;
+
+/**
+ * Import a file (.md, .txt, .docx) as a new document and open it. The import
+ * is faithful — structure only; reformatting is the editor's AI pass, not a
+ * side effect of opening the file.
+ */
+export async function importDocumentAction(
+  _prev: ImportState,
+  formData: FormData,
+): Promise<ImportState> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Choose a file to import." };
+  }
+
+  let doc;
+  try {
+    doc = await createDocument(await docFromFile(file));
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Import failed." };
+  }
+
+  // A file whose content carries no heading would land as "Untitled document";
+  // its filename is the better name.
+  if (doc.title === "Untitled document") {
+    const fromName = titleFromFilename(file.name);
+    if (fromName) await renameDocument(doc.id, fromName);
+  }
+
+  revalidatePath("/");
+  redirect(`/doc/${doc.id}`);
 }
 
 /** Rename a document from the list. An empty title hands the name back to the

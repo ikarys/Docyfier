@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TEMPLATES } from "@/lib/templates";
 import { assertTemplatesValid } from "@/lib/doc/templates-check";
 import { createFromTemplateAction, newDocumentAction } from "@/app/actions";
+import { ImportCard } from "@/components/ImportCard";
 
 /**
  * Template gallery (PLAN.md STEP U5). Statically rendered, so the schema
@@ -27,8 +28,8 @@ export default function NewDocumentPage() {
       <main className="picker">
         <h1>New document</h1>
         <p className="lede">
-          Start from a template — every one is a real, editable document — or
-          from a blank page.
+          Start from a template — every one is a real, editable document — from
+          a blank page, or from a file you already have.
         </p>
 
         <div className="tpl-grid">
@@ -41,6 +42,8 @@ export default function NewDocumentPage() {
               </span>
             </button>
           </form>
+
+          <ImportCard />
 
           {TEMPLATES.map((template) => (
             <form
