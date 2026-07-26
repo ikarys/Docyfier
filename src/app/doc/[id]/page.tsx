@@ -29,6 +29,14 @@ export default async function DocumentPage({
           <Link href="/settings" className="btn" title="Settings">
             ⚙
           </Link>
+          <a
+            className="btn"
+            href={`/api/export/markdown/${doc.id}`}
+            download
+            title="Export as Markdown"
+          >
+            ↓ MD
+          </a>
           <PrintButton />
           <form action={deleteDocumentAction.bind(null, doc.id)}>
             <button className="btn btn-danger" type="submit">
