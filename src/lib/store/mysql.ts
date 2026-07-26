@@ -17,16 +17,21 @@ const STATEMENTS: SqlStatements = {
        theme      JSON NOT NULL,
        created_at DATETIME(3) NOT NULL,
        updated_at DATETIME(3) NOT NULL,
+       title_override TEXT NULL,
        INDEX documents_updated_at_idx (updated_at DESC)
      )`,
+    // Added in STEP U5. MySQL has no `ADD COLUMN IF NOT EXISTS`; on a table
+    // that already has it the duplicate-column error is swallowed (see sql.ts).
+    `ALTER TABLE documents ADD COLUMN title_override TEXT NULL`,
   ],
   list: `SELECT id, title, updated_at FROM documents ORDER BY updated_at DESC`,
-  get: `SELECT id, title, content, theme, created_at, updated_at
+  get: `SELECT id, title, title_override, content, theme, created_at, updated_at
           FROM documents WHERE id = ?`,
-  put: `INSERT INTO documents (id, title, content, theme, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+  put: `INSERT INTO documents (id, title, title_override, content, theme, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
           title = VALUES(title),
+          title_override = VALUES(title_override),
           content = VALUES(content),
           theme = VALUES(theme),
           updated_at = VALUES(updated_at)`,

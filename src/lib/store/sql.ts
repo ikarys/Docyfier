@@ -15,11 +15,13 @@ export interface SqlClient {
 }
 
 export interface SqlStatements {
-  /** DDL run on connect, in order. Must be idempotent. */
+  /** DDL run on connect, in order. Must be idempotent — an `ADD COLUMN` that
+   * the table already has is tolerated (see `ensureSchema`). */
   schema: string[];
   list: string;
   get: string;
-  /** Upsert taking id, title, content, theme, created_at, updated_at. */
+  /** Upsert taking id, title, title_override, content, theme, created_at,
+   * updated_at. */
   put: string;
   remove: string;
 }
@@ -38,7 +40,7 @@ function toIso(value: unknown): string {
 }
 
 function toRecord(row: Record<string, unknown>): DocumentRecord {
-  return {
+  const doc: DocumentRecord = {
     id: String(row.id),
     title: String(row.title),
     content: parseJson(row.content),
@@ -46,10 +48,25 @@ function toRecord(row: Record<string, unknown>): DocumentRecord {
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
   };
+  if (row.title_override != null) doc.titleOverride = String(row.title_override);
+  return doc;
+}
+
+/** MySQL has no `ADD COLUMN IF NOT EXISTS`: on an existing table the column is
+ * already there, which is the expected outcome, not a failure. */
+function isDuplicateColumn(err: unknown): boolean {
+  const { code, errno } = (err ?? {}) as { code?: unknown; errno?: unknown };
+  return code === "ER_DUP_FIELDNAME" || errno === 1060;
 }
 
 async function ensureSchema(client: SqlClient, statements: SqlStatements): Promise<void> {
-  for (const ddl of statements.schema) await client.query(ddl);
+  for (const ddl of statements.schema) {
+    try {
+      await client.query(ddl);
+    } catch (err) {
+      if (!isDuplicateColumn(err)) throw err;
+    }
+  }
 }
 
 /** PostgreSQL `undefined_table`, MySQL `ER_NO_SUCH_TABLE`. */
@@ -97,6 +114,7 @@ export function sqlStore(client: SqlClient, statements: SqlStatements): Document
       await query(statements.put, [
         doc.id,
         doc.title,
+        doc.titleOverride ?? null,
         JSON.stringify(doc.content),
         JSON.stringify(doc.theme),
         new Date(doc.createdAt),

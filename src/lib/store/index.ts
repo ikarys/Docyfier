@@ -21,9 +21,22 @@ export function emptyContent(): JSONContent {
   return { type: "doc", content: [{ type: "paragraph" }] };
 }
 
+/** The document's title heading: top level, or inside the cover block that
+ * carries it when the document opens on one. */
+function findTitleHeading(nodes: JSONContent[]): JSONContent | undefined {
+  for (const node of nodes) {
+    if (node.type === "heading") return node;
+    if (node.type === "docCover") {
+      const inner = findTitleHeading(node.content ?? []);
+      if (inner) return inner;
+    }
+  }
+  return undefined;
+}
+
 /** Derive a display title from the first heading, else the first text, else Untitled. */
 export function deriveTitle(content: JSONContent): string {
-  const heading = content.content?.find((n) => n.type === "heading");
+  const heading = findTitleHeading(content.content ?? []);
   const fromHeading = heading && collectText(heading).trim();
   if (fromHeading) return fromHeading;
   const firstText = content.content?.map(collectText).find((t) => t.trim());
@@ -51,8 +64,17 @@ export async function getDocument(id: string): Promise<DocumentRecord | null> {
   return doc;
 }
 
+/** The title to display: a rename wins over whatever the content says. */
+function effectiveTitle(doc: {
+  content: JSONContent;
+  titleOverride?: string;
+}): string {
+  return doc.titleOverride?.trim() || deriveTitle(doc.content);
+}
+
 export async function createDocument(
   content: JSONContent = emptyContent(),
+  theme: unknown = { preset: DEFAULT_PRESET },
 ): Promise<DocumentRecord> {
   const store = await getStore();
   const now = new Date().toISOString();
@@ -60,7 +82,7 @@ export async function createDocument(
     id: randomUUID(),
     title: deriveTitle(content),
     content,
-    theme: { preset: DEFAULT_PRESET },
+    theme: normalizeTheme(theme),
     createdAt: now,
     updatedAt: now,
   };
@@ -78,11 +100,59 @@ export async function updateDocument(
   const updated: DocumentRecord = {
     ...existing,
     content,
-    title: deriveTitle(content),
+    title: effectiveTitle({ ...existing, content }),
     updatedAt: new Date().toISOString(),
   };
   await store.put(updated);
   return updated;
+}
+
+/**
+ * Rename a document. An empty title clears the override, so the title starts
+ * following the content again instead of freezing on a blank string.
+ */
+export async function renameDocument(
+  id: string,
+  title: string,
+): Promise<DocumentRecord | null> {
+  const existing = await getDocument(id);
+  if (!existing) return null;
+  const store = await getStore();
+  const override = title.trim().slice(0, 200);
+  const updated: DocumentRecord = {
+    ...existing,
+    title: override || deriveTitle(existing.content),
+    updatedAt: new Date().toISOString(),
+  };
+  if (override) updated.titleOverride = override;
+  else delete updated.titleOverride;
+  await store.put(updated);
+  return updated;
+}
+
+/** Copy a document under a new id. The copy is independent: editing either one
+ * leaves the other untouched. */
+export async function duplicateDocument(
+  id: string,
+): Promise<DocumentRecord | null> {
+  const existing = await getDocument(id);
+  if (!existing) return null;
+  const store = await getStore();
+  const now = new Date().toISOString();
+  const title = `Copy of ${existing.title}`.slice(0, 200);
+  const copy: DocumentRecord = {
+    ...existing,
+    id: randomUUID(),
+    // The copy carries its title as an override: two documents with the same
+    // first heading would otherwise show the same name in the list.
+    title,
+    titleOverride: title,
+    content: structuredClone(existing.content),
+    createdAt: now,
+    updatedAt: now,
+  };
+  await store.put(copy);
+  return copy;
 }
 
 /** Update only the presentation theme, leaving content untouched. */

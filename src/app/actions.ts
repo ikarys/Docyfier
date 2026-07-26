@@ -6,14 +6,32 @@ import type { JSONContent } from "@tiptap/react";
 import {
   createDocument,
   deleteDocument,
+  duplicateDocument,
+  renameDocument,
   setDocumentTheme,
   updateDocument,
 } from "@/lib/store";
+import { findTemplate } from "@/lib/templates";
 import type { DocumentTheme } from "@/lib/themes";
 
 /** Create a blank document and open it in the editor. */
 export async function newDocumentAction(): Promise<void> {
   const doc = await createDocument();
+  revalidatePath("/");
+  redirect(`/doc/${doc.id}`);
+}
+
+/** Create a document from a template and open it in the editor. An unknown id
+ * falls back to a blank document rather than failing the navigation. */
+export async function createFromTemplateAction(
+  templateId: string,
+): Promise<void> {
+  const template = findTemplate(templateId);
+  const doc = template
+    ? await createDocument(structuredClone(template.content), {
+        preset: template.preset,
+      })
+    : await createDocument();
   revalidatePath("/");
   redirect(`/doc/${doc.id}`);
 }
@@ -42,6 +60,25 @@ export async function setDocumentThemeAction(
 ): Promise<boolean> {
   const updated = await setDocumentTheme(id, theme);
   return updated !== null;
+}
+
+/** Rename a document from the list. An empty title hands the name back to the
+ * content, so a cleared field is not a way to lose the document. */
+export async function renameDocumentAction(
+  id: string,
+  title: string,
+): Promise<string | null> {
+  const updated = await renameDocument(id, title);
+  if (!updated) return null;
+  revalidatePath("/");
+  return updated.title;
+}
+
+/** Duplicate a document; the copy is independent of its source. */
+export async function duplicateDocumentAction(id: string): Promise<boolean> {
+  const copy = await duplicateDocument(id);
+  revalidatePath("/");
+  return copy !== null;
 }
 
 /** Delete a document and return to the list. */

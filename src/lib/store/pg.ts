@@ -18,14 +18,17 @@ const STATEMENTS: SqlStatements = {
      )`,
     `CREATE INDEX IF NOT EXISTS documents_updated_at_idx
        ON documents (updated_at DESC)`,
+    // Added in STEP U5; tables created before it get the column here.
+    `ALTER TABLE documents ADD COLUMN IF NOT EXISTS title_override TEXT`,
   ],
   list: `SELECT id, title, updated_at FROM documents ORDER BY updated_at DESC`,
-  get: `SELECT id, title, content, theme, created_at, updated_at
+  get: `SELECT id, title, title_override, content, theme, created_at, updated_at
           FROM documents WHERE id = $1`,
-  put: `INSERT INTO documents (id, title, content, theme, created_at, updated_at)
-        VALUES ($1, $2, $3::jsonb, $4::jsonb, $5, $6)
+  put: `INSERT INTO documents (id, title, title_override, content, theme, created_at, updated_at)
+        VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7)
         ON CONFLICT (id) DO UPDATE
           SET title = EXCLUDED.title,
+              title_override = EXCLUDED.title_override,
               content = EXCLUDED.content,
               theme = EXCLUDED.theme,
               updated_at = EXCLUDED.updated_at`,
