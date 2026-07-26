@@ -20,16 +20,18 @@ surfaces are in: prompt-to-document (home), whole-document assistant panel
 menu). LLM = local LM Studio via Vercel AI SDK (`src/lib/ai/`); AI output is
 schema-validated ProseMirror JSON. No auth or multi-tenant yet.
 
-Documents are ProseMirror JSON stored on disk (`src/lib/store.ts`), standing in
-for the future database. The earlier markdown-file model was dropped: users arrive
+Documents are ProseMirror JSON kept in files, PostgreSQL or MySQL — one driver
+among three behind `src/lib/store/`, selected at runtime from the Settings page. The earlier markdown-file model was dropped: users arrive
 with no source. Stack validated: Next.js + TypeScript + Tailwind v4 + Tiptap.
 Node is pinned via `.nvmrc` (nvm).
 
-Editor UX and rendering STEPS U1, U3, U2 and U6 are in: slash menu and drag
-handles; themes as adjustable token sets (accent, font pair, radius, density)
-with a Design panel; images, cover, table of contents and print control; charts,
-block icons and dashboard stat cards. Next: STEP U4 (streaming + targeted AI
-transforms) and STEP U5 (templates), then STEP 3.
+Editor UX and rendering STEPS U1–U6 are in: slash menu and drag handles;
+streaming generation, op-based transforms and AI diff review; themes as
+adjustable token sets (accent, font pair, radius, density) with a Design panel;
+images, cover, table of contents and print control; charts, block icons and
+dashboard stat cards; templates gallery with search/rename/duplicate in the
+document list. Next: STEP 3 (Markdown + PDF export), then the auth half of
+STEP 4.
 
 ## Working conventions
 

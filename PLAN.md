@@ -410,8 +410,8 @@ Instructions:
 
 Acceptance:
 
-- [ ] New doc from template in ≤ 3 clicks; the document opens fully formatted with its suggested theme
-- [ ] All templates pass schema validation automatically (assertion fails the build if one is broken)
+- [x] New doc from template in ≤ 3 clicks; the document opens fully formatted with its suggested theme
+- [x] All templates pass schema validation automatically (assertion fails the build if one is broken)
 - [ ] Search filters as you type; rename sticks after reload and survives content edits; duplicate creates an independent copy
 - [ ] Delete requires confirmation and cannot be triggered by a single stray click
 

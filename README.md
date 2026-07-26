@@ -16,7 +16,11 @@ work in a rich block editor with AI help. There is no dependency on markdown fil
 - **Selection AI menu**: select text → floating menu with quick rewrites
   (rephrase / shorten / expand / formal) or a free prompt applied only to the
   selection.
-- **Create / edit / delete** documents from the home list.
+- **Templates**: "New document" opens a gallery — meeting notes, project
+  one-pager, technical spec, status report, roadmap, incident postmortem,
+  decision note — each a real document opening with its own theme preset.
+- **Document list**: search, inline rename, duplicate, and delete behind a
+  confirmation.
 - **Block editor** (Tiptap / ProseMirror): headings, bold/italic/strike/underline/
   inline code, links, text alignment, bullet & ordered lists, blockquote, code
   block, tables, horizontal rule, undo/redo, and colored **callouts**
@@ -35,9 +39,8 @@ work in a rich block editor with AI help. There is no dependency on markdown fil
   (see PLAN.md STEP 0). It makes reliable formatting, targeted AI edits, snapshots
   and multi-format export possible.
 
-Not yet built (next STEPS in [PLAN.md](PLAN.md)): streaming and targeted AI
-transforms (U4), templates (U5), Markdown/richer export, diagrams, multi-tenant,
-auth.
+Not yet built (next STEPS in [PLAN.md](PLAN.md)): Markdown export and
+print-quality PDF (STEP 3), single-user auth (STEP 4), diagrams, multi-tenant.
 
 ## AI setup (LM Studio)
 
@@ -121,6 +124,7 @@ Or without `just`: `nvm use && npm install && npm run dev`.
 | `just start` | Serve the production build |
 | `just serve` | build + start |
 | `just check` | typecheck + lint |
+| `just docker-build` | Build the Docker image (`docyfier:latest`) |
 | `just clean` | Remove `.next` |
 
 Ports are overridable: `just dev 4000`.
@@ -132,7 +136,9 @@ Ports are overridable: `just dev 4000`.
 - `src/components/AiPanel.tsx` / `SelectionAiMenu.tsx` / `GenerateHero.tsx` —
   the three AI surfaces.
 - `src/lib/ai/` — LLM provider (LM Studio), prompts, schema validation, services.
-- `src/lib/store.ts` — file-backed document store (ProseMirror JSON).
-- `src/app/actions.ts` — server actions: create / save / delete.
+- `src/lib/store/` — document store: facade + files / PostgreSQL / MySQL drivers.
+- `src/lib/templates.ts` — document templates, validated against the editor
+  schema at build time by `src/lib/doc/templates-check.ts`.
+- `src/app/actions.ts` — server actions: create / save / rename / duplicate / delete.
 - `src/app/ai-actions.ts` — AI server actions: generate / transform / rewrite.
 - `src/app/globals.css` — design system, editor chrome, and A4 print rules.
