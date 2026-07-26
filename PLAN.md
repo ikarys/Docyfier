@@ -120,6 +120,13 @@ theming stays in STEP 9.
 **Out of scope:** docx, slides, Confluence (#8).
 **Exit criteria:** exported PDF is visually faithful to the in-app document; markdown round-trips the content.
 
+Acceptance:
+
+- [x] Markdown export downloads a `.md` file for the open document (headings, lists, tables, code, quotes, links, GitHub-style callout alerts)
+- [x] Rich blocks project onto standard markdown instead of vanishing — a chart exports as the table of its own data, a statRow as a list of figures
+- [x] Round-trip: exporting the seven templates to markdown and re-importing them loses no content word
+- [ ] PDF export via headless Chromium, visually faithful, with page numbers in the footer
+
 ### STEP 4 — MVP: persistence + simple auth
 
 **Goal:** a real, deployable mono-user product.

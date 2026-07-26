@@ -37,13 +37,15 @@ work in a rich block editor with AI help. There is no dependency on markdown fil
   pair, corner radius and density — edited live in the Design panel. Themes are
   presentation only and never touch document content.
 - **Autosave**: edits persist automatically (debounced) with a save indicator.
-- **Export**: "PDF" via the browser print dialog (A4 print stylesheet).
+- **Export**: Markdown (`↓ MD`, rich blocks projected onto standard markdown —
+  a chart exports as its data table) and "PDF" via the browser print dialog
+  (A4 print stylesheet).
 - **Internal format**: ProseMirror JSON — the product's document format
   (see PLAN.md STEP 0). It makes reliable formatting, targeted AI edits, snapshots
   and multi-format export possible.
 
-Not yet built (next STEPS in [PLAN.md](PLAN.md)): Markdown export and
-print-quality PDF (STEP 3), single-user auth (STEP 4), docx export, diagrams,
+Not yet built (next STEPS in [PLAN.md](PLAN.md)): print-quality PDF via
+headless Chromium (STEP 3), single-user auth (STEP 4), docx export, diagrams,
 multi-tenant. PDF **import** is deliberately out of scope: a PDF carries
 layout, not structure.
 
@@ -146,6 +148,8 @@ Ports are overridable: `just dev 4000`.
   schema at build time by `src/lib/doc/templates-check.ts`.
 - `src/lib/doc/import.ts` — file import: markdown / text / docx → HTML →
   ProseMirror JSON parsed with the editor schema.
+- `src/lib/doc/markdown.ts` — markdown export, served by
+  `src/app/api/export/markdown/[id]/route.ts`.
 - `src/app/actions.ts` — server actions: create / save / rename / duplicate / delete.
 - `src/app/ai-actions.ts` — AI server actions: generate / transform / rewrite.
 - `src/app/globals.css` — design system, editor chrome, and A4 print rules.
