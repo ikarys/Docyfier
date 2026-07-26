@@ -30,8 +30,8 @@ streaming generation, op-based transforms and AI diff review; themes as
 adjustable token sets (accent, font pair, radius, density) with a Design panel;
 images, cover, table of contents and print control; charts, block icons and
 dashboard stat cards; templates gallery with search/rename/duplicate in the
-document list. Next: STEP 3 (Markdown + PDF export), then the auth half of
-STEP 4.
+document list; file import (md / txt / docx) from STEP 5. Next: STEP 3
+(Markdown + PDF export), then the auth half of STEP 4.
 
 ## Working conventions
 

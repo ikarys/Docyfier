@@ -140,10 +140,23 @@ the single `documents` table is created idempotently on connect.
 
 ### STEP 5 — Import & more exports
 
-- Import docx/markdown to reformat ("beautify my existing doc") (#9).
+- Import markdown, plain text and docx to reformat ("beautify my existing doc")
+  (#9). One conversion path for every format: source → HTML → ProseMirror JSON
+  parsed with the editor's own schema (`src/lib/doc/import.ts`). The import is
+  faithful — structure only; the AI "make it pretty" pass is what reformats.
 - Export docx (#8, partial).
 
+**Out of scope:** PDF import — a PDF carries layout, not structure; recovering
+a document model from it is a project of its own, not a file reader.
 **Exit criteria:** an imported docx can be beautified and re-exported.
+
+Acceptance (import half):
+
+- [x] `.md`, `.markdown`, `.txt` and `.docx` import into an editable document; headings, lists, tables, code blocks, quotes and inline marks survive
+- [x] A `.txt` file is never interpreted as markdown
+- [x] Images in the source are dropped (an imported `src` would point at a file this instance does not serve); headings deeper than 3 collapse onto 3
+- [x] An unsupported extension or an oversized file is refused with a message, and no document is created
+- [ ] docx export
 
 ### STEP 6 — Multi-tenant
 

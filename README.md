@@ -19,6 +19,9 @@ work in a rich block editor with AI help. There is no dependency on markdown fil
 - **Templates**: "New document" opens a gallery — meeting notes, project
   one-pager, technical spec, status report, roadmap, incident postmortem,
   decision note — each a real document opening with its own theme preset.
+- **Import**: bring in a `.md`, `.markdown`, `.txt` or `.docx` file — converted
+  into an editable document (headings, lists, tables, code, quotes, marks).
+  The import is faithful; reformatting is the AI "make it pretty" pass.
 - **Document list**: search, inline rename, duplicate, and delete behind a
   confirmation.
 - **Block editor** (Tiptap / ProseMirror): headings, bold/italic/strike/underline/
@@ -40,7 +43,9 @@ work in a rich block editor with AI help. There is no dependency on markdown fil
   and multi-format export possible.
 
 Not yet built (next STEPS in [PLAN.md](PLAN.md)): Markdown export and
-print-quality PDF (STEP 3), single-user auth (STEP 4), diagrams, multi-tenant.
+print-quality PDF (STEP 3), single-user auth (STEP 4), docx export, diagrams,
+multi-tenant. PDF **import** is deliberately out of scope: a PDF carries
+layout, not structure.
 
 ## AI setup (LM Studio)
 
@@ -139,6 +144,8 @@ Ports are overridable: `just dev 4000`.
 - `src/lib/store/` — document store: facade + files / PostgreSQL / MySQL drivers.
 - `src/lib/templates.ts` — document templates, validated against the editor
   schema at build time by `src/lib/doc/templates-check.ts`.
+- `src/lib/doc/import.ts` — file import: markdown / text / docx → HTML →
+  ProseMirror JSON parsed with the editor schema.
 - `src/app/actions.ts` — server actions: create / save / rename / duplicate / delete.
 - `src/app/ai-actions.ts` — AI server actions: generate / transform / rewrite.
 - `src/app/globals.css` — design system, editor chrome, and A4 print rules.
