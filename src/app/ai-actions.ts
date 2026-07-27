@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAuth } from "@/lib/auth";
+
 import { revalidatePath } from "next/cache";
 import type { JSONContent } from "@tiptap/core";
 import { createDocument, updateDocument } from "@/lib/store";
@@ -41,6 +43,7 @@ function message(err: unknown): string {
  * editor deletes it again if the stream dies before producing anything.
  */
 export async function startGeneratedDocumentAction(): Promise<string> {
+  await requireAuth();
   const doc = await createDocument();
   revalidatePath("/");
   return doc.id;
@@ -54,6 +57,7 @@ export async function fillDocumentAction(
   id: string,
   prompt: string,
 ): Promise<GenerateResult> {
+  await requireAuth();
   const trimmed = prompt.trim();
   if (!trimmed) return { ok: false, error: "Describe the document you want first." };
   try {
@@ -70,6 +74,7 @@ export async function transformDocumentAction(
   content: JSONContent,
   instruction: string,
 ): Promise<TransformResult> {
+  await requireAuth();
   const trimmed = instruction.trim();
   if (!trimmed) return { ok: false, error: "Empty instruction" };
   try {
@@ -83,6 +88,7 @@ export async function transformDocumentAction(
 export async function rewriteSelectionAction(
   input: SelectionInput,
 ): Promise<SelectionResult> {
+  await requireAuth();
   const instruction = input.instruction.trim();
   if (!instruction) return { ok: false, error: "Empty instruction" };
   try {

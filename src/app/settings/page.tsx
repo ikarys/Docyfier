@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAiSettings, getStorageSettings } from "@/lib/settings";
+import { requireAuth } from "@/lib/auth";
 import { SettingsForm } from "@/components/SettingsForm";
 import { StorageForm } from "@/components/StorageForm";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings — Docyfier" };
 
 export default async function SettingsPage() {
+  await requireAuth();
   const settings = await getAiSettings();
   const storage = await getStorageSettings();
 

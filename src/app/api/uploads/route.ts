@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { MAX_UPLOAD_BYTES, extensionFor, saveUpload } from "@/lib/uploads";
+import { hasSession } from "@/lib/auth";
 
 /** Receive one image from the editor (paste, drop or file picker). */
 export async function POST(request: Request): Promise<NextResponse> {
+  if (!(await hasSession())) {
+    return new NextResponse("Unauthorized", { status: 401 });
+  }
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File)) {

@@ -3,17 +3,21 @@ import { TEMPLATES } from "@/lib/templates";
 import { assertTemplatesValid } from "@/lib/doc/templates-check";
 import { createFromTemplateAction, newDocumentAction } from "@/app/actions";
 import { ImportCard } from "@/components/ImportCard";
+import { requireAuth } from "@/lib/auth";
 
 /**
- * Template gallery (PLAN.md STEP U5). Statically rendered, so the schema
- * assertion below runs during `next build`: a template that no longer
+ * Template gallery (PLAN.md STEP U5). The assertion runs at module scope, which
+ * `next build` evaluates when it collects this page: a template that no longer
  * validates breaks the build instead of a user's document.
  */
 assertTemplatesValid();
 
+export const dynamic = "force-dynamic";
+
 export const metadata = { title: "New document — Docyfier" };
 
-export default function NewDocumentPage() {
+export default async function NewDocumentPage() {
+  await requireAuth();
   return (
     <>
       <header className="app-header">

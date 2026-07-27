@@ -2742,3 +2742,17 @@ body {
     ),
     var(--paper);
 }
+
+/* ---- Sign in (STEP 4) ---------------------------------------------------- */
+
+.login-page {
+  max-width: 24rem;
+  margin-top: 5rem;
+}
+.login-page .brand {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+}
+.login-card {
+  gap: 1rem;
+}

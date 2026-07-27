@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import type { JSONContent } from "@tiptap/react";
 import {
@@ -17,6 +18,7 @@ import type { DocumentTheme } from "@/lib/themes";
 
 /** Create a blank document and open it in the editor. */
 export async function newDocumentAction(): Promise<void> {
+  await requireAuth();
   const doc = await createDocument();
   revalidatePath("/");
   redirect(`/doc/${doc.id}`);
@@ -27,6 +29,7 @@ export async function newDocumentAction(): Promise<void> {
 export async function createFromTemplateAction(
   templateId: string,
 ): Promise<void> {
+  await requireAuth();
   const template = findTemplate(templateId);
   const doc = template
     ? await createDocument(structuredClone(template.content), {
@@ -46,6 +49,7 @@ export async function saveDocumentAction(
   id: string,
   content: JSONContent,
 ): Promise<{ title: string; updatedAt: string } | null> {
+  await requireAuth();
   const updated = await updateDocument(id, content);
   if (!updated) return null;
   return { title: updated.title, updatedAt: updated.updatedAt };
@@ -59,6 +63,7 @@ export async function setDocumentThemeAction(
   id: string,
   theme: DocumentTheme,
 ): Promise<boolean> {
+  await requireAuth();
   const updated = await setDocumentTheme(id, theme);
   return updated !== null;
 }
@@ -74,6 +79,7 @@ export async function importDocumentAction(
   _prev: ImportState,
   formData: FormData,
 ): Promise<ImportState> {
+  await requireAuth();
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { error: "Choose a file to import." };
@@ -103,6 +109,7 @@ export async function renameDocumentAction(
   id: string,
   title: string,
 ): Promise<string | null> {
+  await requireAuth();
   const updated = await renameDocument(id, title);
   if (!updated) return null;
   revalidatePath("/");
@@ -111,6 +118,7 @@ export async function renameDocumentAction(
 
 /** Duplicate a document; the copy is independent of its source. */
 export async function duplicateDocumentAction(id: string): Promise<boolean> {
+  await requireAuth();
   const copy = await duplicateDocument(id);
   revalidatePath("/");
   return copy !== null;
@@ -118,6 +126,7 @@ export async function duplicateDocumentAction(id: string): Promise<boolean> {
 
 /** Delete a document and return to the list. */
 export async function deleteDocumentAction(id: string): Promise<void> {
+  await requireAuth();
   await deleteDocument(id);
   revalidatePath("/");
   redirect("/");

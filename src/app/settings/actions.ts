@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth";
 import {
   getAiSettings,
   getStorageSettings,
@@ -32,6 +33,7 @@ export async function saveAiSettingsAction(
   _prev: SaveSettingsState,
   formData: FormData,
 ): Promise<SaveSettingsState> {
+  await requireAuth();
   const baseUrl = String(formData.get("baseUrl") ?? "").trim();
   if (!baseUrl) return { saved: false, error: "Base URL is required." };
   try {
@@ -65,6 +67,7 @@ export async function listModelsAction(
   baseUrl: string,
   apiKey: string,
 ): Promise<ListModelsResult> {
+  await requireAuth();
   try {
     return { ok: true, models: await listModels(baseUrl.trim(), apiKey.trim()) };
   } catch (err) {
@@ -85,6 +88,7 @@ export async function testChatAction(
   apiKey: string,
   model: string,
 ): Promise<TestChatResult> {
+  await requireAuth();
   if (!model.trim()) {
     return { ok: false, error: "Enter a model id to test." };
   }
@@ -100,6 +104,7 @@ export async function testChatAction(
 }
 
 export async function currentAiSettings() {
+  await requireAuth();
   return getAiSettings();
 }
 
@@ -181,6 +186,7 @@ function connectionError(err: unknown): string {
 export async function testStorageAction(
   raw: Partial<StorageSettings>,
 ): Promise<TestStorageResult> {
+  await requireAuth();
   const parsed = parseStorage(raw);
   if ("error" in parsed) return { ok: false, error: parsed.error };
   try {
@@ -197,6 +203,7 @@ export async function saveStorageSettingsAction(
   _prev: SaveStorageState,
   formData: FormData,
 ): Promise<SaveStorageState> {
+  await requireAuth();
   const parsed = parseStorage(storageFromForm(formData));
   if ("error" in parsed) return { saved: false, error: parsed.error };
 
@@ -217,6 +224,7 @@ export async function saveStorageSettingsAction(
 
 /** Copy the file-backed documents into the configured database. */
 export async function importDocumentsAction(): Promise<ImportDocumentsResult> {
+  await requireAuth();
   try {
     const { imported, skipped } = await importDocumentsFromFiles();
     revalidatePath("/");
@@ -227,5 +235,6 @@ export async function importDocumentsAction(): Promise<ImportDocumentsResult> {
 }
 
 export async function currentStorageSettings() {
+  await requireAuth();
   return getStorageSettings();
 }

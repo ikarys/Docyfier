@@ -5,6 +5,7 @@ import { validateDocJson } from "@/lib/ai/doc-schema";
 import { BlockScanner } from "@/lib/ai/stream-blocks";
 import { beautify } from "@/lib/doc/beautify";
 import { getAiSettings } from "@/lib/settings";
+import { hasSession } from "@/lib/auth";
 
 /**
  * Surface 1, streaming (PLAN.md STEP U4). Emits NDJSON: one `{"block":…}` line
@@ -41,6 +42,9 @@ function prepare(raw: string): unknown {
 }
 
 export async function POST(req: Request): Promise<Response> {
+  if (!(await hasSession())) {
+    return new Response("Unauthorized", { status: 401 });
+  }
   const { prompt } = (await req.json()) as { prompt?: unknown };
   if (typeof prompt !== "string" || !prompt.trim()) {
     return Response.json({ error: "Missing prompt" }, { status: 400 });
