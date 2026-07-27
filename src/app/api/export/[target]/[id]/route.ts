@@ -20,7 +20,14 @@ export async function GET(
   // turned off must not stay reachable by URL.
   if (!result) return new Response("Export target not available", { status: 404 });
 
-  return new Response(result.payload, {
+  // A binary payload goes out as its own buffer; `Response` types the union
+  // more narrowly than it accepts.
+  const body =
+    typeof result.payload === "string"
+      ? result.payload
+      : new Blob([result.payload], { type: result.mime });
+
+  return new Response(body, {
     headers: {
       "Content-Type": `${result.mime}; charset=utf-8`,
       "Content-Disposition": `attachment; filename="${result.filename}"`,

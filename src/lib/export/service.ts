@@ -2,7 +2,12 @@ import "server-only";
 import { getExportSettings } from "@/lib/settings";
 import type { DocumentRecord } from "@/lib/store/types";
 import { EXPORT_TARGETS, findExportTarget } from "./registry";
-import { exportFilename, toTargetInfo, type ExportTargetInfo } from "./types";
+import {
+  exportFilename,
+  toTargetInfo,
+  type ExportPayload,
+  type ExportTargetInfo,
+} from "./types";
 
 /**
  * The one place that joins the target registry with what the user enabled.
@@ -14,7 +19,7 @@ export interface RenderedExport {
   target: ExportTargetInfo;
   filename: string;
   mime: string;
-  payload: string;
+  payload: ExportPayload;
 }
 
 /** Targets the user turned on, in registry order. */
@@ -23,6 +28,17 @@ export async function enabledExportTargets(): Promise<ExportTargetInfo[]> {
   return EXPORT_TARGETS.filter((target) => settings.targets[target.id]?.enabled).map(
     toTargetInfo,
   );
+}
+
+/** One target, if it exists and the user enabled it. Lets a caller show the
+ * target without paying for a render it would throw away. */
+export async function availableExportTarget(
+  targetId: string,
+): Promise<ExportTargetInfo | null> {
+  const target = findExportTarget(targetId);
+  if (!target) return null;
+  const settings = await getExportSettings();
+  return settings.targets[target.id]?.enabled ? toTargetInfo(target) : null;
 }
 
 /** Render a document for one target, or `null` when the target is unknown or
@@ -43,6 +59,6 @@ export async function renderExport(
     target: toTargetInfo(target),
     filename: exportFilename(doc.title, target.extension),
     mime: target.mime,
-    payload: target.render({ title: doc.title, content: doc.content }, values),
+    payload: await target.render({ title: doc.title, content: doc.content }, values),
   };
 }

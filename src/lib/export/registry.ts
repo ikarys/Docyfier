@@ -1,4 +1,5 @@
 import { confluenceTarget } from "./targets/confluence";
+import { docxTarget } from "./targets/docx";
 import { notionTarget } from "./targets/notion";
 import { triliumTarget } from "./targets/trilium";
 import { toTargetInfo, type ExportTarget, type ExportTargetInfo } from "./types";
@@ -9,6 +10,7 @@ import { toTargetInfo, type ExportTarget, type ExportTargetInfo } from "./types"
  * a new target is one import away from being offered everywhere.
  */
 export const EXPORT_TARGETS: ExportTarget[] = [
+  docxTarget,
   confluenceTarget,
   notionTarget,
   triliumTarget,

@@ -31,6 +31,10 @@ export interface ExportOption {
 
 export type ExportOptionValues = Record<string, string>;
 
+/** What a target produces. Bytes for the formats that are archives or binary
+ * documents — a `.docx` is a zip, and there is nothing to paste from it. */
+export type ExportPayload = string | Uint8Array<ArrayBuffer>;
+
 export interface ExportTarget {
   id: string;
   label: string;
@@ -41,8 +45,14 @@ export interface ExportTarget {
   mime: string;
   /** Extension of the downloaded file, without the dot. */
   extension: string;
+  /** True when the payload is bytes: the export page then offers the download
+   * alone, since there is nothing a user could paste. */
+  binary?: boolean;
   options?: ExportOption[];
-  render(doc: ExportDocument, options: ExportOptionValues): string;
+  render(
+    doc: ExportDocument,
+    options: ExportOptionValues,
+  ): ExportPayload | Promise<ExportPayload>;
 }
 
 /**
@@ -56,6 +66,7 @@ export interface ExportTargetInfo {
   description: string;
   instructions: string;
   extension: string;
+  binary: boolean;
   options: ExportOption[];
 }
 
@@ -66,6 +77,7 @@ export function toTargetInfo(target: ExportTarget): ExportTargetInfo {
     description: target.description,
     instructions: target.instructions,
     extension: target.extension,
+    binary: target.binary ?? false,
     options: target.options ?? [],
   };
 }
