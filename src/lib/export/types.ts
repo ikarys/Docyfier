@@ -23,8 +23,10 @@ export interface ExportOption {
   id: string;
   label: string;
   help?: string;
-  /** `toggle` values are "on" / "off". */
-  type: "toggle" | "select";
+  /** `toggle` values are "on" / "off". A `secret` holds a credential: it is
+   * stored encrypted, never sent back to the browser, and an empty field on
+   * save means "keep the stored one". */
+  type: "toggle" | "select" | "secret";
   choices?: { value: string; label: string }[];
   default: string;
 }

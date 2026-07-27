@@ -2460,6 +2460,65 @@ body {
   border-top: 1px solid var(--rule);
   padding-top: 1.1rem;
 }
+.link-button {
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ---- AI providers -------------------------------------------------------- */
+
+.provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.provider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+.provider-row[data-active] {
+  border-color: var(--accent);
+}
+.provider-pick {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.provider-name {
+  font-weight: 650;
+}
+.provider-meta {
+  font-size: 0.76rem;
+  color: var(--ink-faint);
+}
+.provider-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+/* Model switcher in the app header. */
+.model-switch {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  max-width: 12rem;
+}
 
 /* ---- Print / PDF (A4) ---------------------------------------------------- */
 

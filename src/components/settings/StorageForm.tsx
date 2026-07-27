@@ -9,7 +9,7 @@ import {
 import {
   DEFAULT_PORTS,
   type StorageDriver,
-  type StorageSettings,
+  type StorageSettingsSummary,
 } from "@/lib/settings-types";
 
 type Probe =
@@ -31,7 +31,7 @@ const DRIVER_LABELS: Record<StorageDriver, string> = {
 };
 
 /** Where documents are stored: on disk, or in a PostgreSQL / MySQL database. */
-export function StorageForm({ initial }: { initial: StorageSettings }) {
+export function StorageForm({ initial }: { initial: StorageSettingsSummary }) {
   const [saveState, formAction, saving] = useActionState(
     saveStorageSettingsAction,
     null,
@@ -40,7 +40,10 @@ export function StorageForm({ initial }: { initial: StorageSettings }) {
   const [host, setHost] = useState(initial.host);
   const [port, setPort] = useState(String(initial.port || DEFAULT_PORTS.postgres));
   const [user, setUser] = useState(initial.user);
-  const [password, setPassword] = useState(initial.password);
+  // Write-only: the stored password stays on the server, so an empty field
+  // means "keep it" and only the explicit clear removes it.
+  const [password, setPassword] = useState("");
+  const [passwordCleared, setPasswordCleared] = useState(false);
   const [database, setDatabase] = useState(initial.database);
   const [ssl, setSsl] = useState(initial.ssl);
   const [probe, setProbe] = useState<Probe>({ state: "idle" });
@@ -57,15 +60,10 @@ export function StorageForm({ initial }: { initial: StorageSettings }) {
 
   const test = async () => {
     setProbe({ state: "loading" });
-    const res = await testStorageAction({
-      driver,
-      host,
-      port: Number(port),
-      user,
-      password,
-      database,
-      ssl,
-    });
+    const res = await testStorageAction(
+      { driver, host, port: Number(port), user, password, database, ssl },
+      passwordCleared,
+    );
     setProbe(
       res.ok
         ? { state: "ok", documents: res.documents }
@@ -148,13 +146,42 @@ export function StorageForm({ initial }: { initial: StorageSettings }) {
           <label className="field">
             <span className="field-label">Password</span>
             <input
+              type="hidden"
+              name="passwordCleared"
+              value={passwordCleared ? "1" : "0"}
+            />
+            <input
               className="field-input"
               name="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (e.target.value) setPasswordCleared(false);
+              }}
+              placeholder={
+                initial.hasPassword && !passwordCleared
+                  ? "•••••••• saved — leave empty to keep it"
+                  : ""
+              }
               autoComplete="off"
             />
+            <span className="field-help">
+              Stored encrypted; it never leaves the server once saved.
+              {initial.hasPassword && !passwordCleared && !password && (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={() => setPasswordCleared(true)}
+                  >
+                    Remove the saved password
+                  </button>
+                </>
+              )}
+              {passwordCleared && " The saved password will be removed on save."}
+            </span>
           </label>
 
           <label className="field">

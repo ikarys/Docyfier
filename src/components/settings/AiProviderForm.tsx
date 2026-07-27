@@ -2,11 +2,11 @@
 
 import { useActionState, useEffect, useState } from "react";
 import {
-  saveAiSettingsAction,
+  saveAiProviderAction,
   listModelsAction,
   testChatAction,
 } from "@/app/settings/ai/actions";
-import type { AiSettings } from "@/lib/settings-types";
+import type { AiProviderSummary } from "@/lib/settings-types";
 
 type Probe =
   | { state: "idle" }
@@ -14,14 +14,20 @@ type Probe =
   | { state: "ok"; models: string[]; via?: "chat" }
   | { state: "error"; message: string; status?: number };
 
-/** AI model configuration: endpoint, model picker, optional API key. */
-export function AiSettingsForm({ initial }: { initial: AiSettings }) {
-  const [saveState, formAction, saving] = useActionState(
-    saveAiSettingsAction,
-    null,
-  );
+/** One LLM endpoint: name, server, model picker, optional API key. Used both to
+ * add a provider and to edit an existing one — the stored API key never comes
+ * down here, so an untouched key field means "keep it". */
+export function AiProviderForm({
+  initial,
+  onDone,
+}: {
+  initial: AiProviderSummary;
+  onDone?: () => void;
+}) {
+  const [saveState, formAction, saving] = useActionState(saveAiProviderAction, null);
   const [baseUrl, setBaseUrl] = useState(initial.baseUrl);
-  const [apiKey, setApiKey] = useState(initial.apiKey);
+  const [apiKey, setApiKey] = useState("");
+  const [keyCleared, setKeyCleared] = useState(false);
   const [model, setModel] = useState(initial.model);
   const [probe, setProbe] = useState<Probe>({ state: "idle" });
   const [manualModel, setManualModel] = useState(false);
@@ -36,7 +42,7 @@ export function AiSettingsForm({ initial }: { initial: AiSettings }) {
         setProbe({ state: "error", message: "Enter a model id to test." });
         return;
       }
-      const res = await testChatAction(url, key, model);
+      const res = await testChatAction(url, key, model, initial.id);
       setProbe(
         res.ok
           ? { state: "ok", models: [model], via: "chat" }
@@ -45,7 +51,7 @@ export function AiSettingsForm({ initial }: { initial: AiSettings }) {
       return;
     }
 
-    const res = await listModelsAction(url, key);
+    const res = await listModelsAction(url, key, initial.id);
     if (res.ok) {
       setProbe({ state: "ok", models: res.models.map((m) => m.id) });
       return;
@@ -64,16 +70,36 @@ export function AiSettingsForm({ initial }: { initial: AiSettings }) {
   };
 
   // Probe the configured server once on mount to populate the model picker.
+  // A brand-new provider has no server yet, so there is nothing to ask.
   useEffect(() => {
-    void test(initial.baseUrl, initial.apiKey);
+    if (initial.id) void test(initial.baseUrl, "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Close the editor once the save went through.
+  useEffect(() => {
+    if (saveState?.saved && !saving) onDone?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveState, saving]);
 
   const models = probe.state === "ok" ? probe.models : [];
   const knownModel = model === "" || models.includes(model);
 
   return (
     <form action={formAction} className="settings-card">
+      <input type="hidden" name="id" value={initial.id} />
+
+      <label className="field">
+        <span className="field-label">Name</span>
+        <input
+          className="field-input"
+          name="label"
+          defaultValue={initial.label}
+          placeholder="LM Studio (local)"
+        />
+        <span className="field-help">Shown in the model switcher.</span>
+      </label>
+
       <label className="field">
         <span className="field-label">Server URL (OpenAI-compatible)</span>
         <input
@@ -91,15 +117,39 @@ export function AiSettingsForm({ initial }: { initial: AiSettings }) {
 
       <label className="field">
         <span className="field-label">API key (optional)</span>
+        <input type="hidden" name="apiKeyCleared" value={keyCleared ? "1" : "0"} />
         <input
           className="field-input"
           name="apiKey"
           type="password"
           value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="Not needed for LM Studio"
+          onChange={(e) => {
+            setApiKey(e.target.value);
+            if (e.target.value) setKeyCleared(false);
+          }}
+          placeholder={
+            initial.hasApiKey && !keyCleared
+              ? "•••••••• saved — leave empty to keep it"
+              : "Not needed for LM Studio"
+          }
           autoComplete="off"
         />
+        <span className="field-help">
+          Stored encrypted; it never leaves the server once saved.
+          {initial.hasApiKey && !keyCleared && !apiKey && (
+            <>
+              {" "}
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => setKeyCleared(true)}
+              >
+                Remove the saved key
+              </button>
+            </>
+          )}
+          {keyCleared && " The saved key will be removed on save."}
+        </span>
       </label>
 
       <div className="field">
@@ -210,11 +260,13 @@ export function AiSettingsForm({ initial }: { initial: AiSettings }) {
         {saveState?.error && (
           <span className="field-error">{saveState.error}</span>
         )}
-        {saveState?.saved && !saving && (
-          <span className="field-ok">Saved ✓</span>
+        {onDone && (
+          <button className="btn" type="button" onClick={onDone}>
+            Cancel
+          </button>
         )}
         <button className="btn btn-primary" type="submit" disabled={saving}>
-          {saving ? "Saving…" : "Save settings"}
+          {saving ? "Saving…" : "Save provider"}
         </button>
       </div>
     </form>

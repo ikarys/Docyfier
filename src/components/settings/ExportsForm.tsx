@@ -3,17 +3,73 @@
 import { useActionState, useState } from "react";
 import { saveExportSettingsAction } from "@/app/settings/exports/actions";
 import type { ExportTargetInfo } from "@/lib/export/types";
-import type { ExportSettings } from "@/lib/settings-types";
+import type { ExportSettingsSummary } from "@/lib/settings-types";
+
+/** A credential option: write-only, like every other secret in Settings. The
+ * stored value never comes down, so an untouched field keeps it. */
+function SecretOption({
+  field,
+  label,
+  help,
+  saved,
+}: {
+  field: string;
+  label: string;
+  help?: string;
+  saved: boolean;
+}) {
+  const [value, setValue] = useState("");
+  const [cleared, setCleared] = useState(false);
+
+  return (
+    <label className="field export-option">
+      <span className="field-label">{label}</span>
+      <input type="hidden" name={`${field}.cleared`} value={cleared ? "1" : "0"} />
+      <input
+        className="field-input"
+        name={field}
+        type="password"
+        autoComplete="off"
+        value={value}
+        onChange={(event) => {
+          setValue(event.target.value);
+          if (event.target.value) setCleared(false);
+        }}
+        placeholder={
+          saved && !cleared ? "•••••••• saved — leave empty to keep it" : ""
+        }
+      />
+      <span className="field-help">
+        {help ? `${help} ` : ""}Stored encrypted; it never leaves the server.
+        {saved && !cleared && !value && (
+          <>
+            {" "}
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => setCleared(true)}
+            >
+              Remove the saved value
+            </button>
+          </>
+        )}
+        {cleared && " The saved value will be removed on save."}
+      </span>
+    </label>
+  );
+}
 
 /** One target: the enable switch, plus its own options once it is on. */
 function TargetCard({
   target,
   enabled: initiallyEnabled,
   options,
+  savedSecrets,
 }: {
   target: ExportTargetInfo;
   enabled: boolean;
   options: Record<string, string>;
+  savedSecrets: string[];
 }) {
   const [enabled, setEnabled] = useState(initiallyEnabled);
 
@@ -36,6 +92,17 @@ function TargetCard({
         target.options.map((option) => {
           const field = `${target.id}.${option.id}`;
           const value = options[option.id] ?? option.default;
+          if (option.type === "secret") {
+            return (
+              <SecretOption
+                key={option.id}
+                field={field}
+                label={option.label}
+                help={option.help}
+                saved={savedSecrets.includes(option.id)}
+              />
+            );
+          }
           return option.type === "toggle" ? (
             <div className="field export-option" key={option.id}>
               <label className="field-help field-checkbox">
@@ -68,7 +135,7 @@ export function ExportsForm({
   initial,
 }: {
   targets: ExportTargetInfo[];
-  initial: ExportSettings;
+  initial: ExportSettingsSummary;
 }) {
   const [state, formAction, saving] = useActionState(saveExportSettingsAction, null);
 
@@ -80,6 +147,7 @@ export function ExportsForm({
           target={target}
           enabled={initial.targets[target.id]?.enabled ?? false}
           options={initial.targets[target.id]?.options ?? {}}
+          savedSecrets={initial.targets[target.id]?.savedSecrets ?? []}
         />
       ))}
 

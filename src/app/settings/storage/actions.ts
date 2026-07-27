@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
-import { getStorageSettings, saveStorageSettings } from "@/lib/settings";
+import {
+  getStoragePassword,
+  getStorageSummary,
+  saveStorageSettings,
+} from "@/lib/settings";
 import {
   DEFAULT_PORTS,
   isStorageDriver,
@@ -20,6 +24,15 @@ export type TestStorageResult =
 export type ImportDocumentsResult =
   | { ok: true; imported: number; skipped: number }
   | { ok: false; error: string };
+
+/**
+ * The password to connect with. The browser never receives the stored one, so
+ * an empty field means "keep it" — and only an explicit clear wipes it.
+ */
+async function resolvePassword(typed: string, cleared: boolean): Promise<string> {
+  if (typed) return typed;
+  return cleared ? "" : getStoragePassword();
+}
 
 /** Validate an untrusted storage config (form or client action argument). */
 function parseStorage(
@@ -86,12 +99,17 @@ function connectionError(err: unknown): string {
  * backend already holds ("test connection"). */
 export async function testStorageAction(
   raw: Partial<StorageSettings>,
+  passwordCleared = false,
 ): Promise<TestStorageResult> {
   await requireAuth();
   const parsed = parseStorage(raw);
   if ("error" in parsed) return { ok: false, error: parsed.error };
+  const settings = {
+    ...parsed.settings,
+    password: await resolvePassword(parsed.settings.password, passwordCleared),
+  };
   try {
-    return { ok: true, documents: await probeStore(parsed.settings) };
+    return { ok: true, documents: await probeStore(settings) };
   } catch (err) {
     return { ok: false, error: connectionError(err) };
   }
@@ -108,15 +126,26 @@ export async function saveStorageSettingsAction(
   const parsed = parseStorage(storageFromForm(formData));
   if ("error" in parsed) return { saved: false, error: parsed.error };
 
-  if (parsed.settings.driver !== "files") {
+  const settings = {
+    ...parsed.settings,
+    password:
+      parsed.settings.driver === "files"
+        ? ""
+        : await resolvePassword(
+            parsed.settings.password,
+            formData.get("passwordCleared") === "1",
+          ),
+  };
+
+  if (settings.driver !== "files") {
     try {
-      await probeStore(parsed.settings);
+      await probeStore(settings);
     } catch (err) {
       return { saved: false, error: connectionError(err) };
     }
   }
 
-  await saveStorageSettings(parsed.settings);
+  await saveStorageSettings(settings);
   await closeStore();
   revalidatePath("/");
   revalidatePath("/settings/storage");
@@ -137,5 +166,5 @@ export async function importDocumentsAction(): Promise<ImportDocumentsResult> {
 
 export async function currentStorageSettings() {
   await requireAuth();
-  return getStorageSettings();
+  return getStorageSummary();
 }

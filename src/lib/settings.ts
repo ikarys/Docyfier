@@ -1,14 +1,24 @@
 import "server-only";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 
+import { decryptSecret, encryptSecret, isEncrypted } from "./secrets";
 import {
   DEFAULT_PORTS,
   isStorageDriver,
+  toStorageSummary,
+  toSummary,
+  type AiConfig,
+  type AiProvider,
+  type AiProviderSummary,
   type AiSettings,
   type ExportSettings,
+  type ExportSettingsSummary,
   type ExportTargetSettings,
+  type ExportTargetSummary,
   type StorageSettings,
+  type StorageSettingsSummary,
 } from "./settings-types";
 
 /**
@@ -17,9 +27,24 @@ import {
  * Resolution order for each value: settings file > env > default.
  */
 
-export type { AiSettings, ExportSettings, StorageSettings };
+export type {
+  AiConfig,
+  AiProvider,
+  AiProviderSummary,
+  AiSettings,
+  ExportSettings,
+  ExportSettingsSummary,
+  StorageSettings,
+  StorageSettingsSummary,
+};
 
-const AI_DEFAULTS: AiSettings = {
+/** Id of the provider the legacy single-endpoint settings migrate into. It is
+ * also the only one the environment can configure. */
+const DEFAULT_PROVIDER_ID = "default";
+
+const AI_DEFAULTS: AiProvider = {
+  id: DEFAULT_PROVIDER_ID,
+  label: "Default",
   baseUrl: "http://localhost:1234/v1",
   model: "",
   apiKey: "",
@@ -37,9 +62,11 @@ const STORAGE_DEFAULTS: StorageSettings = {
   ssl: false,
 };
 
-/** On-disk shape: AI keys stayed flat when storage settings were added, so
- * files written before this STEP keep loading unchanged. */
-type SettingsFile = Partial<AiSettings> & {
+/** On-disk shape. The flat AI keys are the pre-multi-provider layout: they are
+ * still read (and migrated into `ai.providers` on the next save) so files
+ * written before this STEP keep loading unchanged. */
+type SettingsFile = Partial<Omit<AiProvider, "id" | "label">> & {
+  ai?: { providers?: Partial<AiProvider>[]; activeId?: string };
   storage?: Partial<StorageSettings>;
   exports?: Partial<ExportSettings>;
 };
@@ -67,9 +94,11 @@ async function writeSettingsFile(patch: SettingsFile): Promise<void> {
   await writeFile(file, JSON.stringify(merged, null, 2), "utf8");
 }
 
-function aiEnvDefaults(): AiSettings {
+function aiEnvDefaults(): AiProvider {
   const envMax = Number(process.env.DOCYFIER_LLM_MAX_TOKENS);
   return {
+    id: DEFAULT_PROVIDER_ID,
+    label: AI_DEFAULTS.label,
     baseUrl: process.env.DOCYFIER_LLM_BASE_URL ?? AI_DEFAULTS.baseUrl,
     model: process.env.DOCYFIER_LLM_MODEL ?? AI_DEFAULTS.model,
     apiKey: process.env.DOCYFIER_LLM_API_KEY ?? AI_DEFAULTS.apiKey,
@@ -99,13 +128,26 @@ function storageEnvDefaults(): StorageSettings {
   };
 }
 
-export async function getAiSettings(): Promise<AiSettings> {
-  const fallback = aiEnvDefaults();
-  const saved = await readSettingsFile();
+/** A readable name for a provider the user never labelled: its host. */
+function labelFromUrl(baseUrl: string): string {
+  try {
+    return new URL(baseUrl).host;
+  } catch {
+    return AI_DEFAULTS.label;
+  }
+}
+
+function normalizeProvider(saved: Partial<AiProvider>, fallback: AiProvider): AiProvider {
+  const id = saved.id?.trim() || randomUUID();
+  const baseUrl = saved.baseUrl?.trim() || fallback.baseUrl;
   return {
-    baseUrl: saved.baseUrl?.trim() || fallback.baseUrl,
+    id,
+    label: saved.label?.trim() || labelFromUrl(baseUrl),
+    baseUrl,
     model: saved.model?.trim() ?? fallback.model,
-    apiKey: saved.apiKey ?? fallback.apiKey,
+    // Environment credentials only back the provider the environment describes;
+    // every other entry carries its own key or none at all.
+    apiKey: saved.apiKey || (id === DEFAULT_PROVIDER_ID ? fallback.apiKey : ""),
     maxOutputTokens:
       Number.isInteger(saved.maxOutputTokens) && (saved.maxOutputTokens as number) > 0
         ? (saved.maxOutputTokens as number)
@@ -114,10 +156,120 @@ export async function getAiSettings(): Promise<AiSettings> {
   };
 }
 
-export async function saveAiSettings(settings: AiSettings): Promise<void> {
-  await writeSettingsFile(settings);
+/**
+ * Every configured provider plus the active one. API keys come back **as
+ * stored** — encrypted for anything saved through the app. Decryption happens
+ * only where a key is actually used, so a rotated secret breaks the AI call
+ * with a clear message instead of every page that lists providers.
+ */
+async function readAiConfig(): Promise<AiConfig> {
+  const fallback = aiEnvDefaults();
+  const saved = await readSettingsFile();
+  const stored = saved.ai?.providers;
+  const providers =
+    Array.isArray(stored) && stored.length > 0
+      ? stored.map((provider) => normalizeProvider(provider, fallback))
+      : // Pre-multi-provider file (or none at all): the flat keys are the one provider.
+        [normalizeProvider({ ...saved, id: DEFAULT_PROVIDER_ID }, fallback)];
+
+  const activeId = saved.ai?.activeId;
+  return {
+    providers,
+    activeId: providers.some((p) => p.id === activeId) ? activeId! : providers[0].id,
+  };
 }
 
+/**
+ * Persist the whole AI section and drop the flat pre-multi-provider fields.
+ * Keys arrive in stored form — already encrypted, except the clear ones a file
+ * written before this STEP still holds, which get encrypted here.
+ */
+async function writeAiConfig(config: AiConfig): Promise<void> {
+  const providers = await Promise.all(
+    config.providers.map(async (provider) => ({
+      ...provider,
+      apiKey: isEncrypted(provider.apiKey)
+        ? provider.apiKey
+        : await encryptSecret(provider.apiKey),
+    })),
+  );
+  await writeSettingsFile({
+    ai: { providers, activeId: config.activeId },
+    baseUrl: undefined,
+    model: undefined,
+    apiKey: undefined,
+    maxOutputTokens: undefined,
+    structuredOutput: undefined,
+  });
+}
+
+/** The providers, for the switcher and the settings list. Never carries a key. */
+export async function listAiProviders(): Promise<{
+  providers: AiProviderSummary[];
+  activeId: string;
+}> {
+  const { providers, activeId } = await readAiConfig();
+  return { providers: providers.map(toSummary), activeId };
+}
+
+/** The provider AI calls run against, key in clear. Unchanged signature: every
+ * AI call site still asks for "the settings" and gets one endpoint. */
+export async function getAiSettings(): Promise<AiSettings> {
+  const { providers, activeId } = await readAiConfig();
+  const active = providers.find((p) => p.id === activeId) ?? providers[0];
+  return { ...active, apiKey: await decryptSecret(active.apiKey) };
+}
+
+/** The stored key of one provider, in clear — for server-side connection tests
+ * where the browser never held the key to begin with. */
+export async function getAiProviderKey(id: string): Promise<string> {
+  const { providers } = await readAiConfig();
+  const provider = providers.find((p) => p.id === id);
+  return provider ? decryptSecret(provider.apiKey) : "";
+}
+
+/** Create (empty id) or update a provider, whose `apiKey` is in clear. Returns
+ * the saved provider, whose id the caller needs after a creation. */
+export async function saveAiProvider(provider: AiProvider): Promise<AiProvider> {
+  const config = await readAiConfig();
+  const id = provider.id.trim() || randomUUID();
+  const stored: AiProvider = { ...provider, id, apiKey: await encryptSecret(provider.apiKey) };
+  const index = config.providers.findIndex((p) => p.id === id);
+  if (index === -1) {
+    config.providers.push(stored);
+  } else {
+    config.providers[index] = stored;
+  }
+  await writeAiConfig(config);
+  return { ...provider, id };
+}
+
+/** Remove a provider. The last one stays: the app always needs an endpoint. */
+export async function deleteAiProvider(id: string): Promise<void> {
+  const config = await readAiConfig();
+  if (config.providers.length <= 1) {
+    throw new Error("At least one provider must remain configured.");
+  }
+  const providers = config.providers.filter((p) => p.id !== id);
+  if (providers.length === config.providers.length) return;
+  await writeAiConfig({
+    providers,
+    activeId: providers.some((p) => p.id === config.activeId)
+      ? config.activeId
+      : providers[0].id,
+  });
+}
+
+export async function setActiveAiProvider(id: string): Promise<void> {
+  const config = await readAiConfig();
+  if (!config.providers.some((p) => p.id === id)) {
+    throw new Error("Unknown provider.");
+  }
+  await writeAiConfig({ ...config, activeId: id });
+}
+
+/** The connection, password in clear. Same treatment as an LLM key: what sits
+ * in the file is encrypted, what callers get is usable. */
 export async function getStorageSettings(): Promise<StorageSettings> {
   const fallback = storageEnvDefaults();
   const saved = (await readSettingsFile()).storage ?? {};
@@ -130,14 +282,27 @@ export async function getStorageSettings(): Promise<StorageSettings> {
         ? (saved.port as number)
         : (DEFAULT_PORTS[driver] || fallback.port),
     user: saved.user ?? fallback.user,
-    password: saved.password ?? fallback.password,
+    password: await decryptSecret(saved.password ?? fallback.password),
     database: saved.database?.trim() || fallback.database,
     ssl: saved.ssl ?? fallback.ssl,
   };
 }
 
+/** The connection for the settings page: no password crosses to the browser. */
+export async function getStorageSummary(): Promise<StorageSettingsSummary> {
+  return toStorageSummary(await getStorageSettings());
+}
+
+/** The stored password, for a connection test the browser can no longer carry. */
+export async function getStoragePassword(): Promise<string> {
+  return (await getStorageSettings()).password;
+}
+
 export async function saveStorageSettings(storage: StorageSettings): Promise<void> {
-  await writeSettingsFile({ storage });
+  const password = isEncrypted(storage.password)
+    ? storage.password
+    : await encryptSecret(storage.password);
+  await writeSettingsFile({ storage: { ...storage, password } });
 }
 
 /* --- Exports -------------------------------------------------------------- */
@@ -168,11 +333,19 @@ function parseTargets(raw: unknown): Record<string, ExportTargetSettings> {
   return out;
 }
 
+/** Everything an export needs, secret options decrypted. Which options are
+ * secret is the target's business, not this module's: an encrypted value says
+ * so itself through its prefix. */
 export async function getExportSettings(): Promise<ExportSettings> {
   const saved = (await readSettingsFile()).exports ?? {};
   const targets = parseTargets(saved.targets);
   for (const id of exportEnvDefaults()) {
     targets[id] = { enabled: true, options: targets[id]?.options ?? {} };
+  }
+  for (const target of Object.values(targets)) {
+    for (const [key, value] of Object.entries(target.options)) {
+      if (isEncrypted(value)) target.options[key] = await decryptSecret(value);
+    }
   }
   return {
     targets,
@@ -181,6 +354,52 @@ export async function getExportSettings(): Promise<ExportSettings> {
   };
 }
 
-export async function saveExportSettings(exports: ExportSettings): Promise<void> {
-  await writeSettingsFile({ exports });
+/** The same settings for the settings page: stored secrets are replaced by the
+ * fact that they exist. */
+export async function getExportSummary(): Promise<ExportSettingsSummary> {
+  const saved = (await readSettingsFile()).exports ?? {};
+  const stored = parseTargets(saved.targets);
+  const { targets, publicBaseUrl } = await getExportSettings();
+
+  const summary: Record<string, ExportTargetSummary> = {};
+  for (const [id, target] of Object.entries(targets)) {
+    const savedSecrets = Object.entries(stored[id]?.options ?? {})
+      .filter(([, value]) => isEncrypted(value))
+      .map(([key]) => key);
+    summary[id] = {
+      enabled: target.enabled,
+      options: Object.fromEntries(
+        Object.entries(target.options).map(([key, value]) => [
+          key,
+          savedSecrets.includes(key) ? "" : value,
+        ]),
+      ),
+      savedSecrets,
+    };
+  }
+  return { targets: summary, publicBaseUrl };
+}
+
+/**
+ * Persist export settings. `secretOptions` names, per target, the options whose
+ * value is a credential: those are encrypted, the rest stay readable — a
+ * toggle or a page id gains nothing from being ciphertext. The caller passes
+ * them from the target registry, which this module deliberately does not import.
+ */
+export async function saveExportSettings(
+  exports: ExportSettings,
+  secretOptions: Record<string, string[]> = {},
+): Promise<void> {
+  const targets: Record<string, ExportTargetSettings> = {};
+  for (const [id, target] of Object.entries(exports.targets)) {
+    const options: Record<string, string> = {};
+    for (const [key, value] of Object.entries(target.options)) {
+      options[key] =
+        secretOptions[id]?.includes(key) && value && !isEncrypted(value)
+          ? await encryptSecret(value)
+          : value;
+    }
+    targets[id] = { enabled: target.enabled, options };
+  }
+  await writeSettingsFile({ exports: { targets, publicBaseUrl: exports.publicBaseUrl } });
 }

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDocument } from "@/lib/store";
+import { listAiProviders } from "@/lib/settings";
 import { requireAuth } from "@/lib/auth";
 import { deleteDocumentAction } from "@/app/actions";
 import { DocumentEditor } from "@/components/Editor";
+import { ModelSwitcher } from "@/components/ModelSwitcher";
 import { PrintButton } from "@/components/PrintButton";
 import { SignOutButton } from "@/components/SignOutButton";
 
@@ -18,6 +20,7 @@ export default async function DocumentPage({
   const { id } = await params;
   const doc = await getDocument(id);
   if (!doc) notFound();
+  const ai = await listAiProviders();
 
   return (
     <>
@@ -29,6 +32,7 @@ export default async function DocumentPage({
           {doc.title}
         </span>
         <div className="toolbar">
+          <ModelSwitcher providers={ai.providers} activeId={ai.activeId} />
           <Link href="/settings" className="btn" title="Settings">
             ⚙
           </Link>
