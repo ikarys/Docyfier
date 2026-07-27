@@ -1,7 +1,14 @@
 import "server-only";
 import { generateText, generateObject, jsonSchema, APICallError, type Schema } from "ai";
 import type { JSONContent } from "@tiptap/core";
-import { languageModel, llmBaseUrl } from "./provider";
+import {
+  callOptions,
+  callTimeoutMs,
+  isTimeout,
+  languageModel,
+  llmBaseUrl,
+  timeoutMessage,
+} from "./provider";
 import { getAiSettings } from "@/lib/settings";
 import { validateDocJson } from "./doc-schema";
 import { beautify } from "@/lib/doc/beautify";
@@ -25,6 +32,10 @@ import {
 
 class AiUnavailableError extends Error {}
 
+function timeoutError(): AiUnavailableError {
+  return new AiUnavailableError(timeoutMessage());
+}
+
 async function complete(
   system: string,
   prompt: string,
@@ -39,9 +50,14 @@ async function complete(
       prompt,
       temperature,
       maxOutputTokens,
+      ...callOptions(),
     });
     return { text, truncated: finishReason === "length" };
   } catch (err) {
+    if (isTimeout(err)) {
+      console.error("[ai] generateText timed out after", callTimeoutMs(), "ms");
+      throw timeoutError();
+    }
     if (APICallError.isInstance(err)) {
       // The provider's HTTP response didn't parse as the SDK's expected
       // schema (e.g. an HTML error page, an SSE chunk, or a non-OpenAI
@@ -178,9 +194,13 @@ async function produceJson(
         prompt,
         temperature,
         maxOutputTokens,
+        ...callOptions(),
       });
       return object;
     } catch (err) {
+      // A deadline is not a reason to try the same endpoint again: falling
+      // through here would spend the timeout a second time before failing.
+      if (isTimeout(err)) throw timeoutError();
       console.error("[ai] structured output failed, using the text path:", err);
     }
   }

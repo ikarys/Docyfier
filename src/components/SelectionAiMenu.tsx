@@ -197,19 +197,27 @@ export function SelectionAiMenu({
       input = { mode: "blocks", blocks: toPlainJSON(blocks), instruction };
     }
 
-    const res = await rewriteSelectionAction(input);
-    if (!res.ok) {
-      setError(res.error);
-    } else if (res.mode === "text") {
-      // An inline fragment swap is small and locally visible; Tiptap undo is
-      // review enough. Only whole-block replacements go through the diff bar.
-      editor.chain().focus().insertContentAt(range, res.text).run();
-    } else {
-      onAiEdit(() => {
-        editor.chain().focus().insertContentAt(range, res.blocks).run();
-      });
+    // `busy` gates the button, so it has to fall back whatever happens: a
+    // request that never returns would otherwise leave the menu spinning with
+    // no error and no way to retry short of reloading the page.
+    try {
+      const res = await rewriteSelectionAction(input);
+      if (!res.ok) {
+        setError(res.error);
+      } else if (res.mode === "text") {
+        // An inline fragment swap is small and locally visible; Tiptap undo is
+        // review enough. Only whole-block replacements go through the diff bar.
+        editor.chain().focus().insertContentAt(range, res.text).run();
+      } else {
+        onAiEdit(() => {
+          editor.chain().focus().insertContentAt(range, res.blocks).run();
+        });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The AI request failed.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const submitPrompt = () => {
