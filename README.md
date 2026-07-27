@@ -140,6 +140,62 @@ Or without `just`: `nvm use && npm install && npm run dev`.
 
 Ports are overridable: `just dev 4000`.
 
+## Deployment (Docker)
+
+The `Dockerfile` produces a small runtime image: dependencies and the Next.js
+build happen in throwaway stages, and only the `output: "standalone"` server
+bundle reaches the final layer. It runs as a non-root user on port `3000` and
+exposes a single volume, `/data`, holding documents, uploads and
+`settings.json` — everything that must survive an image upgrade.
+
+Build and run locally:
+
+```bash
+just docker-build                      # docker build -t docyfier:latest .
+docker run -p 3000:3000 -v docyfier-data:/data docyfier:latest
+```
+
+### Published images
+
+`.github/workflows/docker.yml` builds on every push to `main` and publishes to
+the GitHub Container Registry as `ghcr.io/<owner>/docyfier`, tagged `latest`,
+the short commit sha, and the git tag for `v*` releases. Nothing to configure:
+the workflow authenticates with the repository's own `GITHUB_TOKEN`.
+
+A host pulling a private image needs a personal access token with the
+`read:packages` scope:
+
+```bash
+docker login ghcr.io -u <github-user> --password-stdin
+```
+
+### Running the published image
+
+`compose.yaml` is the deployment stack. Point the volume at a real directory on
+the host, keep the secrets in a `.env` file beside it (never commit it), then:
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+Pin `image:` to a release tag rather than `latest` so a broken build cannot
+reach the host on the next pull. Upgrading is `pull` + `up -d`; the `/data`
+volume carries over untouched.
+
+Environment inside the container — the AI and storage variables above still
+apply, plus:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DOCYFIER_DATA_DIR` | `/data/documents` | Set by the image; keep it under the volume |
+| `DOCYFIER_AUTH` | auto | On as soon as a password exists; `1` forces the setup form on first visit, `0` forces it off |
+| `DOCYFIER_AUTH_PASSWORD` | — | Sets the password from the environment instead of the setup form |
+| `DOCYFIER_AUTH_SECRET` | derived | Session signing key; without it one is derived and kept under `/data` |
+
+`DOCYFIER_LLM_BASE_URL` must point at a host the container can reach: an
+OpenAI-compatible server on the LAN, not `localhost`. It is also editable from
+the Settings page once the app is up.
+
 ## Key files
 
 - `src/components/Editor.tsx` — Tiptap editor + formatting toolbar + autosave.

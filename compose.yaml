@@ -1,0 +1,28 @@
+# Docyfier — deployment stack for the NAS.
+#
+# The image is built and published by .github/workflows/docker.yml; this file
+# only runs it. Adjust the volume path to a real share on the NAS, then:
+#
+#   docker login ghcr.io -u <github-user>   # once, PAT with read:packages
+#   docker compose pull && docker compose up -d
+
+services:
+  docyfier:
+    image: ghcr.io/ikarys/docyfier:latest
+    container_name: docyfier
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Documents, uploads and settings live here — outside the image.
+      - /Volume1/docker/docyfier:/data
+    environment:
+      DOCYFIER_DATA_DIR: /data/documents
+      # LM Studio runs on the workstation, not on the NAS. Overridable from
+      # the Settings page; this is the fallback.
+      DOCYFIER_LLM_BASE_URL: http://192.168.1.174:1234/v1
+      # Single-user auth (STEP 4). Drop all three to pick the password from
+      # the setup form instead; DOCYFIER_AUTH=0 disables the gate entirely.
+      DOCYFIER_AUTH: "1"
+      DOCYFIER_AUTH_PASSWORD: ${DOCYFIER_AUTH_PASSWORD}
+      DOCYFIER_AUTH_SECRET: ${DOCYFIER_AUTH_SECRET}
