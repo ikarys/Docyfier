@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/auth";
 import { deleteDocumentAction } from "@/app/actions";
 import { DocumentEditor } from "@/components/Editor";
 import { PrintButton } from "@/components/PrintButton";
-import { logoutAction } from "@/app/login/actions";
+import { SignOutButton } from "@/components/SignOutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -41,11 +41,7 @@ export default async function DocumentPage({
             ↓ MD
           </a>
           <PrintButton />
-          <form action={logoutAction}>
-            <button className="btn" type="submit" title="Sign out">
-              Sign out
-            </button>
-          </form>
+          <SignOutButton />
           <form action={deleteDocumentAction.bind(null, doc.id)}>
             <button className="btn btn-danger" type="submit">
               Delete

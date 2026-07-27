@@ -1,6 +1,6 @@
 import { getDocument } from "@/lib/store";
 import { docToMarkdown, markdownFilename } from "@/lib/doc/markdown";
-import { hasSession } from "@/lib/auth";
+import { isAuthorized } from "@/lib/auth";
 
 /** Download a document as markdown (PLAN.md STEP 3). Exports what is stored,
  * so an in-flight edit lands in the file once autosave has run. */
@@ -8,7 +8,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  if (!(await hasSession())) {
+  if (!(await isAuthorized())) {
     return new Response("Unauthorized", { status: 401 });
   }
   const { id } = await params;

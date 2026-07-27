@@ -85,6 +85,26 @@ export async function isPasswordSet(): Promise<boolean> {
   return envPassword() !== null || (await readAuthFile()) !== null;
 }
 
+/**
+ * Whether this instance asks for a password at all. Opt-in: a local run stays
+ * open until credentials exist, so nobody has to invent a password to try the
+ * app. `DOCYFIER_AUTH=0` forces it off even when an `auth.json` lingers, and
+ * `DOCYFIER_AUTH=1` turns it on before any password is chosen, which sends the
+ * first visitor through the setup form.
+ */
+export async function isAuthEnabled(): Promise<boolean> {
+  const flag = process.env.DOCYFIER_AUTH;
+  if (flag === "0") return false;
+  if (flag === "1") return true;
+  return isPasswordSet();
+}
+
+/** Whether the caller may act on this instance: either auth is off, or the
+ * request carries a valid session. The check every API route needs. */
+export async function isAuthorized(): Promise<boolean> {
+  return (await hasSession()) || !(await isAuthEnabled());
+}
+
 async function sessionSecret(): Promise<Buffer> {
   const fromEnv = process.env.DOCYFIER_AUTH_SECRET;
   if (fromEnv) return Buffer.from(fromEnv, "utf8");
@@ -197,6 +217,6 @@ export async function hasSession(): Promise<boolean> {
  * returning, so a caller cannot forget to handle the false case.
  */
 export async function requireAuth(): Promise<void> {
-  if (await hasSession()) return;
+  if (await isAuthorized()) return;
   redirect("/login");
 }

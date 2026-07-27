@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { NextResponse } from "next/server";
 import { mimeForName, uploadPath } from "@/lib/uploads";
-import { hasSession } from "@/lib/auth";
+import { isAuthorized } from "@/lib/auth";
 
 /** Serve a stored upload. `uploadPath` rejects any name that is not one we
  * wrote, so a traversal attempt never reaches the filesystem. */
@@ -9,7 +9,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ name: string }> },
 ): Promise<NextResponse> {
-  if (!(await hasSession())) {
+  if (!(await isAuthorized())) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
   const { name } = await params;

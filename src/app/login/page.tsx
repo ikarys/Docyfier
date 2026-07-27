@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation";
-import { MIN_PASSWORD_LENGTH, hasSession, isPasswordSet } from "@/lib/auth";
+import {
+  MIN_PASSWORD_LENGTH,
+  hasSession,
+  isAuthEnabled,
+  isPasswordSet,
+} from "@/lib/auth";
 import { LoginForm } from "@/components/LoginForm";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +12,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign in — Docyfier" };
 
 export default async function LoginPage() {
-  if (await hasSession()) redirect("/");
+  // Nothing to sign in to when the instance runs open.
+  if ((await hasSession()) || !(await isAuthEnabled())) redirect("/");
   const configured = await isPasswordSet();
 
   return (
