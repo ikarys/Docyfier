@@ -2843,16 +2843,20 @@ body {
   line-height: 1.55;
   resize: vertical;
 }
-.compose-result {
-  margin-top: 2rem;
+/* The field the answer comes back into, and what can be done to it there. */
+.compose-output {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
-/* The composed text is prose, not a payload: wrap it instead of scrolling. */
-.compose-result .copy-box-text {
-  font-family: inherit;
-  font-size: 0.9rem;
-  min-height: 16rem;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
+.compose-output-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.compose-output-actions .field-help {
+  flex: 1 1 12rem;
 }
 
 /* ---- Sign in (STEP 4) ---------------------------------------------------- */

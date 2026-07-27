@@ -39,16 +39,32 @@ export interface ComposerPrompt {
   temperature?: number;
 }
 
+/**
+ * What a run knows beyond the form values: whether it iterates on a previous
+ * answer, and what the user asked to change on it.
+ */
+export interface ComposeContext {
+  /** The output field holds an answer this composer produced, not a brief. */
+  revising: boolean;
+  /** The user's instructions for this pass. Empty on a plain re-run. */
+  guidance: string;
+}
+
 export interface Composer {
   id: string;
   label: string;
   description: string;
   /** One line under the page title. */
   lede: string;
-  /** What to do with the result, shown above the copy box. */
+  /** How to read the answer, shown under the field once there is one. */
   instructions: string;
   fields: ComposerField[];
-  build(values: ComposerValues): ComposerPrompt;
+  /**
+   * The field the answer is written back into, so the user keeps iterating in
+   * one place instead of reading a dead copy of it. Must name a `textarea`.
+   */
+  outputField: string;
+  build(values: ComposerValues, context: ComposeContext): ComposerPrompt;
 }
 
 /**
@@ -63,6 +79,7 @@ export interface ComposerInfo {
   lede: string;
   instructions: string;
   fields: ComposerField[];
+  outputField: string;
 }
 
 export function toComposerInfo(composer: Composer): ComposerInfo {
@@ -73,6 +90,7 @@ export function toComposerInfo(composer: Composer): ComposerInfo {
     lede: composer.lede,
     instructions: composer.instructions,
     fields: composer.fields,
+    outputField: composer.outputField,
   };
 }
 
@@ -127,6 +145,31 @@ export function readComposerValues(
     });
   }
   return values;
+}
+
+/**
+ * Form keys the composer shell owns. They are not declared fields, so
+ * `readComposerValues` never sees them and a composer cannot collide with one.
+ */
+export const REVISING_KEY = "__revising";
+export const GUIDANCE_KEY = "__guidance";
+export const INTENT_KEY = "__intent";
+
+/** Longest accepted revision instruction — same budget guard as a field. */
+const MAX_GUIDANCE = 2000;
+
+/**
+ * How this run relates to the previous one, read from the shell's own keys.
+ * Guidance is honoured only for the button that asks for it: a re-run must not
+ * silently re-apply an instruction left in the box.
+ */
+export function readComposeContext(form: FormData): ComposeContext {
+  const raw = form.get(GUIDANCE_KEY);
+  const guidance =
+    form.get(INTENT_KEY) === "improve" && typeof raw === "string"
+      ? raw.trim().slice(0, MAX_GUIDANCE)
+      : "";
+  return { revising: form.get(REVISING_KEY) === "1", guidance };
 }
 
 /** The label of the first required field left empty, or `null`. */

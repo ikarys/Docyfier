@@ -4,6 +4,7 @@ import { findComposer } from "./registry";
 import {
   missingRequiredField,
   toComposerInfo,
+  type ComposeContext,
   type ComposerInfo,
   type ComposerValues,
 } from "./types";
@@ -29,6 +30,7 @@ export function availableComposer(composerId: string): ComposerInfo | null {
 export async function compose(
   composerId: string,
   values: ComposerValues,
+  context: ComposeContext = { revising: false, guidance: "" },
 ): Promise<ComposeOutcome> {
   const composer = findComposer(composerId);
   if (!composer) return { ok: false, error: "Unknown composer" };
@@ -36,6 +38,6 @@ export async function compose(
   const missing = missingRequiredField(composer, values);
   if (missing) return { ok: false, error: `${missing} is required.` };
 
-  const { system, prompt, temperature } = composer.build(values);
+  const { system, prompt, temperature } = composer.build(values, context);
   return { ok: true, text: await completePlainText(system, prompt, temperature ?? 0.4) };
 }

@@ -3,7 +3,7 @@
 import { requireAuth } from "@/lib/auth";
 import { findComposer } from "@/lib/compose/registry";
 import { compose } from "@/lib/compose/service";
-import { readComposerValues } from "@/lib/compose/types";
+import { readComposeContext, readComposerValues } from "@/lib/compose/types";
 
 /** Server action behind the composers (PLAN.md STEP 8). */
 
@@ -21,7 +21,11 @@ export async function composeAction(
   if (!composer) return { error: "Unknown composer" };
 
   try {
-    const result = await compose(composer.id, readComposerValues(composer, form));
+    const result = await compose(
+      composer.id,
+      readComposerValues(composer, form),
+      readComposeContext(form),
+    );
     return result.ok ? { text: result.text } : { error: result.error };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "AI request failed" };

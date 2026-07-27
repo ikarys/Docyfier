@@ -1,6 +1,7 @@
-import { languageField, languageRule, section } from "../fields";
+import { languageField, languageRule, revisionRule, section } from "../fields";
 import {
   PLAIN_OUTPUT_RULES,
+  type ComposeContext,
   type Composer,
   type ComposerChoice,
   type ComposerValues,
@@ -102,7 +103,8 @@ export const emailComposer: Composer = {
   description: "Write or rewrite a professional email in the tone you choose.",
   lede: "Describe what you want to say, or paste an email to rework.",
   instructions:
-    "The first line is the subject; everything after the blank line is the body.",
+    "The first line is the subject; everything after the blank line is the body. Edit it here, then compose again to iterate on it.",
+  outputField: "input",
   fields: [
     {
       id: "mode",
@@ -148,13 +150,17 @@ export const emailComposer: Composer = {
     languageField,
   ],
 
-  build(values: ComposerValues) {
+  build(values: ComposerValues, context: ComposeContext) {
     const rewriting = values.mode === "rewrite";
-    const task = rewriting
-      ? `Task: rewrite the email below. Keep every fact, request and commitment it
+    // Iterating on an answer overrides the mode: whatever the user first asked
+    // for, the field now holds an email, not a brief.
+    const task = context.revising
+      ? revisionRule(context)
+      : rewriting
+        ? `Task: rewrite the email below. Keep every fact, request and commitment it
 already carries — change the wording, the structure and the tone, not the
 substance. Drop what is redundant.`
-      : `Task: write the email the brief below asks for.`;
+        : `Task: write the email the brief below asks for.`;
 
     const system = `You write professional emails.
 
@@ -168,9 +174,15 @@ ${languageRule(values.language)}
 
 ${task}`;
 
+    const label = context.revising
+      ? "Email to improve"
+      : rewriting
+        ? "Email to rewrite"
+        : "Brief";
+
     const prompt = [
       section("Recipient", values.recipient),
-      section(rewriting ? "Email to rewrite" : "Brief", values.input),
+      section(label, values.input),
     ]
       .filter(Boolean)
       .join("\n");

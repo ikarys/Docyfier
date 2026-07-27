@@ -1,6 +1,7 @@
-import { languageField, languageRule, section } from "../fields";
+import { languageField, languageRule, revisionRule, section } from "../fields";
 import {
   PLAIN_OUTPUT_RULES,
+  type ComposeContext,
   type Composer,
   type ComposerChoice,
   type ComposerValues,
@@ -136,7 +137,8 @@ export const ticketComposer: Composer = {
     "Turn rough notes into a ticket in the markup Jira, ServiceNow or GitLab expects.",
   lede: "Describe what happened or what you need; pick the tracker it goes into.",
   instructions:
-    "The first line is the ticket title; everything after the blank line is the description.",
+    "The first line is the ticket title; everything after the blank line is the description. Edit it here, then compose again to iterate on it.",
+  outputField: "context",
   fields: [
     {
       id: "tool",
@@ -180,7 +182,7 @@ export const ticketComposer: Composer = {
     languageField,
   ],
 
-  build(values: ComposerValues) {
+  build(values: ComposerValues, context: ComposeContext) {
     const format = formatOf(values.tool);
     const priority =
       values.priority === "unset"
@@ -208,11 +210,11 @@ Markup of the description — ${format.markup}
 Ticket type: ${kindGuide(values.kind)}
 ${languageRule(values.language)}
 
-Task: write that ticket from the notes below.`;
+${context.revising ? revisionRule(context) : "Task: write that ticket from the notes below."}`;
 
     const prompt = [
       section("Suggested title", values.title),
-      section("Notes", values.context),
+      section(context.revising ? "Ticket to improve" : "Notes", values.context),
     ]
       .filter(Boolean)
       .join("\n");
