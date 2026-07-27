@@ -1,41 +1,5 @@
-/** One configured LLM endpoint (importable from client components). Several can
- * be saved side by side so switching provider — different capability, or a quota
- * that ran out — is one click rather than a re-typed configuration. */
-export interface AiProvider {
-  /** Stable id, never reused. Empty on a provider that has not been saved yet. */
-  id: string;
-  /** Name shown in the switcher, e.g. "LM Studio (local)". */
-  label: string;
-  /** OpenAI-compatible endpoint, e.g. http://localhost:1234/v1 */
-  baseUrl: string;
-  /** Model id; empty string = auto-detect (first model on the server). */
-  model: string;
-  /** API key; LM Studio ignores it, other providers may require it. Encrypted
-   * at rest — see `src/lib/secrets.ts`; in this shape it is always in clear. */
-  apiKey: string;
-  /** Max tokens the model may generate per response (whole-document edits need room). */
-  maxOutputTokens: number;
-  /** Ask the provider for JSON-schema-constrained output instead of parsing
-   * fences and prose out of free text. Only some servers implement it. */
-  structuredOutput: boolean;
-}
-
-/** The provider AI calls run against: the active one. */
-export type AiSettings = AiProvider;
-
-/** Every configured provider, plus the one in use. */
-export interface AiConfig {
-  providers: AiProvider[];
-  activeId: string;
-}
-
-/** What the client is allowed to see: no API key ever leaves the server. */
-export type AiProviderSummary = Omit<AiProvider, "apiKey"> & { hasApiKey: boolean };
-
-export function toSummary(provider: AiProvider): AiProviderSummary {
-  const { apiKey, ...rest } = provider;
-  return { ...rest, hasApiKey: apiKey.length > 0 };
-}
+/** What a client component may see of a provider: never the key itself. */
+export type { AiProviderSummary } from "@/domain/configuration/ai-provider";
 
 /** Where documents live. `files` is the default on-disk store (STEP 0). */
 export type StorageDriver = "files" | "postgres" | "mysql";

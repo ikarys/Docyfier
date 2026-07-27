@@ -9,7 +9,8 @@ import {
   saveAiProvider,
   setActiveAiProvider,
 } from "@/lib/settings";
-import { toSummary, type AiProviderSummary } from "@/lib/settings-types";
+import { InvalidProvider } from "@/domain/configuration/ai-provider";
+import type { AiProviderSummary } from "@/lib/settings-types";
 import {
   listModels,
   pingChatCompletion,
@@ -26,50 +27,37 @@ export type ListModelsResult =
   | { ok: true; models: ModelInfo[] }
   | { ok: false; error: string; status?: number };
 
-/** Create or update one provider. An empty API key field keeps the stored key —
- * the browser never receives it, so "unchanged" cannot mean "resubmitted". */
+/**
+ * Create or update one provider. An untouched API key field keeps the stored
+ * key — the browser never receives it, so "unchanged" cannot mean "resubmitted"
+ * — while an explicit clear sends an empty one.
+ */
 export async function saveAiProviderAction(
   _prev: SaveSettingsState,
   formData: FormData,
 ): Promise<SaveSettingsState> {
   await requireAuth();
   const id = String(formData.get("id") ?? "").trim();
-
-  const label = String(formData.get("label") ?? "").trim();
-  if (!label) return { saved: false, error: "Name is required." };
-
-  const baseUrl = String(formData.get("baseUrl") ?? "").trim();
-  if (!baseUrl) return { saved: false, error: "Base URL is required." };
-  try {
-    new URL(baseUrl);
-  } catch {
-    return { saved: false, error: "Base URL is not a valid URL." };
-  }
-
-  const maxOutputTokens = Number(formData.get("maxOutputTokens"));
-  if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 256) {
-    return {
-      saved: false,
-      error: "Max output tokens must be an integer ≥ 256.",
-    };
-  }
-
   const typedKey = String(formData.get("apiKey") ?? "").trim();
-  const cleared = formData.get("apiKeyCleared") === "1";
-  const apiKey = typedKey || (cleared || !id ? "" : await getAiProviderKey(id));
+  const forgetKey = !id || formData.get("apiKeyCleared") === "1";
 
-  const saved = await saveAiProvider({
-    id,
-    label,
-    baseUrl,
-    model: String(formData.get("model") ?? "").trim(),
-    apiKey,
-    maxOutputTokens,
-    structuredOutput: formData.get("structuredOutput") === "on",
-  });
-  clearDetectedModels();
-  revalidatePath("/settings/ai");
-  return { saved: true, provider: toSummary(saved) };
+  try {
+    const provider = await saveAiProvider({
+      id,
+      label: String(formData.get("label") ?? ""),
+      baseUrl: String(formData.get("baseUrl") ?? ""),
+      model: String(formData.get("model") ?? ""),
+      apiKey: typedKey || (forgetKey ? "" : undefined),
+      maxOutputTokens: Number(formData.get("maxOutputTokens")),
+      structuredOutput: formData.get("structuredOutput") === "on",
+    });
+    clearDetectedModels();
+    revalidatePath("/settings/ai");
+    return { saved: true, provider };
+  } catch (err) {
+    if (err instanceof InvalidProvider) return { saved: false, error: err.message };
+    throw err;
+  }
 }
 
 export type ProviderActionState = { ok: true } | { ok: false; error: string };

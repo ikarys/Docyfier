@@ -17,6 +17,7 @@ const BLANK: AiProviderSummary = {
   maxOutputTokens: 32768,
   structuredOutput: false,
   hasApiKey: false,
+  keyUnreadable: false,
 };
 
 function host(baseUrl: string): string {
@@ -79,6 +80,7 @@ export function AiProvidersPanel({
             <span className="provider-meta">
               {provider.model || "Auto model"} · {host(provider.baseUrl)}
               {provider.hasApiKey && " · 🔒 key"}
+              {provider.keyUnreadable && " · ⚠ stored key unreadable — enter it again"}
             </span>
             <div className="provider-actions">
               <button

@@ -4,7 +4,7 @@ import {
   decryptSecret,
   encryptSecret,
   isEncrypted,
-} from "./secrets";
+} from "./aes-gcm-cipher";
 
 const KEY = "a".repeat(64);
 const OTHER_KEY = "b".repeat(64);

@@ -3,9 +3,14 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
+import type { SecretCipher } from "@/domain/configuration/secret-cipher";
+
 /**
- * Encryption of the secrets the app stores on disk (LLM API keys today). The
- * settings file sits in the data volume next to the documents, so anything
+ * The `SecretCipher` adapter: encryption of the secrets the app stores on disk
+ * (LLM API keys, the database password, export options a target declares
+ * secret).
+ *
+ * The settings file sits in the data volume next to the documents, so anything
  * copied out of that volume — a backup, a stray container image — would
  * otherwise carry usable cloud credentials in clear text.
  *
@@ -122,3 +127,10 @@ export async function decryptSecret(stored: string): Promise<string> {
     );
   }
 }
+
+/** The port as one object, for a composition root to inject. */
+export const aesGcmCipher: SecretCipher = {
+  encrypt: encryptSecret,
+  decrypt: decryptSecret,
+  isEncrypted,
+};

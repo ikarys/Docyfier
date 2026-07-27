@@ -4,20 +4,8 @@ import {
   STORAGE_DRIVERS,
   isStorageDriver,
   toStorageSummary,
-  toSummary,
-  type AiProvider,
   type StorageSettings,
 } from "./settings-types";
-
-const provider: AiProvider = {
-  id: "p1",
-  label: "LM Studio",
-  baseUrl: "http://localhost:1234/v1",
-  model: "qwen",
-  apiKey: "sk-live-123",
-  maxOutputTokens: 4096,
-  structuredOutput: true,
-};
 
 const storage: StorageSettings = {
   driver: "postgres",
@@ -32,32 +20,8 @@ const storage: StorageSettings = {
 /**
  * The summaries are the only shapes a client component may receive. A
  * credential leaking into one is a security defect, not a formatting detail.
+ * The provider summary is pinned in `src/domain/configuration/ai-provider.test.ts`.
  */
-describe("toSummary", () => {
-  it("never carries the API key", () => {
-    const summary = toSummary(provider);
-    expect(summary).not.toHaveProperty("apiKey");
-    expect(JSON.stringify(summary)).not.toContain("sk-live-123");
-  });
-
-  it("reports only whether a key is stored", () => {
-    expect(toSummary(provider).hasApiKey).toBe(true);
-    expect(toSummary({ ...provider, apiKey: "" }).hasApiKey).toBe(false);
-  });
-
-  it("keeps everything the switcher and the settings list render", () => {
-    expect(toSummary(provider)).toEqual({
-      id: "p1",
-      label: "LM Studio",
-      baseUrl: "http://localhost:1234/v1",
-      model: "qwen",
-      maxOutputTokens: 4096,
-      structuredOutput: true,
-      hasApiKey: true,
-    });
-  });
-});
-
 describe("toStorageSummary", () => {
   it("never carries the database password", () => {
     const summary = toStorageSummary(storage);
