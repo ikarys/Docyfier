@@ -18,7 +18,8 @@ tables, code, callouts), with autosave and PDF-via-print export. STEP 2 AI
 surfaces are in: prompt-to-document (home), whole-document assistant panel
 ("make it pretty", tone, restructure), and selection-scoped rewrites (bubble
 menu). LLM = local LM Studio via Vercel AI SDK (`src/lib/ai/`); AI output is
-schema-validated ProseMirror JSON. No auth or multi-tenant yet.
+schema-validated ProseMirror JSON. Single-user auth is in and opt-in (STEP 4):
+one password, off until credentials exist. No multi-tenant yet.
 
 Documents are ProseMirror JSON kept in files, PostgreSQL or MySQL — one driver
 among three behind `src/lib/store/`, selected at runtime from the Settings page. The earlier markdown-file model was dropped: users arrive
@@ -30,8 +31,10 @@ streaming generation, op-based transforms and AI diff review; themes as
 adjustable token sets (accent, font pair, radius, density) with a Design panel;
 images, cover, table of contents and print control; charts, block icons and
 dashboard stat cards; templates gallery with search/rename/duplicate in the
-document list; file import (md / txt / docx) from STEP 5. Next: STEP 3
-(Markdown + PDF export), then the auth half of STEP 4.
+document list; file import (md / txt / docx) and pluggable export targets
+(Confluence, Notion, Trilium) from STEP 5. Settings is one route per scope
+(`/settings/{ai,storage,exports,access}`). Next: PDF export, the last open
+item of STEP 3, then docx export to close STEP 5.
 
 ## Working conventions
 

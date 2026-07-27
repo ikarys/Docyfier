@@ -139,11 +139,22 @@ Acceptance:
 - **Explicit import** of file-backed documents into the chosen database
   (skip-if-present, never destructive), so switching driver does not hide
   existing work.
-- Single-user authentication (no orgs, no roles).
+- Single-user authentication (no orgs, no roles). **Opt-in:** a local run stays
+  open until credentials exist, so trying the app never starts with inventing a
+  password. A deployment turns it on with an environment variable.
 
 **Out of scope:** multi-tenant anything (#10, #11); schema migration tooling —
 the single `documents` table is created idempotently on connect.
 **Exit criteria:** **MVP complete** — a user signs in, creates, formats, saves, and exports documents on a deployed instance.
+
+Acceptance (auth half):
+
+- [x] One password guards the instance; it is chosen on first run or set by `DOCYFIER_AUTH_PASSWORD`
+- [x] Credentials live in an owner-only `auth.json` beside the settings, never in the document store — a database configured from inside the app cannot hold the secret protecting it
+- [x] Sessions are a signed expiry in an httpOnly cookie: no session table before STEP 6, and rotating the password kills every session
+- [x] Pages, server actions and API routes are all guarded; an unauthenticated API call gets 401, a page redirect
+- [x] Auth is off until credentials exist; `DOCYFIER_AUTH=1` forces it on, `DOCYFIER_AUTH=0` off
+- [x] Repeated wrong passwords lock login attempts for a few minutes
 
 ### STEP 5 — Import & more exports
 
@@ -152,9 +163,16 @@ the single `documents` table is created idempotently on connect.
   parsed with the editor's own schema (`src/lib/doc/import.ts`). The import is
   faithful — structure only; the AI "make it pretty" pass is what reformats.
 - Export docx (#8, partial).
+- **Export targets as plugins:** Confluence, Notion, Trilium (#8). One contract,
+  one file per target (`src/lib/export/targets/`), each enabled from the Settings
+  page. Payload only — the user copies it or downloads it; no API integration, so
+  a target costs nothing to add and needs no credentials for a tool this instance
+  may not even reach.
 
 **Out of scope:** PDF import — a PDF carries layout, not structure; recovering
-a document model from it is a project of its own, not a file reader.
+a document model from it is a project of its own, not a file reader. API-driven
+publishing to those tools: it needs per-tool auth and a page-identity model,
+which is STEP 6 territory.
 **Exit criteria:** an imported docx can be beautified and re-exported.
 
 Acceptance (import half):
@@ -164,6 +182,15 @@ Acceptance (import half):
 - [x] Images in the source are dropped (an imported `src` would point at a file this instance does not serve); headings deeper than 3 collapse onto 3
 - [x] An unsupported extension or an oversized file is refused with a message, and no document is created
 - [ ] docx export
+
+Acceptance (export targets):
+
+- [x] A target declares its own options; Settings renders them and stores them per target, without knowing what any target is
+- [x] Only enabled targets are offered on a document, and a disabled target is unreachable by URL (404, same answer as unknown)
+- [x] Confluence exports rich HTML for paste, or storage format with `ac:` macros (panels, code, toc) for a Data Center source editor
+- [x] Notion exports markdown — the format its paste handler reads; Trilium exports the HTML a text note stores natively
+- [x] Every payload can be copied from the page or downloaded as a file
+- [x] Images export as absolute URLs once the public URL of the instance is set; without it they stay relative and only resolve from inside
 
 ### STEP 6 — Multi-tenant
 
