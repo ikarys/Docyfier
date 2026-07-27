@@ -54,37 +54,48 @@ export function AiPanel({
     setBusy(true);
     push({ role: "user", text: label ?? instruction });
     const before = toPlainJSON(editor.getJSON());
-    const res = await transformDocumentAction(before, instruction);
-    if (!res.ok) {
-      push({ role: "ai", text: res.error, error: true });
-      setBusy(false);
-      return;
-    }
+    // `busy` gates the composer, so it has to fall back whatever happens: a
+    // request that never returns would otherwise leave the panel spinning with
+    // no message and no way to retry short of reloading the page.
+    try {
+      const res = await transformDocumentAction(before, instruction);
+      if (!res.ok) {
+        push({ role: "ai", text: res.error, error: true });
+        return;
+      }
 
-    // The AI edits blocks by index; applying the ops here keeps everything it
-    // did not name byte-identical instead of trusting a rewritten document.
-    const next =
-      res.outcome.kind === "ops"
-        ? applyOps(before, res.outcome.ops)
-        : res.outcome.content;
+      // The AI edits blocks by index; applying the ops here keeps everything it
+      // did not name byte-identical instead of trusting a rewritten document.
+      const next =
+        res.outcome.kind === "ops"
+          ? applyOps(before, res.outcome.ops)
+          : res.outcome.content;
 
-    if (JSON.stringify(next) === JSON.stringify(before)) {
+      if (JSON.stringify(next) === JSON.stringify(before)) {
+        push({
+          role: "ai",
+          text: "The AI returned the document unchanged — try a more specific instruction.",
+          error: true,
+        });
+      } else {
+        onApply(next);
+        const count = res.outcome.kind === "ops" ? res.outcome.ops.length : 0;
+        push({
+          role: "ai",
+          text: count
+            ? `Done — ${count} block${count > 1 ? "s" : ""} edited.`
+            : "Done — applied to the document.",
+        });
+      }
+    } catch (err) {
       push({
         role: "ai",
-        text: "The AI returned the document unchanged — try a more specific instruction.",
+        text: err instanceof Error ? err.message : "The AI request failed.",
         error: true,
       });
-    } else {
-      onApply(next);
-      const count = res.outcome.kind === "ops" ? res.outcome.ops.length : 0;
-      push({
-        role: "ai",
-        text: count
-          ? `Done — ${count} block${count > 1 ? "s" : ""} edited.`
-          : "Done — applied to the document.",
-      });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const submit = () => {

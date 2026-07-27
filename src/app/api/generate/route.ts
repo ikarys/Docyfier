@@ -1,5 +1,10 @@
 import { streamText, APICallError, type TextStreamPart, type ToolSet } from "ai";
-import { languageModel } from "@/lib/ai/provider";
+import {
+  callOptions,
+  isTimeout,
+  languageModel,
+  timeoutMessage,
+} from "@/lib/ai/provider";
 import { GENERATE_SYSTEM } from "@/lib/ai/prompts";
 import { validateDocJson } from "@/lib/ai/doc-schema";
 import { BlockScanner } from "@/lib/ai/stream-blocks";
@@ -67,6 +72,7 @@ export async function POST(req: Request): Promise<Response> {
       prompt,
       temperature: 0.7,
       maxOutputTokens,
+      ...callOptions(),
     }).fullStream[Symbol.asyncIterator]();
 
     // Read up to the first token before committing to a 200: whatever goes
@@ -91,7 +97,13 @@ export async function POST(req: Request): Promise<Response> {
   if (firstText === null) {
     console.error("[ai] streaming generate failed:", openError);
     return Response.json(
-      { error: openError ? message(openError) : "The AI returned nothing." },
+      {
+        error: isTimeout(openError)
+          ? timeoutMessage()
+          : openError
+            ? message(openError)
+            : "The AI returned nothing.",
+      },
       { status: 502 },
     );
   }
