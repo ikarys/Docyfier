@@ -205,6 +205,9 @@ Acceptance (export targets):
 ### STEP 7 — BYO LLM
 
 - Per-org provider/model/API-key configuration on top of the STEP 0 abstraction (#12).
+- Done ahead of the STEP, instance-wide: several providers are configured in
+  Settings, the active one is switched from the header, and API keys are
+  encrypted at rest. What remains here is scoping that list per org (STEP 6).
 
 **Exit criteria:** an org admin switches provider without code changes.
 

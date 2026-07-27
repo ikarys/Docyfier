@@ -110,12 +110,19 @@ variables > defaults**. The Settings page (`/settings`) is split by scope —
 `ai`, `storage`, `exports`, `access` — and writes to `settings.json` next to
 the document store, so nothing here requires a rebuild or a restart.
 
-### AI provider
+### AI providers
 
 Calls go through the Vercel AI SDK to any OpenAI-compatible endpoint — LM
 Studio, Ollama, vLLM, llama.cpp, or a hosted API that speaks the same protocol.
 Point the base URL at your server, and the model picker on the Settings page
 lists what it offers (with a connection test).
+
+**Several providers can be configured side by side** — a local model and a
+hosted one, or two accounts — each with its own model, key, token ceiling and
+structured-output setting. One is active; switch from `/settings/ai` or from the
+picker in the app header when a quota runs out or a task needs the other model.
+The environment variables below describe the first provider, the one a fresh
+deployment starts with.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -123,6 +130,14 @@ lists what it offers (with a connection test).
 | `DOCYFIER_LLM_MODEL` | first model on the server | Model id |
 | `DOCYFIER_LLM_API_KEY` | — | Key for providers that require one |
 | `DOCYFIER_LLM_MAX_TOKENS` | `32768` | Max tokens per response |
+
+Every credential entered in Settings — LLM API keys, the database password, and
+any export option a target declares `secret` — is stored **encrypted**
+(AES-256-GCM) in `settings.json` and never sent back to the browser: an empty
+password field means "keep the stored one". Set `DOCYFIER_SECRET_KEY` to 32
+bytes of hex or base64 (`openssl rand -hex 32`) to control the encryption key;
+without it, `secret.key` is generated next to `settings.json` and belongs to
+your backups — lose it and the credentials have to be entered again.
 
 Every AI response is validated against the editor schema server-side (invalid
 output gets one retry) before it can touch a document.
@@ -136,7 +151,8 @@ output gets one retry) before it can touch a document.
 | MySQL | `documents` table | Same |
 
 Connection settings always stay in `settings.json` — they cannot live in the
-database they configure. Saving a database configuration is refused if the
+database they configure. The password is encrypted there like every other
+credential. Saving a database configuration is refused if the
 connection fails, so a typo cannot take the app down. After switching, **Import
 documents from files** copies what is still on disk into the database, skipping
 ids already present and never deleting the source files.
