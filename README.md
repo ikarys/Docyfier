@@ -1,14 +1,31 @@
 # Docyfier
 
-**Turn raw text into a document that looks like someone designed it.**
+### Make the document they remember.
 
-Docyfier is a self-hostable web app for writing and — above all — *formatting*
-professional documents with AI assistance. Describe what you need, get a
-structured draft in a real block editor, then shape it with callouts, tables,
-charts, cards and themes. Export to Word, Markdown, Confluence, Notion or PDF.
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+[![Docker image](https://img.shields.io/badge/ghcr.io-docyfier-2496ED?logo=docker&logoColor=white)](https://github.com/ikarys/Docyfier/pkgs/container/docyfier)
+[![Self-hosted](https://img.shields.io/badge/AI-bring_your_own_model-8A2BE2)](#ai-provider)
 
-It runs against **any OpenAI-compatible model server**, local or hosted, so
-documents and prompts never have to leave your infrastructure.
+The client, the steering committee, your manager — none of them read your
+document, they *look* at it first. A wall of unstyled text reads as a draft. A
+cover page, a clear structure and a chart that makes the point read as work
+someone thought about.
+
+Getting there normally costs an afternoon: a chatbot hands you a wall of
+markdown, Word hands you a blank page and a style menu. Docyfier hands you the
+finished document — cover, table of contents, callouts, tables, charts, stat
+cards — from a prompt, or from the draft you already have. Then you edit it
+like a real document, because it is one, in a real block editor. Not a chat
+transcript you reformat by hand.
+
+- **Formatting is the product.** Everything else — templates, themes, blocks,
+  the "make it pretty" pass — exists so a document leaves looking designed.
+- **Bring your own model.** Any OpenAI-compatible server, local or hosted. Your
+  drafts and prompts never have to leave your network.
+- **Leaves in the shape they asked for.** Word, Markdown, Confluence, Notion,
+  Trilium, PDF. Adding another target is one file.
+- **Yours to run.** One container, one volume, AGPL. No seat pricing, no
+  document quota, no telemetry.
 
 ## Features
 
