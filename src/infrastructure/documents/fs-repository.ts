@@ -3,7 +3,8 @@ import { mkdir, readFile, readdir, rename, writeFile, unlink } from "node:fs/pro
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-import type { DocumentRecord, DocumentStore, DocumentSummary } from "./types";
+import type { DocumentRecord } from "@/domain/documents/document";
+import type { DocumentRepository, DocumentSummary } from "@/domain/documents/repository";
 
 /**
  * File-backed driver: one JSON file per document under `DOCYFIER_DATA_DIR`.
@@ -30,7 +31,7 @@ function isSafeId(id: string): boolean {
   return /^[a-zA-Z0-9-]+$/.test(id);
 }
 
-export const fsStore: DocumentStore = {
+export const fileDocumentRepository: DocumentRepository = {
   async list(): Promise<DocumentSummary[]> {
     const dir = await ensureDir();
     const entries = await readdir(dir, { withFileTypes: true });

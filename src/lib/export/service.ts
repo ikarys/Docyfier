@@ -1,6 +1,6 @@
 import "server-only";
 import { getExportSettings } from "@/lib/settings";
-import type { DocumentRecord } from "@/lib/store/types";
+import type { DocumentRecord } from "@/domain/documents/document";
 import { EXPORT_TARGETS, findExportTarget } from "./registry";
 import {
   exportFilename,

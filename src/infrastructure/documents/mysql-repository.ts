@@ -1,7 +1,7 @@
 import "server-only";
 import type { StorageSettings } from "@/lib/settings-types";
-import { connectSqlStore, type SqlClient, type SqlStatements } from "./sql";
-import type { DocumentStore } from "./types";
+import { connectSqlRepository, type SqlClient, type SqlStatements } from "./sql-repository";
+import type { DocumentRepository } from "@/domain/documents/repository";
 
 /** MySQL driver. `mysql2` is imported lazily so the unused backend never
  * loads. */
@@ -38,9 +38,9 @@ const STATEMENTS: SqlStatements = {
   remove: `DELETE FROM documents WHERE id = ?`,
 };
 
-export async function createMysqlStore(
+export async function createMysqlRepository(
   settings: StorageSettings,
-): Promise<DocumentStore> {
+): Promise<DocumentRepository> {
   const mysql = await import("mysql2/promise");
   const pool = mysql.createPool({
     host: settings.host,
@@ -63,5 +63,5 @@ export async function createMysqlStore(
     },
     close: () => pool.end(),
   };
-  return connectSqlStore(client, STATEMENTS);
+  return connectSqlRepository(client, STATEMENTS);
 }

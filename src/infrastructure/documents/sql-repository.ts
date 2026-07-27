@@ -1,5 +1,6 @@
 import "server-only";
-import type { DocumentRecord, DocumentStore, DocumentSummary } from "./types";
+import type { DocumentRecord } from "@/domain/documents/document";
+import type { DocumentRepository, DocumentSummary } from "@/domain/documents/repository";
 
 /**
  * Backend-agnostic half of the SQL drivers. PostgreSQL and MySQL differ only in
@@ -81,7 +82,7 @@ function isMissingTable(err: unknown): boolean {
  * container leaves a live connection with no `documents` table, which would
  * otherwise fail every request until the process restarts. Recreating the
  * schema on that one error makes the store self-heal. */
-export function sqlStore(client: SqlClient, statements: SqlStatements): DocumentStore {
+export function sqlRepository(client: SqlClient, statements: SqlStatements): DocumentRepository {
   async function query(
     sql: string,
     params?: unknown[],
@@ -132,15 +133,15 @@ export function sqlStore(client: SqlClient, statements: SqlStatements): Document
 
 /** Run the idempotent DDL, then build the store. Failing here surfaces a bad
  * connection at configuration time rather than on the first page load. */
-export async function connectSqlStore(
+export async function connectSqlRepository(
   client: SqlClient,
   statements: SqlStatements,
-): Promise<DocumentStore> {
+): Promise<DocumentRepository> {
   try {
     await ensureSchema(client, statements);
   } catch (err) {
     await client.close().catch(() => {});
     throw err;
   }
-  return sqlStore(client, statements);
+  return sqlRepository(client, statements);
 }

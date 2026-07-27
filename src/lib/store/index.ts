@@ -1,158 +1,72 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
-import type { JSONContent } from "@tiptap/react";
-import { DEFAULT_PRESET, normalizeTheme } from "@/lib/themes";
-import { getStore } from "./driver";
-import { fsStore } from "./fs";
-import type { DocumentRecord, DocumentSummary } from "./types";
+import type { DocumentDeps } from "@/application/documents/deps";
+import { importDocuments } from "@/application/documents/import-documents";
+import * as read from "@/application/documents/read-documents";
+import * as write from "@/application/documents/write-documents";
+import type { DocumentRecord } from "@/domain/documents/document";
+import type { DocumentSummary } from "@/domain/documents/repository";
+import {
+  activeRepository,
+  fileRepository,
+} from "@/infrastructure/documents/repository-factory";
+import { systemClock, uuidIds } from "@/infrastructure/shared/system-clock";
 
 /**
- * Document store. Documents are ProseMirror JSON — the product's internal
- * format (see PLAN.md STEP 0) — kept in files, PostgreSQL or MySQL depending on
- * the storage settings (STEP 4). Everything that is not raw persistence lives
- * here, so all backends behave identically; see ./types.ts for the driver
- * contract.
+ * Composition root for documents.
+ *
+ * The use cases (`src/application/documents/`) take their repository, clock and
+ * id source as arguments; this is the one module that decides what those are in
+ * a running app — the configured backend, the real clock, real UUIDs. Routes,
+ * server actions and pages call these functions and never see an adapter.
+ *
+ * It hands back records rather than `Document` instances on purpose: what
+ * crosses into a React Server Component has to be plain serializable data.
  */
 
 export type { DocumentRecord, DocumentSummary };
 
-/** A document is empty of typed text but always has a valid doc shape. */
-export function emptyContent(): JSONContent {
-  return { type: "doc", content: [{ type: "paragraph" }] };
-}
-
-/** The document's title heading: top level, or inside the cover block that
- * carries it when the document opens on one. */
-function findTitleHeading(nodes: JSONContent[]): JSONContent | undefined {
-  for (const node of nodes) {
-    if (node.type === "heading") return node;
-    if (node.type === "docCover") {
-      const inner = findTitleHeading(node.content ?? []);
-      if (inner) return inner;
-    }
-  }
-  return undefined;
-}
-
-/** Derive a display title from the first heading, else the first text, else Untitled. */
-export function deriveTitle(content: JSONContent): string {
-  const heading = findTitleHeading(content.content ?? []);
-  const fromHeading = heading && collectText(heading).trim();
-  if (fromHeading) return fromHeading;
-  const firstText = content.content?.map(collectText).find((t) => t.trim());
-  return firstText?.trim().slice(0, 80) || "Untitled document";
-}
-
-function collectText(node: JSONContent): string {
-  if (node.text) return node.text;
-  if (Array.isArray(node.content)) return node.content.map(collectText).join("");
-  return "";
+async function deps(): Promise<DocumentDeps> {
+  return { repository: await activeRepository(), clock: systemClock, ids: uuidIds };
 }
 
 export async function listDocuments(): Promise<DocumentSummary[]> {
-  const store = await getStore();
-  return store.list();
+  return read.listDocuments(await deps());
 }
 
 export async function getDocument(id: string): Promise<DocumentRecord | null> {
-  const store = await getStore();
-  const doc = await store.get(id);
-  if (!doc) return null;
-  // Older documents predate themes, or store the pre-U3 string form: both
-  // normalize to a full DocumentTheme here, never at the render site.
-  doc.theme = normalizeTheme(doc.theme);
-  return doc;
-}
-
-/** The title to display: a rename wins over whatever the content says. */
-function effectiveTitle(doc: {
-  content: JSONContent;
-  titleOverride?: string;
-}): string {
-  return doc.titleOverride?.trim() || deriveTitle(doc.content);
+  const document = await read.getDocument(await deps(), id);
+  return document?.toRecord() ?? null;
 }
 
 export async function createDocument(
-  content: JSONContent = emptyContent(),
-  theme: unknown = { preset: DEFAULT_PRESET },
+  content?: unknown,
+  theme?: unknown,
 ): Promise<DocumentRecord> {
-  const store = await getStore();
-  const now = new Date().toISOString();
-  const doc: DocumentRecord = {
-    id: randomUUID(),
-    title: deriveTitle(content),
-    content,
-    theme: normalizeTheme(theme),
-    createdAt: now,
-    updatedAt: now,
-  };
-  await store.put(doc);
-  return doc;
+  const document = await write.createDocument(await deps(), { body: content, theme });
+  return document.toRecord();
 }
 
+/** Persist edited content. The title follows it unless a rename froze it. */
 export async function updateDocument(
   id: string,
-  content: JSONContent,
+  content: unknown,
 ): Promise<DocumentRecord | null> {
-  const existing = await getDocument(id);
-  if (!existing) return null;
-  const store = await getStore();
-  const updated: DocumentRecord = {
-    ...existing,
-    content,
-    title: effectiveTitle({ ...existing, content }),
-    updatedAt: new Date().toISOString(),
-  };
-  await store.put(updated);
-  return updated;
+  const document = await write.saveDocument(await deps(), id, content);
+  return document?.toRecord() ?? null;
 }
 
-/**
- * Rename a document. An empty title clears the override, so the title starts
- * following the content again instead of freezing on a blank string.
- */
+/** Rename. An empty title hands the name back to the content. */
 export async function renameDocument(
   id: string,
   title: string,
 ): Promise<DocumentRecord | null> {
-  const existing = await getDocument(id);
-  if (!existing) return null;
-  const store = await getStore();
-  const override = title.trim().slice(0, 200);
-  const updated: DocumentRecord = {
-    ...existing,
-    title: override || deriveTitle(existing.content),
-    updatedAt: new Date().toISOString(),
-  };
-  if (override) updated.titleOverride = override;
-  else delete updated.titleOverride;
-  await store.put(updated);
-  return updated;
+  const document = await write.renameDocument(await deps(), id, title);
+  return document?.toRecord() ?? null;
 }
 
-/** Copy a document under a new id. The copy is independent: editing either one
- * leaves the other untouched. */
-export async function duplicateDocument(
-  id: string,
-): Promise<DocumentRecord | null> {
-  const existing = await getDocument(id);
-  if (!existing) return null;
-  const store = await getStore();
-  const now = new Date().toISOString();
-  const title = `Copy of ${existing.title}`.slice(0, 200);
-  const copy: DocumentRecord = {
-    ...existing,
-    id: randomUUID(),
-    // The copy carries its title as an override: two documents with the same
-    // first heading would otherwise show the same name in the list.
-    title,
-    titleOverride: title,
-    content: structuredClone(existing.content),
-    createdAt: now,
-    updatedAt: now,
-  };
-  await store.put(copy);
-  return copy;
+export async function duplicateDocument(id: string): Promise<DocumentRecord | null> {
+  const document = await write.duplicateDocument(await deps(), id);
+  return document?.toRecord() ?? null;
 }
 
 /** Update only the presentation theme, leaving content untouched. */
@@ -160,49 +74,19 @@ export async function setDocumentTheme(
   id: string,
   theme: unknown,
 ): Promise<DocumentRecord | null> {
-  const existing = await getDocument(id);
-  if (!existing) return null;
-  const store = await getStore();
-  const updated: DocumentRecord = {
-    ...existing,
-    theme: normalizeTheme(theme),
-    updatedAt: new Date().toISOString(),
-  };
-  await store.put(updated);
-  return updated;
+  const document = await write.setDocumentTheme(await deps(), id, theme);
+  return document?.toRecord() ?? null;
 }
 
 export async function deleteDocument(id: string): Promise<void> {
-  const store = await getStore();
-  await store.remove(id);
+  await write.deleteDocument(await deps(), id);
 }
 
-/**
- * Copy the file-backed documents into the active store, so switching to a
- * database does not hide existing work. Ids already there are skipped and the
- * source files are never touched: the import can be re-run, and switching back
- * to the file store still shows the originals.
- */
+/** Copy the file-backed documents into the active store, so switching to a
+ * database does not hide existing work. */
 export async function importDocumentsFromFiles(): Promise<{
   imported: number;
   skipped: number;
 }> {
-  const store = await getStore();
-  if (store === fsStore) return { imported: 0, skipped: 0 };
-
-  let imported = 0;
-  let skipped = 0;
-  for (const summary of await fsStore.list()) {
-    const doc = await fsStore.get(summary.id);
-    if (!doc) continue;
-    if (await store.get(doc.id)) {
-      skipped += 1;
-      continue;
-    }
-    // Legacy documents carry the pre-U3 theme form; normalize on the way in so
-    // the database never holds a shape the readers have to repair.
-    await store.put({ ...doc, theme: normalizeTheme(doc.theme) });
-    imported += 1;
-  }
-  return { imported, skipped };
+  return importDocuments(await deps(), fileRepository());
 }

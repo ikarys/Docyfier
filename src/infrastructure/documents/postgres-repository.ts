@@ -1,7 +1,7 @@
 import "server-only";
 import type { StorageSettings } from "@/lib/settings-types";
-import { connectSqlStore, type SqlClient, type SqlStatements } from "./sql";
-import type { DocumentStore } from "./types";
+import { connectSqlRepository, type SqlClient, type SqlStatements } from "./sql-repository";
+import type { DocumentRepository } from "@/domain/documents/repository";
 
 /** PostgreSQL driver. `pg` is imported lazily so the unused backend never
  * loads. */
@@ -35,9 +35,9 @@ const STATEMENTS: SqlStatements = {
   remove: `DELETE FROM documents WHERE id = $1`,
 };
 
-export async function createPostgresStore(
+export async function createPostgresRepository(
   settings: StorageSettings,
-): Promise<DocumentStore> {
+): Promise<DocumentRepository> {
   const { Pool } = await import("pg");
   const pool = new Pool({
     host: settings.host,
@@ -59,5 +59,5 @@ export async function createPostgresStore(
     query: async (sql, params) => (await pool.query(sql, params)).rows,
     close: () => pool.end(),
   };
-  return connectSqlStore(client, STATEMENTS);
+  return connectSqlRepository(client, STATEMENTS);
 }
