@@ -7,8 +7,11 @@
  * function of the submitted values, so a composer can be reasoned about and
  * exercised without a model behind it.
  *
- * Output is plain text on purpose: the point of these flows is a payload the
- * user pastes into their mail client or their tracker, not another document.
+ * The answer is a document, edited in a real editor like any other, but it
+ * never becomes a stored document: it ends in the clipboard, converted to the
+ * markup its destination understands. That conversion is the composer's
+ * `clipboard` declaration, and the model never writes that markup itself — it
+ * writes Markdown, once, for every destination.
  */
 
 export interface ComposerChoice {
@@ -50,6 +53,36 @@ export interface ComposeContext {
   guidance: string;
 }
 
+/**
+ * The markup one destination reads: rich HTML for a mail client, Jira wiki
+ * markup for a Jira description, Markdown for a GitLab issue, plain text for a
+ * field that renders nothing.
+ */
+export type ComposeFormat = "html" | "markdown" | "jira" | "text";
+
+/**
+ * Which of those the Copy button produces. A composer whose destination is
+ * fixed declares one format; a composer where the user picks the destination
+ * names the select that decides, so the mapping stays data rather than a branch
+ * in the form.
+ */
+export interface ComposeClipboard {
+  /** Used when no field decides, or when its value is not in `by`. */
+  default: ComposeFormat;
+  /** Id of the `select` whose value picks the format. */
+  field?: string;
+  by?: Record<string, ComposeFormat>;
+}
+
+/** The format the Copy button should produce for the current form values. */
+export function clipboardFormat(
+  clipboard: ComposeClipboard,
+  values: ComposerValues,
+): ComposeFormat {
+  const chosen = clipboard.field ? values[clipboard.field] : undefined;
+  return (chosen && clipboard.by?.[chosen]) || clipboard.default;
+}
+
 export interface Composer {
   id: string;
   label: string;
@@ -61,9 +94,11 @@ export interface Composer {
   fields: ComposerField[];
   /**
    * The field the answer is written back into, so the user keeps iterating in
-   * one place instead of reading a dead copy of it. Must name a `textarea`.
+   * one place instead of reading a dead copy of it. Must name a `textarea`:
+   * it is the one the editor replaces.
    */
   outputField: string;
+  clipboard: ComposeClipboard;
   build(values: ComposerValues, context: ComposeContext): ComposerPrompt;
 }
 
@@ -80,6 +115,7 @@ export interface ComposerInfo {
   instructions: string;
   fields: ComposerField[];
   outputField: string;
+  clipboard: ComposeClipboard;
 }
 
 export function toComposerInfo(composer: Composer): ComposerInfo {
@@ -91,13 +127,24 @@ export function toComposerInfo(composer: Composer): ComposerInfo {
     instructions: composer.instructions,
     fields: composer.fields,
     outputField: composer.outputField,
+    clipboard: composer.clipboard,
   };
 }
 
-/** The output contract every composer shares: text, ready to paste. */
-export const PLAIN_OUTPUT_RULES = `OUTPUT RULES — follow exactly:
+/**
+ * The output contract every composer shares. Markdown is the one language the
+ * model writes: it is parsed into the editor's own document JSON, and the
+ * destination's markup is produced from there. Asking for Jira markup directly
+ * would give the editor nothing to render.
+ */
+export const MARKDOWN_OUTPUT_RULES = `OUTPUT RULES — follow exactly:
 - Output the finished text and nothing else: no preamble, no closing remark, no
   explanation of your choices, no markdown code fence around the whole answer.
+- Write Markdown, and only Markdown: "## " for a section heading, **bold**,
+  *italic*, \`inline code\`, "- " for a bullet, "1. " for a numbered step, "> "
+  for a quote, triple-backtick fences for logs and snippets, | pipe | tables |
+  for genuinely tabular data. Your answer is converted to the markup the
+  destination expects, so never write that markup yourself.
 - Never invent facts, names, dates, figures, deadlines or commitments that are
   not in the input. When something essential is missing, leave a short bracketed
   placeholder such as [date] instead of guessing.`;

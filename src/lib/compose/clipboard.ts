@@ -1,0 +1,31 @@
+import type { JSONContent } from "@tiptap/core";
+import { docToHtml } from "@/lib/doc/html";
+import { docToJira } from "@/lib/doc/jira";
+import { docToMarkdown } from "@/lib/doc/markdown";
+import { docToText } from "@/lib/doc/text";
+import type { ComposeFormat } from "./types";
+
+/**
+ * The last step of a composer: the edited document, in the markup its
+ * destination reads (PLAN.md STEP 8).
+ *
+ * Pure and client-safe — the Copy button calls it on the text currently in the
+ * editor, so nothing has to travel to the server to be converted.
+ */
+export function composePayload(
+  format: ComposeFormat,
+  doc: JSONContent,
+): { text: string; html?: string } {
+  switch (format) {
+    // A rich flavour for the destinations that accept one; the plain flavour
+    // is what a mail client falls back to, so it must read on its own.
+    case "html":
+      return { text: docToText(doc), html: docToHtml(doc) };
+    case "jira":
+      return { text: docToJira(doc) };
+    case "text":
+      return { text: docToText(doc) };
+    case "markdown":
+      return { text: docToMarkdown(doc) };
+  }
+}

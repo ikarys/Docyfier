@@ -98,6 +98,13 @@ export async function docFromHtml(html: string): Promise<JSONContent> {
   return validateDocJson(json);
 }
 
+/** Document JSON for a markdown source — the same path an imported `.md` takes,
+ * offered on its own for text that never was a file (a composer's answer). */
+export async function docFromMarkdown(source: string): Promise<JSONContent> {
+  const { marked } = await import("marked");
+  return docFromHtml(marked.parse(source, { async: false, gfm: true }));
+}
+
 /**
  * Document JSON for an uploaded file. Throws a message meant for the user when
  * the file cannot be imported.

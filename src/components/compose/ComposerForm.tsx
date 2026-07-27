@@ -1,15 +1,20 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { composeAction } from "@/app/compose/actions";
+import { useActionState, useEffect, useRef, useState } from "react";
+import type { JSONContent } from "@tiptap/core";
+import { composeAction, type ComposeState } from "@/app/compose/actions";
 import { CopyButton } from "@/components/CopyBox";
+import { ComposeEditor, useComposeEditor } from "@/components/compose/ComposeEditor";
+import { composePayload } from "@/lib/compose/clipboard";
 import {
+  clipboardFormat,
   GUIDANCE_KEY,
   INTENT_KEY,
   REVISING_KEY,
   type ComposerField,
   type ComposerInfo,
 } from "@/lib/compose/types";
+import { docToMarkdown } from "@/lib/doc/markdown";
 
 /** A field whose value the form drives, rather than the DOM. */
 interface Bound {
@@ -30,7 +35,13 @@ function Field({ field, bound }: { field: ComposerField; bound?: Bound }) {
     return (
       <label className="field">
         {label}
-        <select className="field-input" name={field.id} defaultValue={field.default}>
+        <select
+          className="field-input"
+          name={field.id}
+          {...(bound
+            ? { value: bound.value, onChange: (e) => bound.onChange(e.target.value) }
+            : { defaultValue: field.default })}
+        >
           {field.choices?.map((choice) => (
             <option key={choice.value} value={choice.value}>
               {choice.label}
@@ -52,9 +63,7 @@ function Field({ field, bound }: { field: ComposerField; bound?: Bound }) {
           rows={field.rows ?? 8}
           placeholder={field.placeholder}
           required={field.required}
-          {...(bound
-            ? { value: bound.value, onChange: (e) => bound.onChange(e.target.value) }
-            : { defaultValue: field.default })}
+          defaultValue={field.default}
         />
       ) : (
         <input
@@ -71,52 +80,68 @@ function Field({ field, bound }: { field: ComposerField; bound?: Bound }) {
   );
 }
 
-/** What the output field held before the run in progress, so one step can be
- * taken back — an answer overwrites what the user typed. */
+/** What the editor held before the run in progress, so one step can be taken
+ * back — an answer overwrites what the user typed. */
 interface Snapshot {
-  text: string;
+  doc: JSONContent;
   isAnswer: boolean;
 }
 
 /**
  * One composer: its fields, and the text they produce. The answer is written
  * back into the composer's output field instead of landing in a read-only box
- * below, so the user edits it and composes again on top of it. The other fields
- * stay uncontrolled: they survive a run on their own, and changing one before
- * the next pass is the point.
+ * below, so the user edits it and composes again on top of it. That field is a
+ * small block editor, so the answer is read as a formatted document rather than
+ * as the destination's raw markup — the markup is produced on copy.
+ *
+ * The other fields stay uncontrolled: they survive a run on their own, and
+ * changing one before the next pass is the point. The exception is the select
+ * that decides the clipboard format, whose value the Copy button needs.
  */
 export function ComposerForm({ composer }: { composer: ComposerInfo }) {
   const [state, formAction, running] = useActionState(composeAction, null);
-  const [text, setText] = useState(
-    composer.fields.find((field) => field.id === composer.outputField)?.default ?? "",
+  const output = composer.fields.find((field) => field.id === composer.outputField);
+  const editor = useComposeEditor(output?.placeholder ?? "");
+
+  const decider = composer.clipboard.field;
+  const [choice, setChoice] = useState(
+    composer.fields.find((field) => field.id === decider)?.default ?? "",
   );
   const [isAnswer, setIsAnswer] = useState(false);
   const [composed, setComposed] = useState(false);
   const [guidance, setGuidance] = useState("");
   const [previous, setPrevious] = useState<Snapshot | null>(null);
 
+  // Keyed on the state object rather than on its content: the editor becomes
+  // available after the first render, and re-running the effect then would
+  // overwrite whatever the user has already typed into the answer.
+  const applied = useRef<ComposeState>(null);
   useEffect(() => {
-    if (!state?.text) return;
-    setText(state.text);
+    if (!editor || !state?.doc || applied.current === state) return;
+    applied.current = state;
+    editor.commands.setContent(state.doc);
     setIsAnswer(true);
     setComposed(true);
     setGuidance("");
-  }, [state]);
+  }, [state, editor]);
 
   function restore() {
-    if (!previous) return;
-    setText(previous.text);
+    if (!previous || !editor) return;
+    editor.commands.setContent(previous.doc);
     setIsAnswer(previous.isAnswer);
     setPrevious(null);
   }
-
-  const canRestore = previous !== null && previous.text !== text;
 
   return (
     <form
       className="settings-card"
       action={(form: FormData) => {
-        setPrevious({ text, isAnswer });
+        if (!editor) return;
+        const doc = editor.getJSON();
+        // The editor is the output field: the model reads it as markdown, and
+        // one markdown is all any composer's prompt asks for.
+        form.set(composer.outputField, docToMarkdown(doc));
+        setPrevious({ doc, isAnswer });
         formAction(form);
       }}
     >
@@ -125,22 +150,42 @@ export function ComposerForm({ composer }: { composer: ComposerInfo }) {
 
       {composer.fields.map((field) =>
         field.id === composer.outputField ? (
-          <div key={field.id} className="compose-output">
-            <Field field={field} bound={{ value: text, onChange: setText }} />
-            {isAnswer && (
+          <div key={field.id} className="field compose-output">
+            <span className="field-label">
+              {field.label}
+              {field.required && <span aria-hidden="true"> *</span>}
+            </span>
+            <ComposeEditor editor={editor} />
+            {isAnswer ? (
               <div className="compose-output-actions">
-                <CopyButton payload={text} className="btn" />
-                {canRestore && (
+                <CopyButton
+                  className="btn"
+                  payload={() =>
+                    composePayload(
+                      clipboardFormat(composer.clipboard, { [decider ?? ""]: choice }),
+                      editor?.getJSON() ?? { type: "doc", content: [] },
+                    )
+                  }
+                />
+                {previous && (
                   <button className="btn btn-ghost" type="button" onClick={restore}>
                     Restore my input
                   </button>
                 )}
                 <span className="field-help">{composer.instructions}</span>
               </div>
+            ) : (
+              field.help && <span className="field-help">{field.help}</span>
             )}
           </div>
         ) : (
-          <Field key={field.id} field={field} />
+          <Field
+            key={field.id}
+            field={field}
+            bound={
+              field.id === decider ? { value: choice, onChange: setChoice } : undefined
+            }
+          />
         ),
       )}
 

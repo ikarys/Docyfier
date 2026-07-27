@@ -2859,6 +2859,48 @@ body {
   flex: 1 1 12rem;
 }
 
+/* The output field is a small editor: the answer is read as a formatted
+   document, and the destination's markup is only produced on copy. */
+.compose-editor {
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.compose-editor-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.45rem;
+  background: var(--paper-shell);
+  border-bottom: 1px solid var(--rule);
+}
+.compose-doc {
+  padding: 0.9rem 1.1rem;
+  font-size: 0.95rem;
+  min-height: 14rem;
+  max-height: 65vh;
+  overflow-y: auto;
+  outline: none;
+}
+.compose-doc > *:first-child {
+  margin-top: 0;
+}
+.compose-doc p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--ink-faint);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.compose-doc .tableWrapper {
+  overflow-x: auto;
+}
+.compose-doc .selectedCell {
+  background: var(--accent-soft);
+}
+
 /* ---- Sign in (STEP 4) ---------------------------------------------------- */
 
 .login-page {

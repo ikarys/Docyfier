@@ -1,6 +1,6 @@
 import { languageField, languageRule, revisionRule, section } from "../fields";
 import {
-  PLAIN_OUTPUT_RULES,
+  MARKDOWN_OUTPUT_RULES,
   type ComposeContext,
   type Composer,
   type ComposerChoice,
@@ -86,6 +86,9 @@ const SHAPE = `Shape of the answer:
 - Then one blank line, then the email itself: greeting, body, sign-off.
 - Short paragraphs separated by a blank line. Use "- " bullets only for a real
   enumeration (dates, options, action items).
+- Keep the formatting an email carries: paragraphs, the occasional bullet list,
+  **bold** on a date or a figure the reader must not miss. No headings, no
+  tables, no code fences — an email is not a report.
 - End on the sign-off line. Do not invent a sender name or a signature block:
   when no name is given, stop after the sign-off formula.`;
 
@@ -103,8 +106,10 @@ export const emailComposer: Composer = {
   description: "Write or rewrite a professional email in the tone you choose.",
   lede: "Describe what you want to say, or paste an email to rework.",
   instructions:
-    "The first line is the subject; everything after the blank line is the body. Edit it here, then compose again to iterate on it.",
+    "The first line is the subject; everything below it is the body. Edit it here, then compose again to iterate on it. Copy pastes it into your mail client with its formatting.",
   outputField: "input",
+  // A mail client eats rich HTML, so the styling survives the paste.
+  clipboard: { default: "html" },
   fields: [
     {
       id: "mode",
@@ -164,7 +169,7 @@ substance. Drop what is redundant.`
 
     const system = `You write professional emails.
 
-${PLAIN_OUTPUT_RULES}
+${MARKDOWN_OUTPUT_RULES}
 
 ${SHAPE}
 

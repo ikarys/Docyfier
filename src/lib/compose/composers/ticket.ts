@@ -1,7 +1,8 @@
 import { languageField, languageRule, revisionRule, section } from "../fields";
 import {
-  PLAIN_OUTPUT_RULES,
+  MARKDOWN_OUTPUT_RULES,
   type ComposeContext,
+  type ComposeFormat,
   type Composer,
   type ComposerChoice,
   type ComposerValues,
@@ -15,11 +16,15 @@ import {
  * of the user are the same everywhere, only the markup and the section names
  * differ. Each format is one entry in `FORMATS`, so supporting another tracker
  * means adding an entry, not a route.
+ *
+ * The model never writes a tracker's markup — it writes Markdown, and the
+ * Copy button converts. That keeps one output contract, and it is what lets the
+ * answer be edited as a rendered document instead of as raw `h2.` lines.
  */
 
 interface TicketFormat extends ComposerChoice {
-  /** The markup the tracker's description field understands. */
-  markup: string;
+  /** The markup this tracker's description field reads, produced on copy. */
+  format: ComposeFormat;
   /** The sections to emit, in order, and what belongs in each. */
   sections: string;
   /** Where the first line of the answer goes in that tool. */
@@ -31,54 +36,37 @@ const FORMATS: TicketFormat[] = [
     value: "jira",
     label: "Jira",
     titleField: "Jira's Summary field",
-    markup: `Jira classic wiki markup, never Markdown:
-- "h2. Section" for a section heading, "h3. " one level down
-- *bold*, _italic_, {{monospace}}
-- "* " for a bullet, "# " for a numbered step (nest with "** " and "## ")
-- {code}...{code} for logs, stack traces or snippets, {code:sql}...{code} when the language is known
-- {quote}...{quote} for a quoted report
-- ||Header||Header|| then |cell|cell| for a table
-Never emit "#" headings, "**bold**" or triple-backtick fences: Jira renders them literally.`,
-    sections: `h2. Context
-h2. Steps to reproduce   (numbered, only for a defect)
-h2. Expected result
-h2. Actual result        (only for a defect)
-h2. Acceptance criteria  (a "* " list, each item verifiable)
-h2. Notes                (impact, workaround, links — only when the input gives some)`,
+    format: "jira",
+    sections: `## Context
+## Steps to reproduce   (numbered, only for a defect)
+## Expected result
+## Actual result        (only for a defect)
+## Acceptance criteria  (a "- " list, each item verifiable)
+## Notes                (impact, workaround, links — only when the input gives some)`,
   },
   {
     value: "servicenow",
     label: "ServiceNow",
     titleField: "the Short description field",
-    markup: `Plain text only — the ServiceNow form fields render no markup at all:
-- Section labels in UPPERCASE on their own line, followed by a colon
-- "- " for a bullet, "1. " for a numbered step
-- No asterisks, no backticks, no headings, no tables. Indent a log excerpt by
-  four spaces instead of fencing it.`,
-    sections: `DESCRIPTION:
-STEPS TO REPRODUCE:      (numbered, only for a defect)
-EXPECTED BEHAVIOUR:
-ACTUAL BEHAVIOUR:        (only for a defect)
-BUSINESS IMPACT:         (who is blocked, and from doing what)
-WORKAROUND:              (or "None known")
-SUGGESTED CATEGORY:      (one short line)`,
+    format: "text",
+    sections: `## Description
+## Steps to reproduce   (numbered, only for a defect)
+## Expected behaviour
+## Actual behaviour     (only for a defect)
+## Business impact      (who is blocked, and from doing what)
+## Workaround           (or "None known")
+## Suggested category   (one short line)`,
   },
   {
     value: "gitlab",
     label: "GitLab issue",
     titleField: "the issue title",
-    markup: `GitLab flavored Markdown:
-- "## Section" for a section heading
-- **bold**, \`inline code\`
-- "- " for a bullet, "1. " for a numbered step
-- Triple-backtick fenced blocks with a language for logs and snippets
-- "- [ ] " for a checklist item
-- | pipe | tables | when the content is genuinely tabular`,
+    format: "markdown",
     sections: `## Summary
 ## Steps to reproduce   (numbered, only for a defect)
 ## Expected behaviour
 ## Actual behaviour     (only for a defect)
-## Acceptance criteria  (a "- [ ] " checklist, each item verifiable)
+## Acceptance criteria  (a "- " list, each item verifiable)
 ## Notes                (impact, workaround, links — only when the input gives some)`,
   },
 ];
@@ -137,8 +125,15 @@ export const ticketComposer: Composer = {
     "Turn rough notes into a ticket in the markup Jira, ServiceNow or GitLab expects.",
   lede: "Describe what happened or what you need; pick the tracker it goes into.",
   instructions:
-    "The first line is the ticket title; everything after the blank line is the description. Edit it here, then compose again to iterate on it.",
+    "The first line is the ticket title; everything below it is the description. Edit it here, then compose again to iterate on it. Copy converts it to the markup the tracker reads.",
   outputField: "context",
+  // Each tracker's description field reads its own markup; the answer is
+  // converted to it on copy, never written in it.
+  clipboard: {
+    default: "markdown",
+    field: "tool",
+    by: Object.fromEntries(FORMATS.map((f) => [f.value, f.format])),
+  },
   fields: [
     {
       id: "tool",
@@ -191,21 +186,19 @@ export const ticketComposer: Composer = {
 
     const system = `You turn raw notes into a well-formed ticket for ${format.label}.
 
-${PLAIN_OUTPUT_RULES}
+${MARKDOWN_OUTPUT_RULES}
 - Report only what the notes support. No root cause, no fix, no estimate, no
   assignee unless the notes give one.
 
 Shape of the answer:
 - First line: "Title: <one-line ticket title>", at most 80 characters, no
   trailing period. It names the observable problem or the outcome wanted, never
-  a guessed cause.
+  a guessed cause. It goes in ${format.titleField}.
 - Then one blank line, then the description.
 - Emit only the sections the notes actually support, in this order, and drop the
   ones you would have to invent:
 ${format.sections}
 ${priority}
-
-Markup of the description — ${format.markup}
 
 Ticket type: ${kindGuide(values.kind)}
 ${languageRule(values.language)}

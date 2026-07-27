@@ -1,5 +1,8 @@
 import "server-only";
+import type { JSONContent } from "@tiptap/core";
 import { completePlainText } from "@/lib/ai/service";
+import { docFromMarkdown } from "@/lib/doc/import";
+import { toPlainJSON } from "@/lib/doc/plain";
 import { findComposer } from "./registry";
 import {
   missingRequiredField,
@@ -16,7 +19,7 @@ import {
  */
 
 export type ComposeOutcome =
-  | { ok: true; text: string }
+  | { ok: true; doc: JSONContent }
   | { ok: false; error: string };
 
 /** One composer as plain data, or `null` when the id is unknown. */
@@ -39,5 +42,8 @@ export async function compose(
   if (missing) return { ok: false, error: `${missing} is required.` };
 
   const { system, prompt, temperature } = composer.build(values, context);
-  return { ok: true, text: await completePlainText(system, prompt, temperature ?? 0.4) };
+  const markdown = await completePlainText(system, prompt, temperature ?? 0.4);
+  // The answer goes back into an editor, so it lands as document JSON — parsed
+  // and validated on the same path an imported markdown file takes.
+  return { ok: true, doc: toPlainJSON(await docFromMarkdown(markdown)) };
 }
