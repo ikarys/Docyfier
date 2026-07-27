@@ -163,7 +163,7 @@ Acceptance (auth half):
   parsed with the editor's own schema (`src/lib/doc/import.ts`). The import is
   faithful — structure only; the AI "make it pretty" pass is what reformats.
 - Export docx (#8, partial).
-- **Export targets as plugins:** Confluence, Notion, Trilium (#8). One contract,
+- **Export targets as plugins:** Word, Confluence, Notion, Trilium (#8). One contract,
   one file per target (`src/lib/export/targets/`), each enabled from the Settings
   page. Payload only — the user copies it or downloads it; no API integration, so
   a target costs nothing to add and needs no credentials for a tool this instance
@@ -181,7 +181,9 @@ Acceptance (import half):
 - [x] A `.txt` file is never interpreted as markdown
 - [x] Images in the source are dropped (an imported `src` would point at a file this instance does not serve); headings deeper than 3 collapse onto 3
 - [x] An unsupported extension or an oversized file is refused with a message, and no document is created
-- [ ] docx export
+- [x] docx export: real Word heading styles, bulleted and numbered lists, bordered tables, page number in the footer, A4 or Letter
+- [x] Blocks Word has no equivalent for keep their content — a callout becomes a shaded one-cell table, a chart the table of its own data
+- [ ] Images are exported as a captioned link, not embedded: their bytes sit behind `/api/uploads` and a target is a pure function of the document
 
 Acceptance (export targets):
 
@@ -189,7 +191,7 @@ Acceptance (export targets):
 - [x] Only enabled targets are offered on a document, and a disabled target is unreachable by URL (404, same answer as unknown)
 - [x] Confluence exports rich HTML for paste, or storage format with `ac:` macros (panels, code, toc) for a Data Center source editor
 - [x] Notion exports markdown — the format its paste handler reads; Trilium exports the HTML a text note stores natively
-- [x] Every payload can be copied from the page or downloaded as a file
+- [x] Every payload can be copied from the page or downloaded as a file; a binary target (Word) offers the download alone
 - [x] Images export as absolute URLs once the public URL of the instance is set; without it they stay relative and only resolve from inside
 
 ### STEP 6 — Multi-tenant

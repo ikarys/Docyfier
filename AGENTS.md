@@ -32,9 +32,11 @@ adjustable token sets (accent, font pair, radius, density) with a Design panel;
 images, cover, table of contents and print control; charts, block icons and
 dashboard stat cards; templates gallery with search/rename/duplicate in the
 document list; file import (md / txt / docx) and pluggable export targets
-(Confluence, Notion, Trilium) from STEP 5. Settings is one route per scope
-(`/settings/{ai,storage,exports,access}`). Next: PDF export, the last open
-item of STEP 3, then docx export to close STEP 5.
+(Word, Confluence, Notion, Trilium) from STEP 5 — see `src/lib/export/`, where
+adding a target is one file plus a line in the registry. Settings is one route
+per scope (`/settings/{ai,storage,exports,access}`). Next: STEP 8 (email and
+ticket composers). PDF stays print-based on purpose; a headless-Chromium
+renderer is the only open item of STEP 3 and was judged not worth its weight.
 
 ## Working conventions
 
