@@ -5,7 +5,7 @@ import {
   languageModel,
   timeoutMessage,
 } from "@/lib/ai/provider";
-import { GENERATE_SYSTEM } from "@/lib/ai/prompts";
+import { GENERATE_SYSTEM } from "@/domain/authoring/prompts";
 import { validateDocJson } from "@/lib/ai/doc-schema";
 import { BlockScanner } from "@/lib/ai/stream-blocks";
 import { beautify } from "@/lib/doc/beautify";

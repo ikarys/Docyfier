@@ -39,10 +39,10 @@ export default defineConfig({
        * change that lowers them is a change that skipped its tests.
        */
       thresholds: {
-        lines: 57,
-        functions: 62,
-        branches: 48,
-        statements: 57,
+        lines: 63,
+        functions: 66,
+        branches: 55,
+        statements: 63,
         // The destination for the whole codebase, already reached where the
         // rules actually live. Every layer joins it as it moves in.
         "src/domain/**": {

@@ -1,6 +1,5 @@
-import "server-only";
 
-import { ICON_NAMES } from "@/lib/icons";
+import { ICON_NAMES } from "./icons";
 
 /**
  * Prompt building for the three AI surfaces (PLAN.md STEP 2):

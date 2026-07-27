@@ -61,7 +61,7 @@ export function isTimeout(err: unknown): boolean {
 /** What the user is told when the deadline is what stopped the call. */
 export function timeoutMessage(): string {
   const seconds = Math.round(callTimeoutMs() / 1000);
-  return `The AI server did not answer within ${seconds}s. It may be overloaded, or the request may be too large — try again, select a smaller passage, or lower the token budget in Settings → AI model.`;
+  return `The AI server did not answer within ${seconds}s. It may be overloaded, or the request may be too large — try again, select a smaller passage, or lower the token budget in Settings → AI providers.`;
 }
 
 export interface ModelInfo {

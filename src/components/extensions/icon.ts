@@ -1,6 +1,6 @@
 import { mergeAttributes } from "@tiptap/core";
 import type { DOMOutputSpec } from "@tiptap/pm/model";
-import { iconSpec } from "@/lib/icons";
+import { iconSpec } from "@/domain/authoring/icons";
 
 /**
  * Shared `icon` attribute (PLAN.md STEP U6) for the blocks that can carry one:

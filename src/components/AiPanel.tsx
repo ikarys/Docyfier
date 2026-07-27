@@ -5,7 +5,7 @@ import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { transformDocumentAction } from "@/app/ai-actions";
 import { toPlainJSON } from "@/lib/doc/plain";
-import { applyOps } from "@/lib/doc/ops";
+import { applyOps } from "@/domain/authoring/ops";
 
 interface PanelItem {
   role: "user" | "ai";

@@ -1,4 +1,4 @@
-import type { JSONContent } from "@tiptap/core";
+import type { DocumentNode } from "@/domain/documents/body";
 
 /**
  * Edit operations on the top-level blocks of a document (PLAN.md STEP U4).
@@ -12,17 +12,17 @@ import type { JSONContent } from "@tiptap/core";
  */
 
 export type DocOp =
-  | { op: "replace"; index: number; blocks: JSONContent[] }
-  | { op: "insert_after"; index: number; blocks: JSONContent[] }
+  | { op: "replace"; index: number; blocks: DocumentNode[] }
+  | { op: "insert_after"; index: number; blocks: DocumentNode[] }
   | { op: "delete"; index: number };
 
 const OPS = ["replace", "insert_after", "delete"] as const;
 
-function asBlocks(value: unknown, op: string, index: number): JSONContent[] {
+function asBlocks(value: unknown, op: string, index: number): DocumentNode[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw new Error(`Op ${op} at index ${index} needs a non-empty "blocks" array`);
   }
-  return value as JSONContent[];
+  return value as DocumentNode[];
 }
 
 /**
@@ -62,7 +62,7 @@ const ORDER: Record<DocOp["op"], number> = { insert_after: 0, replace: 1, delete
  * At an equal index, `insert_after` runs first so its blocks are already parked
  * beyond the target before a `replace`/`delete` disturbs it.
  */
-export function applyOps(doc: JSONContent, ops: DocOp[]): JSONContent {
+export function applyOps(doc: DocumentNode, ops: DocOp[]): DocumentNode {
   const content = [...(doc.content ?? [])];
   const ordered = [...ops].sort(
     (a, b) => b.index - a.index || ORDER[a.op] - ORDER[b.op],
