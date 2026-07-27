@@ -18,6 +18,9 @@ export default async function HomePage() {
           Docy<span>fier</span>
         </span>
         <div className="toolbar">
+          <Link href="/compose" className="btn" title="Email and ticket composers">
+            ✎ Compose
+          </Link>
           <Link href="/settings" className="btn" title="Settings">
             ⚙ Settings
           </Link>

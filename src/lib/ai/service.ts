@@ -321,6 +321,36 @@ export async function rewriteSelectionBlocks(
   return doc.content ?? [];
 }
 
+/**
+ * A model that was told to answer in plain text sometimes wraps the whole
+ * answer in a fence anyway. Unwrap that, but only when the body holds no fence
+ * of its own — a GitLab ticket legitimately contains fenced log blocks.
+ */
+function unwrapWholeAnswerFence(text: string): string {
+  const fenced = text.match(/^```[a-zA-Z]*\n([\s\S]*)\n?```$/);
+  const body = fenced?.[1];
+  return body !== undefined && !body.includes("```") ? body.trim() : text;
+}
+
+/**
+ * Surface 4 — the composers (PLAN.md STEP 8). Plain text in, plain text out:
+ * these flows produce something to paste into another tool, not document JSON,
+ * so none of the doc validation applies.
+ */
+export async function completePlainText(
+  system: string,
+  prompt: string,
+  temperature: number,
+): Promise<string> {
+  const { text, truncated } = await complete(system, prompt, temperature);
+  if (truncated) {
+    throw new Error(
+      "The answer hit the output limit — shorten the input, or raise the token budget in Settings → AI model.",
+    );
+  }
+  return unwrapWholeAnswerFence(text.trim());
+}
+
 /** Surface 3b — inline selection rewrite; plain text in, plain text out. */
 export async function rewriteSelectionText(
   text: string,
