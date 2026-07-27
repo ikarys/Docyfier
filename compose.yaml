@@ -1,9 +1,16 @@
-# Docyfier — deployment stack for the NAS.
+# Docyfier — deployment stack.
 #
 # The image is built and published by .github/workflows/docker.yml; this file
-# only runs it. Adjust the volume path to a real share on the NAS, then:
+# only runs it. Everything host-specific comes from a .env file beside this
+# one, so the stack is committed once and each deployment differs only by its
+# .env:
 #
-#   docker login ghcr.io -u <github-user>   # once, PAT with read:packages
+#   DOCYFIER_PORT=8085
+#   DOCYFIER_DATA=/Volume1/docker/docyfier
+#   DOCYFIER_LLM_BASE_URL=http://192.168.1.10:1234/v1
+#   DOCYFIER_AUTH_PASSWORD=...
+#   DOCYFIER_AUTH_SECRET=...        # openssl rand -hex 32
+#
 #   docker compose pull && docker compose up -d
 
 services:
@@ -12,15 +19,15 @@ services:
     container_name: docyfier
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${DOCYFIER_PORT:-3000}:3000"
     volumes:
       # Documents, uploads and settings live here — outside the image.
-      - /Volume1/docker/docyfier:/data
+      - ${DOCYFIER_DATA:-./data}:/data
     environment:
       DOCYFIER_DATA_DIR: /data/documents
-      # LM Studio runs on the workstation, not on the NAS. Overridable from
-      # the Settings page; this is the fallback.
-      DOCYFIER_LLM_BASE_URL: http://192.168.1.174:1234/v1
+      # An OpenAI-compatible server the *container* can reach: not localhost,
+      # and it must listen on 0.0.0.0. Overridable from the Settings page.
+      DOCYFIER_LLM_BASE_URL: ${DOCYFIER_LLM_BASE_URL:-http://localhost:1234/v1}
       # Single-user auth (STEP 4). Drop all three to pick the password from
       # the setup form instead; DOCYFIER_AUTH=0 disables the gate entirely.
       DOCYFIER_AUTH: "1"
