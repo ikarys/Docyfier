@@ -1,6 +1,6 @@
 # Docyfier — Plan
 
-Roadmap derived from [vision.md](vision.md). Priorities below **challenge** the
+Roadmap derived from [docs/vision.md](docs/vision.md). Priorities below **challenge** the
 original P\* where justified; the "Was → Now" column tracks every change.
 
 **MVP = STEPS 0–4.** Everything after is post-MVP.
@@ -10,7 +10,7 @@ slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 
 
 ## Part A — Prioritized needs
 
-| # | Need (from vision.md) | Was | Now | Rationale for change |
+| # | Need (from docs/vision.md) | Was | Now | Rationale for change |
 |---|---|---|---|---|
 | 1 | AI-assisted writing & formatting for professional environments | P0 | P0 | Core value |
 | 2 | Modern, intuitive web UI usable by non-technical users | P0 | P0 | Core value |

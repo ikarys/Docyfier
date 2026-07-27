@@ -6,7 +6,7 @@ document creation: turn raw text into modern, polished, well-structured document
 
 ## Sources of truth
 
-- [vision.md](vision.md) — product vision and raw needs. Product questions resolve here.
+- [docs/vision.md](docs/vision.md) — product vision and raw needs. Product questions resolve here.
 - [PLAN.md](PLAN.md) — prioritized needs and roadmap in STEPS. **Check the current
   STEP before any work**; do not build ahead of it.
 
