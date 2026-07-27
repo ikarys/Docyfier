@@ -2,37 +2,27 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
-import { getExportSettings, getExportSummary, saveExportSettings } from "@/lib/settings";
-import type { ExportTargetSettings } from "@/lib/settings-types";
+import { getExportSummary, saveExportSettings } from "@/lib/settings";
+import { InvalidPublicUrl } from "@/domain/publishing/export-configuration";
+import type {
+  ExportSettings,
+  ExportTargetSettings,
+} from "@/domain/publishing/export-configuration";
 import { EXPORT_TARGETS } from "@/lib/export/registry";
+import { secretOptionIds } from "@/lib/export/secret-options";
 
 export type SaveExportsState = { saved: boolean; error?: string } | null;
 
 /**
  * Read the form against the registry rather than against the submitted keys:
- * only declared targets and declared options are stored, so a hand-crafted
- * POST cannot grow the settings file with fields nothing reads.
+ * only declared targets and declared options are stored, so a hand-crafted POST
+ * cannot grow the settings file with fields nothing reads.
+ *
+ * A credential field left untouched submits nothing at all — that is how the
+ * stored one survives; only an explicit clear sends an empty string.
  */
-export async function saveExportSettingsAction(
-  _prev: SaveExportsState,
-  formData: FormData,
-): Promise<SaveExportsState> {
-  await requireAuth();
-
-  const publicBaseUrl = String(formData.get("publicBaseUrl") ?? "").trim();
-  if (publicBaseUrl) {
-    try {
-      new URL(publicBaseUrl);
-    } catch {
-      return { saved: false, error: "Public URL is not a valid URL." };
-    }
-  }
-
-  // Secrets never reach the browser, so an empty field means "unchanged".
-  const previous = await getExportSettings();
-
+function settingsFromForm(formData: FormData): ExportSettings {
   const targets: Record<string, ExportTargetSettings> = {};
-  const secretOptions: Record<string, string[]> = {};
   for (const target of EXPORT_TARGETS) {
     const options: Record<string, string> = {};
     for (const option of target.options ?? []) {
@@ -42,10 +32,9 @@ export async function saveExportSettingsAction(
         continue;
       }
       if (option.type === "secret") {
-        (secretOptions[target.id] ??= []).push(option.id);
         const typed = String(formData.get(field) ?? "").trim();
         const cleared = formData.get(`${field}.cleared`) === "1";
-        options[option.id] = typed || (cleared ? "" : (previous.targets[target.id]?.options[option.id] ?? ""));
+        if (typed || cleared) options[option.id] = typed;
         continue;
       }
       options[option.id] = String(formData.get(field) ?? option.default);
@@ -55,13 +44,28 @@ export async function saveExportSettingsAction(
       options,
     };
   }
+  return {
+    targets,
+    publicBaseUrl: String(formData.get("publicBaseUrl") ?? ""),
+  };
+}
 
-  await saveExportSettings({ targets, publicBaseUrl }, secretOptions);
+export async function saveExportSettingsAction(
+  _prev: SaveExportsState,
+  formData: FormData,
+): Promise<SaveExportsState> {
+  await requireAuth();
+  try {
+    await saveExportSettings(settingsFromForm(formData), secretOptionIds());
+  } catch (err) {
+    if (err instanceof InvalidPublicUrl) return { saved: false, error: err.message };
+    throw err;
+  }
   revalidatePath("/settings/exports");
   return { saved: true };
 }
 
 export async function currentExportSettings() {
   await requireAuth();
-  return getExportSummary();
+  return getExportSummary(secretOptionIds());
 }

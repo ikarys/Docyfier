@@ -74,12 +74,18 @@ domain/        entities, value objects, domain services, ports (interfaces)
 infrastructure/ adapters implementing domain ports: SQL, fs, LLM, crypto, HTTP
 ```
 
-Documents already live this way and are the reference to copy:
-`src/domain/documents/` (the `Document` entity, its title and body rules, the
-`DocumentRepository` port), `src/application/documents/` (the use cases, which
-take their dependencies as arguments), `src/infrastructure/documents/` (files,
-PostgreSQL, MySQL, plus an in-memory implementation for the tests). Settings,
-the AI client and the editor components have not moved yet.
+Four bounded contexts already live this way and are the reference to copy:
+`documents` (the `Document` entity, the `DocumentRepository` port, the files /
+PostgreSQL / MySQL / in-memory adapters), `configuration` (the `AiProvider` and
+`ProviderCatalog` entities, the `StorageConnection` value object, the
+`SecretCipher` and repository ports, the settings-file adapters), `authoring`
+(what models get wrong on the way out, the prompts, the op contract, the
+`TextGenerator` port and its OpenAI-compatible adapter) and `publishing` (the
+`ExportConfiguration`). Composition roots stay under `src/lib/`: `store/`,
+`settings/{ai,storage,exports}`, `ai/service.ts`.
+
+The editor components, the document conversions in `src/lib/doc/`, the export
+targets and the composers have not moved yet.
 
 - **The domain imports nothing.** No `next/*`, no `@tiptap/*`, no `react`, no
   `pg`/`mysql2`, no `ai`, no `node:fs`. If a domain file needs an import from
@@ -138,8 +144,9 @@ the AI client and the editor components have not moved yet.
 - **No god file, no god component.** Split by responsibility, not by size alone:
   a 700-line editor is a state machine, a toolbar and a panel host — three files.
 - **DRY on knowledge, not on shape.** Two identical lines with different reasons
-  to change stay apart; a rule expressed twice gets one home. Current offenders
-  to fold: `unknown → message`, fence unwrapping, `parseX`/`xFromForm` in settings actions.
+  to change stay apart; a rule expressed twice gets one home. Fence unwrapping
+  now lives in `domain/authoring/model-answer.ts` and form parsing in the
+  settings entities; `unknown → message` is still spelled out per action.
 - Guard clauses over nesting; max 2 levels of indentation in a function body.
 - No boolean parameters that select behaviour — split the function.
 - No dead code, no commented-out code, no `TODO` without an issue reference.
