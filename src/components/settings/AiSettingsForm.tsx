@@ -5,7 +5,7 @@ import {
   saveAiSettingsAction,
   listModelsAction,
   testChatAction,
-} from "@/app/settings/actions";
+} from "@/app/settings/ai/actions";
 import type { AiSettings } from "@/lib/settings-types";
 
 type Probe =
@@ -15,7 +15,7 @@ type Probe =
   | { state: "error"; message: string; status?: number };
 
 /** AI model configuration: endpoint, model picker, optional API key. */
-export function SettingsForm({ initial }: { initial: AiSettings }) {
+export function AiSettingsForm({ initial }: { initial: AiSettings }) {
   const [saveState, formAction, saving] = useActionState(
     saveAiSettingsAction,
     null,

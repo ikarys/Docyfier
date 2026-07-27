@@ -5,7 +5,7 @@ import {
   importDocumentsAction,
   saveStorageSettingsAction,
   testStorageAction,
-} from "@/app/settings/actions";
+} from "@/app/settings/storage/actions";
 import {
   DEFAULT_PORTS,
   type StorageDriver,
