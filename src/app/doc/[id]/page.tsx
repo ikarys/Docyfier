@@ -40,6 +40,13 @@ export default async function DocumentPage({
           >
             ↓ MD
           </a>
+          <Link
+            href={`/doc/${doc.id}/export`}
+            className="btn"
+            title="Export to another tool"
+          >
+            Export
+          </Link>
           <PrintButton />
           <SignOutButton />
           <form action={deleteDocumentAction.bind(null, doc.id)}>

@@ -39,3 +39,19 @@ export interface StorageSettings {
 export function isStorageDriver(value: unknown): value is StorageDriver {
   return STORAGE_DRIVERS.includes(value as StorageDriver);
 }
+
+/** State of one export target: off until the user turns it on, plus whatever
+ * options that target declares. */
+export interface ExportTargetSettings {
+  enabled: boolean;
+  options: Record<string, string>;
+}
+
+/** Export settings, keyed by target id. `publicBaseUrl` is shared: every
+ * target that emits images needs the same absolute origin. */
+export interface ExportSettings {
+  targets: Record<string, ExportTargetSettings>;
+  /** Absolute origin of this instance, e.g. https://docs.example.com. Empty
+   * means images stay relative and only resolve from inside. */
+  publicBaseUrl: string;
+}

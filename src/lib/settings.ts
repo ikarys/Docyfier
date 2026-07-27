@@ -6,6 +6,8 @@ import {
   DEFAULT_PORTS,
   isStorageDriver,
   type AiSettings,
+  type ExportSettings,
+  type ExportTargetSettings,
   type StorageSettings,
 } from "./settings-types";
 
@@ -15,7 +17,7 @@ import {
  * Resolution order for each value: settings file > env > default.
  */
 
-export type { AiSettings, StorageSettings };
+export type { AiSettings, ExportSettings, StorageSettings };
 
 const AI_DEFAULTS: AiSettings = {
   baseUrl: "http://localhost:1234/v1",
@@ -37,7 +39,10 @@ const STORAGE_DEFAULTS: StorageSettings = {
 
 /** On-disk shape: AI keys stayed flat when storage settings were added, so
  * files written before this STEP keep loading unchanged. */
-type SettingsFile = Partial<AiSettings> & { storage?: Partial<StorageSettings> };
+type SettingsFile = Partial<AiSettings> & {
+  storage?: Partial<StorageSettings>;
+  exports?: Partial<ExportSettings>;
+};
 
 function settingsFile(): string {
   const dir =
@@ -133,4 +138,49 @@ export async function getStorageSettings(): Promise<StorageSettings> {
 
 export async function saveStorageSettings(storage: StorageSettings): Promise<void> {
   await writeSettingsFile({ storage });
+}
+
+/* --- Exports -------------------------------------------------------------- */
+
+/** Targets enabled out of the box, e.g. `DOCYFIER_EXPORTS=confluence,notion`,
+ * so a deployment can ship them without a first visit to Settings. */
+function exportEnvDefaults(): string[] {
+  return (process.env.DOCYFIER_EXPORTS ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
+/** Drop anything the file holds for a target this build no longer ships, and
+ * keep the values as strings — the shape comes from the target, not from here. */
+function parseTargets(raw: unknown): Record<string, ExportTargetSettings> {
+  const source = (raw ?? {}) as Record<string, Partial<ExportTargetSettings>>;
+  const out: Record<string, ExportTargetSettings> = {};
+  for (const [id, value] of Object.entries(source)) {
+    const options = (value?.options ?? {}) as Record<string, unknown>;
+    out[id] = {
+      enabled: Boolean(value?.enabled),
+      options: Object.fromEntries(
+        Object.entries(options).map(([key, val]) => [key, String(val ?? "")]),
+      ),
+    };
+  }
+  return out;
+}
+
+export async function getExportSettings(): Promise<ExportSettings> {
+  const saved = (await readSettingsFile()).exports ?? {};
+  const targets = parseTargets(saved.targets);
+  for (const id of exportEnvDefaults()) {
+    targets[id] = { enabled: true, options: targets[id]?.options ?? {} };
+  }
+  return {
+    targets,
+    publicBaseUrl:
+      saved.publicBaseUrl?.trim() || (process.env.DOCYFIER_PUBLIC_URL ?? "").trim(),
+  };
+}
+
+export async function saveExportSettings(exports: ExportSettings): Promise<void> {
+  await writeSettingsFile({ exports });
 }
