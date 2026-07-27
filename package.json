@@ -57,5 +57,6 @@
     "@tailwindcss/oxide@4.1.14": true,
     "sharp@0.34.5": true,
     "unrs-resolver@1.12.2": true
-  }
+  },
+  "license": "AGPL-3.0-only"
 }

@@ -233,8 +233,14 @@ per-user permissions, corporate themes and style settings (automatic emphasis
 rules, emoji policy), diagrams, and print-quality PDF through headless
 Chromium — today's PDF goes through the browser print dialog on purpose.
 
-[PLAN.md](PLAN.md) holds the ordered roadmap; [vision.md](vision.md) holds the
-product intent behind it.
+[PLAN.md](PLAN.md) holds the ordered roadmap; [docs/vision.md](docs/vision.md)
+holds the product intent behind it.
+
+## License
+
+[GNU AGPL-3.0-only](LICENSE). Use it, modify it, self-host it freely. The one
+obligation that matters: if you run a modified version as a network service,
+its users are entitled to your source.
 
 ## Contributing
 
