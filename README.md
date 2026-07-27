@@ -1,10 +1,12 @@
-# Docyfier
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="Docyfier — Make the document they remember." width="820">
+</p>
 
-### Make the document they remember.
-
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![Docker image](https://img.shields.io/badge/ghcr.io-docyfier-2496ED?logo=docker&logoColor=white)](https://github.com/ikarys/Docyfier/pkgs/container/docyfier)
-[![Self-hosted](https://img.shields.io/badge/AI-bring_your_own_model-8A2BE2)](#ai-provider)
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL_v3-blue.svg" alt="License: AGPL v3"></a>
+  <a href="https://github.com/ikarys/Docyfier/pkgs/container/docyfier"><img src="https://img.shields.io/badge/ghcr.io-docyfier-2496ED?logo=docker&logoColor=white" alt="Docker image"></a>
+  <a href="#ai-provider"><img src="https://img.shields.io/badge/AI-bring_your_own_model-8A2BE2" alt="Bring your own model"></a>
+</p>
 
 The client, the steering committee, your manager — none of them read your
 document, they *look* at it first. A wall of unstyled text reads as a draft. A

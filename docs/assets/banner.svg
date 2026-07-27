@@ -1,0 +1,32 @@
+<svg width="1280" height="400" viewBox="0 0 1280 400" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="1280" height="400" fill="#1e2327"/>
+
+  <rect x="-75" y="-90" width="150" height="180" rx="16" fill="#5b6270" transform="translate(230,230) rotate(-8)"/>
+  <rect x="170" y="90" width="170" height="200" rx="16" fill="#eef3f8"/>
+  <path d="M310 90 L340 90 L340 120 Z" fill="#c17a54"/>
+
+  <rect x="190" y="110" width="90" height="11" rx="5" fill="#7c8896"/>
+
+  <rect x="190" y="131" width="62" height="50" rx="7" fill="#dde6ee"/>
+  <rect x="190" y="131" width="62" height="7" rx="7" fill="#4fd1c5"/>
+
+  <rect x="262" y="131" width="62" height="50" rx="7" fill="#dde6ee"/>
+  <rect x="262" y="131" width="62" height="7" rx="7" fill="#f6ad55"/>
+
+  <rect x="190" y="193" width="134" height="24" rx="6" fill="#dde6ee"/>
+  <rect x="190" y="193" width="4" height="24" fill="#8b7cf6"/>
+
+  <rect x="190" y="243" width="13" height="27" rx="3" fill="#63b3ed"/>
+  <rect x="208" y="228" width="13" height="42" rx="3" fill="#4fd1c5"/>
+  <rect x="226" y="250" width="13" height="20" rx="3" fill="#f6ad55"/>
+  <rect x="244" y="218" width="13" height="52" rx="3" fill="#fc8181"/>
+
+  <text x="420" y="200" font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="700" fill="#f4f2ee">Docyfier</text>
+  <text x="420" y="235" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="400" fill="#9aa8b8">Make the document they remember.</text>
+
+  <rect x="420" y="252" width="20" height="6" rx="3" fill="#4fd1c5"/>
+  <rect x="448" y="252" width="20" height="6" rx="3" fill="#f6ad55"/>
+  <rect x="476" y="252" width="20" height="6" rx="3" fill="#8b7cf6"/>
+  <rect x="504" y="252" width="20" height="6" rx="3" fill="#fc8181"/>
+  <rect x="532" y="252" width="20" height="6" rx="3" fill="#63b3ed"/>
+</svg>
