@@ -6,10 +6,11 @@ import * as write from "@/application/documents/write-documents";
 import type { DocumentRecord } from "@/domain/documents/document";
 import type { DocumentSummary } from "@/domain/documents/repository";
 import {
-  activeRepository,
   fileRepository,
+  repositoryFor,
 } from "@/infrastructure/documents/repository-factory";
 import { systemClock, uuidIds } from "@/infrastructure/shared/system-clock";
+import { getStorageSettings } from "@/lib/settings/storage";
 
 /**
  * Composition root for documents.
@@ -26,7 +27,8 @@ import { systemClock, uuidIds } from "@/infrastructure/shared/system-clock";
 export type { DocumentRecord, DocumentSummary };
 
 async function deps(): Promise<DocumentDeps> {
-  return { repository: await activeRepository(), clock: systemClock, ids: uuidIds };
+  const repository = await repositoryFor(await getStorageSettings());
+  return { repository, clock: systemClock, ids: uuidIds };
 }
 
 export async function listDocuments(): Promise<DocumentSummary[]> {

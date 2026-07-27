@@ -1,7 +1,6 @@
 import "server-only";
 import type { DocumentRepository } from "@/domain/documents/repository";
-import { getStorageSettings } from "@/lib/settings";
-import type { StorageSettings } from "@/lib/settings-types";
+import type { StorageConnectionRecord } from "@/domain/configuration/storage-connection";
 import { fileDocumentRepository } from "./fs-repository";
 
 /**
@@ -15,11 +14,11 @@ type Cached = { key: string; repository: Promise<DocumentRepository> };
 
 const cache = globalThis as typeof globalThis & { __docyfierRepository?: Cached };
 
-function configKey(s: StorageSettings): string {
+function configKey(s: StorageConnectionRecord): string {
   return [s.driver, s.host, s.port, s.user, s.password, s.database, s.ssl].join(" ");
 }
 
-async function connect(settings: StorageSettings): Promise<DocumentRepository> {
+async function connect(settings: StorageConnectionRecord): Promise<DocumentRepository> {
   if (settings.driver === "postgres") {
     const { createPostgresRepository } = await import("./postgres-repository");
     return createPostgresRepository(settings);
@@ -30,7 +29,7 @@ async function connect(settings: StorageSettings): Promise<DocumentRepository> {
 
 /** The repository for an explicit config — used by the settings page to
  * validate a connection before saving it. */
-export function repositoryFor(settings: StorageSettings): Promise<DocumentRepository> {
+export function repositoryFor(settings: StorageConnectionRecord): Promise<DocumentRepository> {
   if (settings.driver === "files") return Promise.resolve(fileDocumentRepository);
 
   const key = configKey(settings);
@@ -48,11 +47,6 @@ export function repositoryFor(settings: StorageSettings): Promise<DocumentReposi
   return repository;
 }
 
-/** The repository the app is configured to use right now. */
-export async function activeRepository(): Promise<DocumentRepository> {
-  return repositoryFor(await getStorageSettings());
-}
-
 /** The file-backed repository, whatever the settings say — the source the
  * "import my documents into the database" flow reads from. */
 export function fileRepository(): DocumentRepository {
@@ -61,7 +55,7 @@ export function fileRepository(): DocumentRepository {
 
 /** Connect with an explicit config, count the documents, release. Validates a
  * connection from the settings page without disturbing the live pool. */
-export async function probeRepository(settings: StorageSettings): Promise<number> {
+export async function probeRepository(settings: StorageConnectionRecord): Promise<number> {
   if (settings.driver === "files") return (await fileDocumentRepository.list()).length;
   const repository = await connect(settings);
   try {

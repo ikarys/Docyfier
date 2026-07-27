@@ -1,42 +1,19 @@
-/** What a client component may see of a provider: never the key itself. */
+/**
+ * The settings shapes a client component may import.
+ *
+ * The rules behind them live in `src/domain/configuration/`; this module only
+ * re-exports what crosses to the browser, so a `"use client"` file never has to
+ * reach into a layer it must not depend on.
+ */
 export type { AiProviderSummary } from "@/domain/configuration/ai-provider";
-
-/** Where documents live. `files` is the default on-disk store (STEP 0). */
-export type StorageDriver = "files" | "postgres" | "mysql";
-
-export const STORAGE_DRIVERS: StorageDriver[] = ["files", "postgres", "mysql"];
-
-export const DEFAULT_PORTS: Record<StorageDriver, number> = {
-  files: 0,
-  postgres: 5432,
-  mysql: 3306,
-};
-
-/** Connection settings for the document store. Always file-backed themselves:
- * they cannot be read from the database they configure. */
-export interface StorageSettings {
-  driver: StorageDriver;
-  host: string;
-  port: number;
-  user: string;
-  password: string;
-  database: string;
-  ssl: boolean;
-}
-
-export function isStorageDriver(value: unknown): value is StorageDriver {
-  return STORAGE_DRIVERS.includes(value as StorageDriver);
-}
-
-/** What the browser gets: the connection minus its password. */
-export type StorageSettingsSummary = Omit<StorageSettings, "password"> & {
-  hasPassword: boolean;
-};
-
-export function toStorageSummary(settings: StorageSettings): StorageSettingsSummary {
-  const { password, ...rest } = settings;
-  return { ...rest, hasPassword: password.length > 0 };
-}
+export {
+  DEFAULT_PORTS,
+  STORAGE_DRIVERS,
+  isStorageDriver,
+  type StorageDriver,
+  type StorageConnectionRecord as StorageSettings,
+  type StorageConnectionSummary as StorageSettingsSummary,
+} from "@/domain/configuration/storage-connection";
 
 /** State of one export target: off until the user turns it on, plus whatever
  * options that target declares. */
