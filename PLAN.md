@@ -213,7 +213,28 @@ Acceptance (export targets):
 - Email composer with tone choices (#13).
 - Ticket composer with per-tool formats: Jira, ServiceNow, GitLab issues (#14).
 
+**Composers as plugins:** one contract, one file per flow
+(`src/lib/compose/composers/`). A composer declares its form fields and builds
+its prompt from them, and does nothing else — no AI client, no storage. The
+form, the menu and the server action all read the registry, so a new flow is a
+file plus a line.
+
+**Out of scope:** posting to the tracker or sending the mail. These flows end at
+the clipboard for the same reason exports do: delivery needs per-tool auth,
+which is STEP 6/10 territory. Composed text does not become a document either —
+that is what the document surfaces are for.
+
 **Exit criteria:** both flows produce ready-to-paste output.
+
+Acceptance:
+
+- [x] Email: brief → email, or an existing email rewritten; tone, length, recipient and language are choices, and the subject line comes out first
+- [x] Ticket: raw notes → title plus description, in the markup the chosen tracker reads — Jira wiki markup, ServiceNow plain-text fields, GitLab flavored markdown
+- [x] One ticket composer, not three: the tracker is a field, so the questions asked of the user stay the same and each format is one entry
+- [x] Output is plain text with a copy button; the form keeps its values so one choice can be changed and composed again
+- [x] Composers invent nothing the input does not carry — missing facts come out as bracketed placeholders
+- [x] A `select` only ever yields a declared choice, and unknown form keys are never read: the values reach a prompt
+- [x] Pages and the action are guarded like the rest — auth on gives a redirect to `/login`, auth off lets them through
 
 ### STEP 9 — Templates, themes, style settings
 

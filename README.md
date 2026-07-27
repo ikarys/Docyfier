@@ -40,14 +40,18 @@ work in a rich block editor with AI help. There is no dependency on markdown fil
 - **Export**: Markdown (`↓ MD`, rich blocks projected onto standard markdown —
   a chart exports as its data table) and "PDF" via the browser print dialog
   (A4 print stylesheet).
+- **Compose** (`/compose`): email and ticket composers — short writing that ends
+  in the clipboard rather than in a document. An email from a brief (or an
+  existing one rewritten) in a chosen tone; a ticket in the markup Jira,
+  ServiceNow or GitLab expects.
 - **Internal format**: ProseMirror JSON — the product's document format
   (see PLAN.md STEP 0). It makes reliable formatting, targeted AI edits, snapshots
   and multi-format export possible.
 
-Not yet built (next STEPS in [PLAN.md](PLAN.md)): print-quality PDF via
-headless Chromium (STEP 3), single-user auth (STEP 4), docx export, diagrams,
-multi-tenant. PDF **import** is deliberately out of scope: a PDF carries
-layout, not structure.
+Not yet built (next STEPS in [PLAN.md](PLAN.md)): print-quality PDF via headless
+Chromium (STEP 3, judged not worth its weight), multi-tenant (STEP 6), corporate
+themes and style settings (STEP 9), diagrams. PDF **import** is deliberately out
+of scope: a PDF carries layout, not structure.
 
 ## AI setup (LM Studio)
 
@@ -150,6 +154,8 @@ Ports are overridable: `just dev 4000`.
   ProseMirror JSON parsed with the editor schema.
 - `src/lib/doc/markdown.ts` — markdown export, served by
   `src/app/api/export/markdown/[id]/route.ts`.
+- `src/lib/compose/` — email and ticket composers: one file per flow, each
+  declaring its fields and building its own prompt.
 - `src/app/actions.ts` — server actions: create / save / rename / duplicate / delete.
 - `src/app/ai-actions.ts` — AI server actions: generate / transform / rewrite.
 - `src/app/globals.css` — design system, editor chrome, and A4 print rules.

@@ -34,9 +34,12 @@ dashboard stat cards; templates gallery with search/rename/duplicate in the
 document list; file import (md / txt / docx) and pluggable export targets
 (Word, Confluence, Notion, Trilium) from STEP 5 — see `src/lib/export/`, where
 adding a target is one file plus a line in the registry. Settings is one route
-per scope (`/settings/{ai,storage,exports,access}`). Next: STEP 8 (email and
-ticket composers). PDF stays print-based on purpose; a headless-Chromium
-renderer is the only open item of STEP 3 and was judged not worth its weight.
+per scope (`/settings/{ai,storage,exports,access}`). STEP 8 is in: the email and
+ticket composers under `/compose`, same plugin shape in `src/lib/compose/` —
+short-form writing that ends in the clipboard, not in a document. Next: STEP 6
+(multi-tenant) or STEP 9 (templates, themes, style settings). PDF stays
+print-based on purpose; a headless-Chromium renderer is the only open item of
+STEP 3 and was judged not worth its weight.
 
 ## Working conventions
 
