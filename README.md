@@ -1,105 +1,126 @@
 # Docyfier
 
-SaaS for AI-assisted writing and formatting of professional documents.
-See [vision.md](vision.md) for the product vision and [PLAN.md](PLAN.md) for the roadmap.
+**Turn raw text into a document that looks like someone designed it.**
 
-## Current state — WYSIWYG editor + AI assistance
+Docyfier is a self-hostable web app for writing and — above all — *formatting*
+professional documents with AI assistance. Describe what you need, get a
+structured draft in a real block editor, then shape it with callouts, tables,
+charts, cards and themes. Export to Word, Markdown, Confluence, Notion or PDF.
 
-Users arrive with no source file: they describe a document (or start blank) and
-work in a rich block editor with AI help. There is no dependency on markdown files.
+It runs against **any OpenAI-compatible model server**, local or hosted, so
+documents and prompts never have to leave your infrastructure.
 
-- **Generate from a prompt** (home page): describe the document, the AI drafts
-  it fully formatted straight into the editor.
-- **AI assistant panel** (editor): whole-document operations — restructure
-  ("Make it pretty"), shorten, change tone, add sections — via chat or one-click
-  actions.
-- **Selection AI menu**: select text → floating menu with quick rewrites
-  (rephrase / shorten / expand / formal) or a free prompt applied only to the
-  selection.
-- **Templates**: "New document" opens a gallery — meeting notes, project
-  one-pager, technical spec, status report, roadmap, incident postmortem,
-  decision note — each a real document opening with its own theme preset.
-- **Import**: bring in a `.md`, `.markdown`, `.txt` or `.docx` file — converted
-  into an editable document (headings, lists, tables, code, quotes, marks).
-  The import is faithful; reformatting is the AI "make it pretty" pass.
-- **Document list**: search, inline rename, duplicate, and delete behind a
-  confirmation.
-- **Block editor** (Tiptap / ProseMirror): headings, bold/italic/strike/underline/
-  inline code, links, text alignment, bullet & ordered lists, blockquote, code
-  block, tables, horizontal rule, undo/redo, and colored **callouts**
-  (note / tip / warn / danger). Type `/` to insert any block.
-- **Presentation blocks**: card grids, columns, key-figure rows (compact or
-  full-width dashboard cards), timelines, step lists, pyramids, bar & line
-  **charts** (inline SVG), a document **cover** and a **table of contents**.
-- **Images**: paste, drag-drop or pick a file — uploaded, stored and re-rendered
-  at 25 / 50 / 75 / 100 % of the text column.
-- **Themes**: four presets, each an adjustable token set — accent color, font
-  pair, corner radius and density — edited live in the Design panel. Themes are
+## Features
+
+**Writing with AI**
+
+- **Generate from a prompt** — describe a document, get it drafted and
+  formatted straight into the editor.
+- **Document assistant** — whole-document operations: restructure, "make it
+  pretty", shorten, change tone, add sections, via chat or one-click actions.
+- **Selection rewrites** — select text, get a floating menu with rephrase /
+  shorten / expand / formal, or apply a free prompt to that selection only.
+- **Diff review** — AI edits arrive as a reviewable diff, applied or rejected
+  block by block, never as a silent overwrite.
+
+**The editor**
+
+- Block editor built on Tiptap / ProseMirror: headings, bold / italic / strike /
+  underline / inline code, links, alignment, lists, blockquotes, code blocks,
+  tables, and colored **callouts** (note / tip / warn / danger). Type `/` for
+  the insert menu; drag handles reorder anything.
+- **Presentation blocks**: card grids, columns, key-figure rows, dashboard stat
+  cards, timelines, step lists, pyramids, and bar & line **charts** rendered as
+  inline SVG.
+- **Images**: paste, drag-drop or pick a file, re-rendered at 25 / 50 / 75 /
+  100 % of the text column.
+- **Cover page and table of contents**, with print control for both.
+- **Themes**: presets that are adjustable token sets — accent color, font pair,
+  corner radius, density — edited live in a Design panel. Themes are
   presentation only and never touch document content.
-- **Autosave**: edits persist automatically (debounced) with a save indicator.
-- **Export**: Markdown (`↓ MD`, rich blocks projected onto standard markdown —
-  a chart exports as its data table) and "PDF" via the browser print dialog
-  (A4 print stylesheet).
-- **Compose** (`/compose`): email and ticket composers — short writing that ends
-  in the clipboard rather than in a document. An email from a brief (or an
-  existing one rewritten) in a chosen tone; a ticket in the markup Jira,
-  ServiceNow or GitLab expects.
-- **Internal format**: ProseMirror JSON — the product's document format
-  (see PLAN.md STEP 0). It makes reliable formatting, targeted AI edits, snapshots
-  and multi-format export possible.
+- **Autosave**, debounced, with a save indicator.
 
-Not yet built (next STEPS in [PLAN.md](PLAN.md)): print-quality PDF via headless
-Chromium (STEP 3, judged not worth its weight), multi-tenant (STEP 6), corporate
-themes and style settings (STEP 9), diagrams. PDF **import** is deliberately out
-of scope: a PDF carries layout, not structure.
+**Getting content in and out**
 
-## AI setup (LM Studio)
+- **Templates**: meeting notes, project one-pager, technical spec, status
+  report, roadmap, incident postmortem, decision note — each a real document
+  with its own theme preset.
+- **Import**: `.md`, `.markdown`, `.txt` and `.docx` become editable documents
+  with their structure intact. PDF import is deliberately out of scope — a PDF
+  carries layout, not structure.
+- **Export**: Word (`.docx`), Markdown, Confluence, Notion, Trilium, and PDF
+  through the browser print dialog against an A4 stylesheet. Targets are
+  plugins: one file in `src/lib/export/targets/` plus a line in the registry.
+- **Compose**: short-form writing that ends in the clipboard instead of a
+  document — an email from a brief in a chosen tone, or a ticket in the markup
+  Jira, ServiceNow or GitLab expects.
 
-AI calls go through the Vercel AI SDK to any OpenAI-compatible server
-(LM Studio, Ollama, vLLM…); the default target is a local **LM Studio**
-instance:
+Documents are stored as **ProseMirror JSON**, not markdown. That is what makes
+reliable formatting, targeted AI edits and multi-format export possible.
 
-1. Start LM Studio, load a model, enable the local server (default
-   `http://localhost:1234`).
-2. That's it — the first loaded model is auto-detected.
+## Quick start
 
-Configure the endpoint, model and API key on the **Settings page** (`/settings`,
-gear icon in the header), with a connection test and a model picker. Settings
-are persisted next to the document store (`data/settings.json`).
+### With Docker
 
-Resolution order: Settings page > environment > defaults. Env vars
-(`.env.local`):
+```bash
+docker run -p 3000:3000 \
+  -v docyfier-data:/data \
+  -e DOCYFIER_LLM_BASE_URL=http://<your-model-server>:1234/v1 \
+  ghcr.io/<owner>/docyfier:latest
+```
+
+Open <http://localhost:3000>. Everything else is configurable from the Settings
+page once the app is running.
+
+### From source
+
+Requires Node `24.18.0` (pinned in `.nvmrc`).
+
+```bash
+nvm use
+npm install
+npm run dev        # http://localhost:3000
+```
+
+With [`just`](https://github.com/casey/just): `just setup && just dev`.
+
+## Configuration
+
+Every setting below resolves in the same order: **Settings page > environment
+variables > defaults**. The Settings page (`/settings`) is split by scope —
+`ai`, `storage`, `exports`, `access` — and writes to `settings.json` next to
+the document store, so nothing here requires a rebuild or a restart.
+
+### AI provider
+
+Calls go through the Vercel AI SDK to any OpenAI-compatible endpoint — LM
+Studio, Ollama, vLLM, llama.cpp, or a hosted API that speaks the same protocol.
+Point the base URL at your server, and the model picker on the Settings page
+lists what it offers (with a connection test).
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `DOCYFIER_LLM_BASE_URL` | `http://localhost:1234/v1` | OpenAI-compatible endpoint |
 | `DOCYFIER_LLM_MODEL` | first model on the server | Model id |
-| `DOCYFIER_LLM_API_KEY` | `lm-studio` | Key for providers that need one |
-| `DOCYFIER_LLM_MAX_TOKENS` | `32768` | Max tokens per AI response |
+| `DOCYFIER_LLM_API_KEY` | — | Key for providers that require one |
+| `DOCYFIER_LLM_MAX_TOKENS` | `32768` | Max tokens per response |
 
-Every AI response is ProseMirror JSON validated against the editor schema
-server-side (invalid output → one retry) before it touches the document.
+Every AI response is validated against the editor schema server-side (invalid
+output gets one retry) before it can touch a document.
 
-## Storage
-
-Documents live in one of three backends, chosen under **Document storage** on
-the Settings page — no rebuild, no restart:
+### Storage
 
 | Backend | Where | Notes |
 |---|---|---|
-| Files (default) | JSON files under `data/documents/` (gitignored) | Override the location with `DOCYFIER_DATA_DIR` |
+| Files *(default)* | JSON files under `data/documents/` | Override with `DOCYFIER_DATA_DIR` |
 | PostgreSQL | `documents` table | Needs an existing database; the table is created on first connection |
 | MySQL | `documents` table | Same |
 
-The connection settings themselves always stay in `data/settings.json` — they
-cannot be read from the database they configure. Saving a database
-configuration is refused if the connection fails, so a typo cannot take the app
-down. After switching to a database, **Import documents from files** copies the
-documents still on disk into it (skipping ids already present, never deleting
-the source files).
-
-Env vars, same resolution order as above (Settings page > environment >
-defaults):
+Connection settings always stay in `settings.json` — they cannot live in the
+database they configure. Saving a database configuration is refused if the
+connection fails, so a typo cannot take the app down. After switching, **Import
+documents from files** copies what is still on disk into the database, skipping
+ids already present and never deleting the source files.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -111,56 +132,39 @@ defaults):
 | `DOCYFIER_DB_NAME` | — | Database name |
 | `DOCYFIER_DB_SSL` | `0` | `1` connects over TLS (certificates verified) |
 
-## Requirements
+### Access control
 
-- Node `24.18.0` (pinned in `.nvmrc`; `nvm use`).
+Docyfier is currently **single-user**: one password guarding the instance, off
+by default and enabled as soon as a password exists. Multi-tenant access is on
+the roadmap, not in the build — do not expose an instance to the open internet
+expecting per-user isolation.
 
-## Getting started
+| Variable | Default | Purpose |
+|---|---|---|
+| `DOCYFIER_AUTH` | auto | On as soon as a password exists; `1` forces the setup form on first visit, `0` forces it off |
+| `DOCYFIER_AUTH_PASSWORD` | — | Sets the password from the environment instead of the setup form |
+| `DOCYFIER_AUTH_SECRET` | derived | Session signing key; without it one is derived and kept with the data |
 
-```bash
-nvm use        # switch to pinned Node version
-just setup     # npm install
-just dev       # http://localhost:3000
-```
+## Deployment
 
-Or without `just`: `nvm use && npm install && npm run dev`.
-
-## Tasks (Justfile)
-
-| Command | Purpose |
-|---|---|
-| `just setup` | Install Node toolchain + deps |
-| `just dev` | Dev server (hot reload) |
-| `just build` | Production build |
-| `just start` | Serve the production build |
-| `just serve` | build + start |
-| `just check` | typecheck + lint |
-| `just docker-build` | Build the Docker image (`docyfier:latest`) |
-| `just clean` | Remove `.next` |
-
-Ports are overridable: `just dev 4000`.
-
-## Deployment (Docker)
-
-The `Dockerfile` produces a small runtime image: dependencies and the Next.js
+The `Dockerfile` builds a small runtime image: dependencies and the Next.js
 build happen in throwaway stages, and only the `output: "standalone"` server
 bundle reaches the final layer. It runs as a non-root user on port `3000` and
-exposes a single volume, `/data`, holding documents, uploads and
-`settings.json` — everything that must survive an image upgrade.
-
-Build and run locally:
+exposes a single volume, `/data`, holding documents, uploads and settings —
+everything that must survive an image upgrade.
 
 ```bash
-just docker-build                      # docker build -t docyfier:latest .
-docker run -p 3000:3000 -v docyfier-data:/data docyfier:latest
+just docker-build    # docker build -t docyfier:latest .
 ```
 
 ### Published images
 
-`.github/workflows/docker.yml` builds on every push to `main` and publishes to
-the GitHub Container Registry as `ghcr.io/<owner>/docyfier`, tagged `latest`,
-the short commit sha, and the git tag for `v*` releases. Nothing to configure:
-the workflow authenticates with the repository's own `GITHUB_TOKEN`.
+`.github/workflows/docker.yml` publishes to the GitHub Container Registry as
+`ghcr.io/<owner>/docyfier`. It runs on **version tags only** — pushing `v0.2.0`
+yields `0.2.0`, `0.2`, `latest` and the short commit sha — because a tag is the
+signal that a build is meant to be deployed. `workflow_dispatch` covers the
+occasional build from a branch. The workflow authenticates with the
+repository's own `GITHUB_TOKEN`, so a fork needs no configuration.
 
 A host pulling a private image needs a personal access token with the
 `read:packages` scope:
@@ -169,49 +173,72 @@ A host pulling a private image needs a personal access token with the
 docker login ghcr.io -u <github-user> --password-stdin
 ```
 
-### Running the published image
+### Running it
 
-`compose.yaml` is the deployment stack. Point the volume at a real directory on
-the host, keep the secrets in a `.env` file beside it (never commit it), then:
+`compose.yaml` is a ready deployment stack. Point the volume at a directory on
+the host, keep secrets in a `.env` file beside it (never commit it), then:
 
 ```bash
 docker compose pull && docker compose up -d
 ```
 
-Pin `image:` to a release tag rather than `latest` so a broken build cannot
+Pin `image:` to a release tag rather than `latest`, so a broken build cannot
 reach the host on the next pull. Upgrading is `pull` + `up -d`; the `/data`
 volume carries over untouched.
 
-Environment inside the container — the AI and storage variables above still
-apply, plus:
+One recurring trap: `DOCYFIER_LLM_BASE_URL` must name a host the *container*
+can reach. A model server on the machine running Docker is not `localhost` from
+inside the container — use its LAN address, and make sure the server listens on
+`0.0.0.0` rather than loopback.
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `DOCYFIER_DATA_DIR` | `/data/documents` | Set by the image; keep it under the volume |
-| `DOCYFIER_AUTH` | auto | On as soon as a password exists; `1` forces the setup form on first visit, `0` forces it off |
-| `DOCYFIER_AUTH_PASSWORD` | — | Sets the password from the environment instead of the setup form |
-| `DOCYFIER_AUTH_SECRET` | derived | Session signing key; without it one is derived and kept under `/data` |
+## Development
 
-`DOCYFIER_LLM_BASE_URL` must point at a host the container can reach: an
-OpenAI-compatible server on the LAN, not `localhost`. It is also editable from
-the Settings page once the app is up.
+| Command | Purpose |
+|---|---|
+| `just setup` | Install dependencies |
+| `just dev` | Dev server with hot reload |
+| `just build` | Production build |
+| `just start` | Serve the production build |
+| `just serve` | build + start |
+| `just check` | typecheck + lint |
+| `just docker-build` | Build the Docker image |
+| `just clean` | Remove `.next` |
 
-## Key files
+Ports are overridable: `just dev 4000`. Each recipe maps to an npm script, so
+`just` is a convenience, not a requirement.
 
-- `src/components/Editor.tsx` — Tiptap editor + formatting toolbar + autosave.
-- `src/components/extensions/Callout.ts` — custom callout block node with variants.
+### Project layout
+
+- `src/components/Editor.tsx` — Tiptap editor, toolbar, autosave.
+- `src/components/extensions/` — custom nodes (callouts, charts, cards…).
 - `src/components/AiPanel.tsx` / `SelectionAiMenu.tsx` / `GenerateHero.tsx` —
   the three AI surfaces.
-- `src/lib/ai/` — LLM provider (LM Studio), prompts, schema validation, services.
+- `src/lib/ai/` — provider, prompts, schema validation, services.
 - `src/lib/store/` — document store: facade + files / PostgreSQL / MySQL drivers.
-- `src/lib/templates.ts` — document templates, validated against the editor
-  schema at build time by `src/lib/doc/templates-check.ts`.
-- `src/lib/doc/import.ts` — file import: markdown / text / docx → HTML →
-  ProseMirror JSON parsed with the editor schema.
-- `src/lib/doc/markdown.ts` — markdown export, served by
-  `src/app/api/export/markdown/[id]/route.ts`.
-- `src/lib/compose/` — email and ticket composers: one file per flow, each
-  declaring its fields and building its own prompt.
-- `src/app/actions.ts` — server actions: create / save / rename / duplicate / delete.
-- `src/app/ai-actions.ts` — AI server actions: generate / transform / rewrite.
-- `src/app/globals.css` — design system, editor chrome, and A4 print rules.
+- `src/lib/export/targets/` — export targets, one file each, listed in
+  `registry.ts`.
+- `src/lib/compose/composers/` — email and ticket composers, same plugin shape.
+- `src/lib/doc/` — import, markdown export, template validation.
+- `src/app/actions.ts` / `ai-actions.ts` — server actions.
+- `src/app/globals.css` — design system, editor chrome, A4 print rules.
+
+Adding an export target or a composer means writing one file and registering
+it; that is the intended extension point.
+
+## Roadmap
+
+Shipped so far: the editor, the AI surfaces, themes, templates, import/export,
+the composers, and single-user auth. Next up: multi-tenant workspaces with
+per-user permissions, corporate themes and style settings (automatic emphasis
+rules, emoji policy), diagrams, and print-quality PDF through headless
+Chromium — today's PDF goes through the browser print dialog on purpose.
+
+[PLAN.md](PLAN.md) holds the ordered roadmap; [vision.md](vision.md) holds the
+product intent behind it.
+
+## Contributing
+
+Issues and pull requests are welcome. Conventions: all artifacts in English
+(code, comments, docs, commit messages), [Conventional
+Commits](https://www.conventionalcommits.org/) for messages, and small focused
+diffs — one concern per commit. Run `just check` before opening a PR.
