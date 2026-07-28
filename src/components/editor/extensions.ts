@@ -1,67 +1,35 @@
-import { StarterKit } from "@tiptap/starter-kit";
-import { Table } from "@tiptap/extension-table";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableCell } from "@tiptap/extension-table-cell";
-import { TableHeader } from "@tiptap/extension-table-header";
+import type { AnyExtension } from "@tiptap/core";
 import { Placeholder } from "@tiptap/extension-placeholder";
-import { TextStyle, Color } from "@tiptap/extension-text-style";
-import { Highlight } from "@tiptap/extension-highlight";
-import { TextAlign } from "@tiptap/extension-text-align";
-import { Callout } from "@/infrastructure/editor/callout";
-import { Badge } from "@/infrastructure/editor/badge";
-import { CardGrid, Card } from "@/infrastructure/editor/cards";
-import { ColumnList, Column } from "@/infrastructure/editor/columns";
-import { StatRow, Stat } from "@/infrastructure/editor/stats";
-import { Timeline, TimelineItem } from "@/infrastructure/editor/timeline";
-import { StepList, Step } from "@/infrastructure/editor/steps";
-import { Pyramid, PyramidTier } from "@/infrastructure/editor/pyramid";
-import { DocCover, CoverLine } from "@/infrastructure/editor/cover";
-import { PageBreak } from "@/infrastructure/editor/page-break";
-import { SlashCommand } from "./slash-command";
 import { AiDiff } from "@/infrastructure/editor/ai-diff";
+import {
+  DOCUMENT_EXTENSIONS,
+  VIEWED_NODES,
+} from "@/infrastructure/editor/document-extensions";
 import { ChartNode } from "../ChartView";
 import { ImageNode } from "../ImageView";
 import { TocNode } from "../TocView";
+import { SlashCommand } from "./slash-command";
 
 /**
- * Every node and mark the editor understands.
+ * Everything the editor loads: the document's own nodes and marks, and the
+ * extensions that only exist while someone is typing — the slash menu, the AI
+ * review markers, the placeholder.
  *
- * The same list is mirrored server-side by `src/lib/ai/doc-schema.ts`: a node
- * type added here that is missing there makes every AI answer containing it
- * fail validation.
+ * What a document is made of is declared once, in
+ * `src/infrastructure/editor/document-extensions.ts`, and shared with the
+ * server-side schema that validates AI output. Here a node is only ever
+ * *upgraded* with the React view that draws it; one with no view still loads,
+ * so the editor can never understand fewer node types than the schema.
  */
+const VIEWS: Record<string, AnyExtension> = {
+  [ChartNode.name]: ChartNode,
+  [ImageNode.name]: ImageNode,
+  [TocNode.name]: TocNode,
+};
+
 export const EDITOR_EXTENSIONS = [
-  // Link ships in StarterKit v3; inside the editor a click must place the
-  // caret, not navigate away from the document being written.
-  StarterKit.configure({ link: { openOnClick: false } }),
-  Callout,
-  Table.configure({ resizable: true }),
-  TableRow,
-  TableHeader,
-  TableCell,
-  TextStyle,
-  Color,
-  Highlight.configure({ multicolor: true }),
-  Badge,
-  CardGrid,
-  Card,
-  ColumnList,
-  Column,
-  StatRow,
-  Stat,
-  Timeline,
-  TimelineItem,
-  StepList,
-  Step,
-  Pyramid,
-  PyramidTier,
-  ChartNode,
-  ImageNode,
-  TocNode,
-  DocCover,
-  CoverLine,
-  PageBreak,
-  TextAlign.configure({ types: ["heading", "paragraph"] }),
+  ...DOCUMENT_EXTENSIONS,
+  ...VIEWED_NODES.map((node) => VIEWS[node.name] ?? node),
   SlashCommand,
   AiDiff,
   Placeholder.configure({
