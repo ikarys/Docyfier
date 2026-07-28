@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDocument } from "@/lib/store";
-import { listAiProviders } from "@/lib/settings";
+import { getBrandPresets, listAiProviders } from "@/lib/settings";
 import { requireAuth } from "@/lib/auth";
 import { deleteDocumentAction } from "@/app/actions";
 import { DocumentEditor } from "@/components/Editor";
@@ -20,7 +20,7 @@ export default async function DocumentPage({
   const { id } = await params;
   const doc = await getDocument(id);
   if (!doc) notFound();
-  const ai = await listAiProviders();
+  const [ai, presets] = await Promise.all([listAiProviders(), getBrandPresets()]);
 
   return (
     <>
@@ -65,6 +65,7 @@ export default async function DocumentPage({
         initialContent={doc.content}
         initialTheme={doc.theme}
         initialUpdatedAt={doc.updatedAt}
+        presets={presets}
       />
     </>
   );

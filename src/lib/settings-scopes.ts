@@ -28,6 +28,12 @@ export const SETTINGS_SCOPES: SettingsScope[] = [
     lede: "Where documents live: files, PostgreSQL or MySQL.",
   },
   {
+    id: "style",
+    label: "Style",
+    href: "/settings/style",
+    lede: "How documents look and how the assistant writes them.",
+  },
+  {
     id: "exports",
     label: "Exports",
     href: "/settings/exports",

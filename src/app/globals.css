@@ -3011,3 +3011,62 @@ body {
 .login-card {
   gap: 1rem;
 }
+
+/* ---- Style settings: the instance's identity (STEP 9) -------------------- */
+
+.settings-heading {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 1.75rem 0 0.75rem;
+}
+.settings-heading:first-of-type {
+  margin-top: 0.5rem;
+}
+.brand-preview {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: var(--paper);
+}
+.brand-preview-sheet {
+  font-family: var(--doc-font-body);
+}
+.brand-preview-title {
+  font-family: var(--doc-font-heading);
+  color: var(--doc-accent);
+  font-size: 1.4rem;
+  margin: 0 0 0.4rem;
+}
+.brand-preview-line {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+.preset-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.preset-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+}
+.preset-list-item .preset-name {
+  flex: 1;
+}
+.preset-save-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+.preset-save-row .field-input {
+  flex: 1;
+}

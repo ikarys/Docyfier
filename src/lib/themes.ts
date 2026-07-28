@@ -24,6 +24,7 @@ export {
   findFontPair,
   findPreset,
   normalizeTheme,
+  presetSkin,
   resolveTokens,
 } from "@/domain/documents/theme";
 

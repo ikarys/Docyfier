@@ -1,21 +1,10 @@
 "use client";
 
 import type { Editor } from "@tiptap/react";
-import {
-  ChipChoice,
-  DENSITY_CHOICES,
-  RADIUS_CHOICES,
-} from "@/components/design/ChipChoice";
-import { PresetGrid } from "@/components/design/PresetGrid";
 import { RestyleButton } from "@/components/design/RestyleButton";
+import { ThemeControls } from "@/components/design/ThemeControls";
 import { useRestyle } from "@/components/editor/useRestyle";
-import {
-  ACCENT_SWATCHES,
-  FONT_PAIRS,
-  resolveTokens,
-  type DocumentTheme,
-  type ThemeTokens,
-} from "@/lib/themes";
+import type { DocumentTheme, Theme } from "@/lib/themes";
 
 /**
  * Surface for STEP U3: the design side panel. It edits **tokens only** — the
@@ -29,19 +18,17 @@ import {
 export function DesignPanel({
   editor,
   theme,
+  presets,
   onChange,
   onClose,
 }: {
   editor: Editor;
   theme: DocumentTheme;
+  presets: Theme[];
   onChange: (theme: DocumentTheme) => void;
   onClose: () => void;
 }) {
-  const tokens = resolveTokens(theme);
   const restyle = useRestyle(editor, onChange);
-
-  const set = <K extends keyof ThemeTokens>(key: K, value: ThemeTokens[K]) =>
-    onChange({ ...theme, overrides: { ...theme.overrides, [key]: value } });
 
   return (
     <aside className="ai-panel design-panel no-print">
@@ -53,63 +40,7 @@ export function DesignPanel({
       </div>
 
       <div className="design-body">
-        <PresetGrid theme={theme} onChange={onChange} />
-
-        <section className="design-section">
-          <h3 className="design-label">Accent</h3>
-          <div className="accent-row">
-            {ACCENT_SWATCHES.map((hex) => (
-              <button
-                key={hex}
-                type="button"
-                className={
-                  hex.toLowerCase() === tokens.accent.toLowerCase()
-                    ? "accent-dot is-active"
-                    : "accent-dot"
-                }
-                style={{ background: hex }}
-                title={hex}
-                onClick={() => set("accent", hex)}
-              />
-            ))}
-            <input
-              type="color"
-              className="accent-picker"
-              value={tokens.accent}
-              title="Custom accent"
-              onChange={(e) => set("accent", e.target.value)}
-            />
-          </div>
-        </section>
-
-        <section className="design-section">
-          <h3 className="design-label">Typeface</h3>
-          <select
-            className="tb-select design-select"
-            value={tokens.fontPair}
-            onChange={(e) => set("fontPair", e.target.value)}
-          >
-            {FONT_PAIRS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </section>
-
-        <ChipChoice
-          label="Density"
-          choices={DENSITY_CHOICES}
-          value={tokens.density}
-          onChange={(density) => set("density", density)}
-        />
-
-        <ChipChoice
-          label="Corners"
-          choices={RADIUS_CHOICES}
-          value={tokens.radius}
-          onChange={(radius) => set("radius", radius)}
-        />
+        <ThemeControls theme={theme} presets={presets} onChange={onChange} />
 
         <RestyleButton restyle={restyle} />
 

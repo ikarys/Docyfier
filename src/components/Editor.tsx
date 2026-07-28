@@ -4,7 +4,13 @@ import { useRef, useState } from "react";
 import { useEditor, type JSONContent } from "@tiptap/react";
 import type { JSONContent as DocJSON } from "@tiptap/core";
 import { imageFilesOf, insertUploadedImages } from "@/components/editor/image-upload";
-import { resolveTokens, tokenStyle, type DocumentTheme } from "@/lib/themes";
+import {
+  presetSkin,
+  resolveTokens,
+  tokenStyle,
+  type DocumentTheme,
+  type Theme,
+} from "@/lib/themes";
 import { AiPanel } from "./AiPanel";
 import { AiDiffBar } from "./AiDiffBar";
 import { DesignPanel } from "./DesignPanel";
@@ -27,11 +33,14 @@ export function DocumentEditor({
   initialContent,
   initialTheme,
   initialUpdatedAt,
+  presets,
 }: {
   id: string;
   initialContent: JSONContent;
   initialTheme: DocumentTheme;
   initialUpdatedAt: string;
+  /** The presets this instance saved, so a document wearing one resolves it. */
+  presets: Theme[];
 }) {
   /** Only one side panel at a time — they share the same slot. */
   const [panel, setPanel] = useState<PanelName | null>("ai");
@@ -91,14 +100,15 @@ export function DocumentEditor({
         panel={panel}
         onTogglePanel={(which) => setPanel((p) => (p === which ? null : which))}
         theme={theme}
+        presets={presets}
         onChangeTheme={changeTheme}
         onSaveNow={autosave.saveNow}
       />
       <div className="editor-body" data-panel={panel !== null}>
         <main
           className="doc-shell"
-          data-theme={theme.preset}
-          style={tokenStyle(resolveTokens(theme))}
+          data-theme={presetSkin(theme.preset, presets)}
+          style={tokenStyle(resolveTokens(theme, presets))}
         >
           <EditorSurface
             editor={editor}
@@ -118,6 +128,7 @@ export function DocumentEditor({
           <DesignPanel
             editor={editor}
             theme={theme}
+            presets={presets}
             onChange={changeTheme}
             onClose={() => setPanel(null)}
           />
