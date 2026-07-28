@@ -115,6 +115,7 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
     return `\`\`\`${language}\n${plainTextRaw(node)}\n\`\`\``;
   },
   horizontalRule: () => "---",
+  blockMath: (node) => `$$\n${String(node.attrs?.latex ?? "")}\n$$`,
   table: tableToMarkdown,
   image: imageToMarkdown,
   callout: (node) => {

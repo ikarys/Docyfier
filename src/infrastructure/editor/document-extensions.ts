@@ -1,6 +1,7 @@
 import { StarterKit } from "@tiptap/starter-kit";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
 import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
+import { BlockMath, InlineMath } from "@tiptap/extension-mathematics";
 import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
 import { Table } from "@tiptap/extension-table";
@@ -21,6 +22,7 @@ import { Pyramid, PyramidTier } from "./pyramid";
 import { DocCover, CoverLine } from "./cover";
 import { PageBreak } from "./page-break";
 import { Chart } from "./chart";
+import { HighlightedCodeBlock } from "./code-block";
 import { DocImage } from "./doc-image";
 import { TableOfContents } from "./toc";
 
@@ -37,7 +39,9 @@ import { TableOfContents } from "./toc";
 export const DOCUMENT_EXTENSIONS = [
   // Link ships in StarterKit v3; inside the editor a click must place the
   // caret, not navigate away from the document being written.
-  StarterKit.configure({ link: { openOnClick: false } }),
+  // The code block comes from `code-block.ts` instead: same node name, same
+  // shape, plus the language it is written in.
+  StarterKit.configure({ link: { openOnClick: false }, codeBlock: false }),
   Callout,
   TaskList,
   TaskItem.configure({ nested: true }),
@@ -54,6 +58,8 @@ export const DOCUMENT_EXTENSIONS = [
   Badge,
   Subscript,
   Superscript,
+  InlineMath,
+  BlockMath,
   CardGrid,
   Card,
   ColumnList,
@@ -79,4 +85,4 @@ export const DOCUMENT_EXTENSIONS = [
  * shape by construction. A node that gains a view — or loses one — changes
  * nothing here.
  */
-export const VIEWED_NODES = [Chart, DocImage, TableOfContents];
+export const VIEWED_NODES = [Chart, DocImage, TableOfContents, HighlightedCodeBlock];

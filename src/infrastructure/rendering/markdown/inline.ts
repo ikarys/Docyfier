@@ -18,6 +18,8 @@ export function inlineToMarkdown(nodes: DocumentNode[] | undefined): string {
 function nodeToMarkdown(node: DocumentNode): string {
   if (node.type === "hardBreak") return "  \n";
   if (node.type === "image") return imageToMarkdown(node);
+  // Maths keeps its source: dollars are what a markdown reader expects.
+  if (node.type === "inlineMath") return `$${String(node.attrs?.latex ?? "")}$`;
   if (node.type !== "text") return inlineToMarkdown(node.content);
 
   const marks = node.marks ?? [];

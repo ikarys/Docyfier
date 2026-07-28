@@ -9,6 +9,7 @@ import {
   VIEWED_NODES,
 } from "@/infrastructure/editor/document-extensions";
 import { ChartNode } from "../chart/ChartView";
+import { CodeBlockNode } from "./CodeBlockView";
 import { ImageNode } from "../ImageView";
 import { TocNode } from "../TocView";
 import { EmojiCommand } from "./emoji-command";
@@ -30,6 +31,7 @@ const VIEWS: Record<string, AnyExtension> = {
   [ChartNode.name]: ChartNode,
   [ImageNode.name]: ImageNode,
   [TocNode.name]: TocNode,
+  [CodeBlockNode.name]: CodeBlockNode,
 };
 
 /** What the instance's writing style decides about typing itself. */

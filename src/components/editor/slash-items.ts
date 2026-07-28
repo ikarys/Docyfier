@@ -58,6 +58,18 @@ export const SLASH_ITEMS: SlashItem[] = [
       editor.chain().focus().deleteRange(range).toggleTaskList().run(),
   },
   {
+    title: "Math block",
+    icon: "∑",
+    keywords: ["math", "latex", "formula", "equation", "formule", "maths"],
+    command: ({ editor, range }) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertBlockMath({ latex: "e = mc^2" })
+        .run(),
+  },
+  {
     title: "Collapsible section",
     icon: "▸",
     keywords: ["details", "toggle", "fold", "repliable", "accordeon", "section"],

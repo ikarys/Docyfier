@@ -104,6 +104,9 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
     return `<pre><code${cls}>${escapeHtml(rawText(node))}</code></pre>`;
   },
   horizontalRule: () => "<hr />",
+  // No HTML for maths that survives a paste: the LaTeX source does, and every
+  // receiving tool renders or shows it rather than losing it.
+  blockMath: (node) => `<p><code>$$${escapeHtml(String(node.attrs?.latex ?? ""))}$$</code></p>`,
   table: tableToHtml,
   image: (node, ctx) => `<p>${imageTag(node, ctx.url)}</p>`,
   callout: (node, ctx) => {

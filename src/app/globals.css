@@ -782,6 +782,84 @@ body {
   background: var(--paper);
 }
 
+/* ---- Code blocks and maths (STEP U9) ------------------------------------- */
+
+.doc .code-block {
+  position: relative;
+}
+/* The picker sits over the block and steps back until the block is hovered. */
+.doc .code-language {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  font: inherit;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 5px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--ink-faint);
+  opacity: 0;
+  transition: opacity 0.12s;
+  cursor: pointer;
+}
+.doc .code-block:hover .code-language,
+.doc .code-language:focus {
+  opacity: 1;
+}
+
+/* Syntax colours, from the theme tokens rather than a highlight.js theme:
+   a document keeps one palette, code included. */
+.doc pre code .hljs-comment,
+.doc pre code .hljs-quote {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+.doc pre code .hljs-keyword,
+.doc pre code .hljs-selector-tag,
+.doc pre code .hljs-literal,
+.doc pre code .hljs-type {
+  color: var(--accent);
+  font-weight: 600;
+}
+.doc pre code .hljs-string,
+.doc pre code .hljs-attr,
+.doc pre code .hljs-regexp {
+  color: #1f9d6b;
+}
+.doc pre code .hljs-number,
+.doc pre code .hljs-built_in,
+.doc pre code .hljs-symbol {
+  color: #b4690e;
+}
+.doc pre code .hljs-title,
+.doc pre code .hljs-name,
+.doc pre code .hljs-section {
+  color: #7048e8;
+}
+.doc pre code .hljs-deletion {
+  color: var(--danger);
+}
+.doc pre code .hljs-addition {
+  color: #1f9d6b;
+}
+
+.doc .tiptap-mathematics-render {
+  display: inline-block;
+}
+.doc [data-type="block-math"],
+.doc .block-math {
+  display: block;
+  margin: 1.25rem 0;
+  text-align: center;
+}
+/* A formula that failed to parse must say so rather than vanish. */
+.doc .tiptap-mathematics-render--editable:hover {
+  outline: 1px dashed var(--rule-strong);
+  outline-offset: 3px;
+  cursor: pointer;
+}
+
 /* ---- Checklists and collapsible sections (STEP U9) ----------------------- */
 
 .doc ul[data-type="taskList"] {
@@ -2927,6 +3005,7 @@ body {
   .doc .doc-toc,
   .doc .doc-image,
   .doc .details,
+  .doc .code-block,
   .doc .task-item {
     break-inside: avoid;
   }

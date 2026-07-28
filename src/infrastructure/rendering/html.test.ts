@@ -65,6 +65,15 @@ describe("docToHtml", () => {
     );
   });
 
+  it("writes maths as its source, which every tool can still read", () => {
+    expect(html({ type: "blockMath", attrs: { latex: "e = mc^2" } })).toBe(
+      "<p><code>$$e = mc^2$$</code></p>",
+    );
+    expect(html(p(text("mass "), { type: "inlineMath", attrs: { latex: "m_0" } }))).toBe(
+      "<p>mass <code>$m_0$</code></p>",
+    );
+  });
+
   it("maps heading levels, falling back to h1 for a level HTML has no tag for", () => {
     expect(html({ type: "heading", attrs: { level: 2 }, content: [text("T")] })).toBe(
       "<h2>T</h2>",

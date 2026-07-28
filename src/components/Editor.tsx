@@ -1,5 +1,8 @@
 "use client";
 
+// KaTeX ships the fonts and metrics its own rendering needs; the editor is the
+// only surface that draws a formula, so the stylesheet loads with it.
+import "katex/dist/katex.min.css";
 import { useRef, useState } from "react";
 import { useEditor, type JSONContent } from "@tiptap/react";
 import type { JSONContent as DocJSON } from "@tiptap/core";

@@ -55,6 +55,13 @@ describe("docToMarkdown", () => {
     expect(md(details)).toBe("**Details**\n\nbody");
   });
 
+  it("writes maths as the dollars every markdown reader knows", () => {
+    expect(md({ type: "blockMath", attrs: { latex: "e = mc^2" } })).toBe("$$\ne = mc^2\n$$");
+    expect(
+      md(p(text("mass "), { type: "inlineMath", attrs: { latex: "m_0" } })),
+    ).toBe("mass $m_0$");
+  });
+
   it("renders the marks markdown has", () => {
     expect(md(p(text("gras", [{ type: "bold" }])))).toBe("**gras**");
     expect(md(p(text("ital", [{ type: "italic" }])))).toBe("*ital*");
