@@ -7,6 +7,8 @@
 export interface Clock {
   /** The current instant, ISO-8601 — the form every timestamp is stored in. */
   now(): string;
+  /** The same instant as a number, for the arithmetic a session expiry needs. */
+  epochMs(): number;
 }
 
 export interface IdGenerator {

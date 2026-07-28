@@ -1,8 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { WeakPassword } from "@/domain/access/password";
 import {
-  MIN_PASSWORD_LENGTH,
   endSession,
   isPasswordSet,
   setPassword,
@@ -21,11 +21,17 @@ export async function loginAction(
   const confirm = String(formData.get("confirm") ?? "");
 
   if (!(await isPasswordSet())) {
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      return { error: `Choose a password of at least ${MIN_PASSWORD_LENGTH} characters.` };
-    }
     if (password !== confirm) return { error: "The two passwords do not match." };
-    await setPassword(password);
+    // The length rule lives with the password, not with this form: the form only
+    // chooses how to say it.
+    try {
+      await setPassword(password);
+    } catch (err) {
+      if (err instanceof WeakPassword) {
+        return { error: `Choose a password of at least ${err.minimum} characters.` };
+      }
+      throw err;
+    }
     await startSession();
     redirect("/");
   }

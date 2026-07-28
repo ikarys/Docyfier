@@ -21,8 +21,10 @@ menu). LLM = any OpenAI-compatible endpoint via Vercel AI SDK (`src/lib/ai/`);
 several providers can be saved and the active one switched from Settings or the
 header picker; AI output is schema-validated ProseMirror JSON. Every stored
 credential (LLM keys, DB password, `secret` export options) is encrypted at rest
-via `src/lib/secrets.ts` and write-only in the UI — never send one to a client
-component. Single-user auth is in and opt-in (STEP 4):
+via `src/infrastructure/configuration/aes-gcm-cipher.ts` and write-only in the UI
+— never send one to a client component. The instance password is not encrypted
+but hashed (scrypt), which is the only correct treatment for something no code
+ever needs to read back. Single-user auth is in and opt-in (STEP 4):
 one password, off until credentials exist. No multi-tenant yet.
 
 Documents are ProseMirror JSON kept in files, PostgreSQL or MySQL — one driver
@@ -76,19 +78,22 @@ domain/        entities, value objects, domain services, ports (interfaces)
 infrastructure/ adapters implementing domain ports: SQL, fs, LLM, crypto, HTTP
 ```
 
-Five bounded contexts already live this way and are the reference to copy:
+Six bounded contexts already live this way and are the reference to copy:
 `documents` (the `Document` entity, the `DocumentRepository` port, the files /
 PostgreSQL / MySQL / in-memory adapters), `configuration` (the `AiProvider` and
 `ProviderCatalog` entities, the `StorageConnection` value object, the
 `SecretCipher` and repository ports, the settings-file adapters), `authoring`
 (what models get wrong on the way out, the prompts, the op contract, the
 `TextGenerator` port and its OpenAI-compatible adapter), `publishing` (the
-`ExportConfiguration`, the `ExportTarget` port and its four adapters) and
+`ExportConfiguration`, the `ExportTarget` port and its four adapters),
 `composing` (the `Composer` contract, the `AnswerWriter` and `AnswerParser`
-ports, the email and ticket flows). The document renderers — HTML, Markdown,
-Jira, plain text — are adapters too and live in `infrastructure/rendering/`.
-Composition roots stay under `src/lib/`: `store/`, `settings/{ai,storage,exports}`,
-`ai/service.ts`, `export/`, `compose/`.
+ports, the email and ticket flows) and `access` (the `Session` entity, the
+`LoginAttempts` lockout, the `PasswordHasher`, `SessionSigning` and
+`CredentialsRepository` ports, the scrypt / HMAC / file adapters). The document
+renderers — HTML, Markdown, Jira, plain text — are adapters too and live in
+`infrastructure/rendering/`. Composition roots stay under `src/lib/`: `store/`,
+`settings/{ai,storage,exports}`, `ai/service.ts`, `export/`, `compose/`,
+`auth.ts`.
 
 The editor components and the rest of `src/lib/doc/` (import, beautify, chart,
 diff, upload) have not moved yet. Four infrastructure adapters still import

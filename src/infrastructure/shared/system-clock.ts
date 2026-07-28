@@ -5,6 +5,7 @@ import type { Clock, IdGenerator } from "@/domain/shared/clock";
 
 export const systemClock: Clock = {
   now: () => new Date().toISOString(),
+  epochMs: () => Date.now(),
 };
 
 export const uuidIds: IdGenerator = {

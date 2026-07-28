@@ -16,6 +16,10 @@ export class FixedClock implements Clock {
     return this.current;
   }
 
+  epochMs(): number {
+    return Date.parse(this.current);
+  }
+
   /** Move to an explicit instant, so a test can say what "later" means. */
   set(instant: string): void {
     this.current = instant;
