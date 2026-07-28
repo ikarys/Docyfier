@@ -41,8 +41,20 @@ typecheck:
 lint:
     npm run lint
 
-# Type-check + lint
-check: typecheck lint
+# Run the test suite once
+test:
+    npm run test
+
+# Re-run the tests on change
+test-watch:
+    npm run test:watch
+
+# Run the tests and enforce the coverage thresholds
+coverage:
+    npm run coverage
+
+# Everything CI runs, minus the build
+check: typecheck lint coverage
 
 # Remove build output and caches
 clean:

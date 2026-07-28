@@ -19,7 +19,7 @@ export const SETTINGS_SCOPES: SettingsScope[] = [
     id: "ai",
     label: "AI model",
     href: "/settings/ai",
-    lede: "The model behind the assistant, and the server that serves it.",
+    lede: "The providers behind the assistant, and which one is in use.",
   },
   {
     id: "storage",

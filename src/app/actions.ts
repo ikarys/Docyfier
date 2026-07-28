@@ -12,7 +12,7 @@ import {
   setDocumentTheme,
   updateDocument,
 } from "@/lib/store";
-import { docFromFile, titleFromFilename } from "@/lib/doc/import";
+import { docFromFile, titleFromFilename } from "@/lib/import";
 import { findTemplate } from "@/lib/templates";
 import type { DocumentTheme } from "@/lib/themes";
 

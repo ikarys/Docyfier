@@ -1,20 +1,20 @@
-import { getAiSettings } from "@/lib/settings";
+import { listAiProviders } from "@/lib/settings";
 import { requireAuth } from "@/lib/auth";
-import { AiSettingsForm } from "@/components/settings/AiSettingsForm";
+import { AiProvidersPanel } from "@/components/settings/AiProvidersPanel";
 import { ScopeIntro } from "@/components/settings/ScopeIntro";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "AI model — Docyfier" };
+export const metadata = { title: "AI providers — Docyfier" };
 
 export default async function AiSettingsPage() {
   await requireAuth();
-  const settings = await getAiSettings();
+  const { providers, activeId } = await listAiProviders();
 
   return (
     <>
       <ScopeIntro scope="ai" />
-      <AiSettingsForm initial={settings} />
+      <AiProvidersPanel providers={providers} activeId={activeId} />
     </>
   );
 }

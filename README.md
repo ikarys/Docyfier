@@ -69,7 +69,8 @@ transcript you reformat by hand.
   carries layout, not structure.
 - **Export**: Word (`.docx`), Markdown, Confluence, Notion, Trilium, and PDF
   through the browser print dialog against an A4 stylesheet. Targets are
-  plugins: one file in `src/lib/export/targets/` plus a line in the registry.
+  plugins: one adapter in `src/infrastructure/publishing/targets/` plus a line
+  in the registry.
 - **Compose**: short-form writing that ends in the clipboard instead of a
   document — an email from a brief in a chosen tone, or a ticket in the markup
   Jira, ServiceNow or GitLab expects.
@@ -110,12 +111,19 @@ variables > defaults**. The Settings page (`/settings`) is split by scope —
 `ai`, `storage`, `exports`, `access` — and writes to `settings.json` next to
 the document store, so nothing here requires a rebuild or a restart.
 
-### AI provider
+### AI providers
 
 Calls go through the Vercel AI SDK to any OpenAI-compatible endpoint — LM
 Studio, Ollama, vLLM, llama.cpp, or a hosted API that speaks the same protocol.
 Point the base URL at your server, and the model picker on the Settings page
 lists what it offers (with a connection test).
+
+**Several providers can be configured side by side** — a local model and a
+hosted one, or two accounts — each with its own model, key, token ceiling and
+structured-output setting. One is active; switch from `/settings/ai` or from the
+picker in the app header when a quota runs out or a task needs the other model.
+The environment variables below describe the first provider, the one a fresh
+deployment starts with.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -123,6 +131,14 @@ lists what it offers (with a connection test).
 | `DOCYFIER_LLM_MODEL` | first model on the server | Model id |
 | `DOCYFIER_LLM_API_KEY` | — | Key for providers that require one |
 | `DOCYFIER_LLM_MAX_TOKENS` | `32768` | Max tokens per response |
+
+Every credential entered in Settings — LLM API keys, the database password, and
+any export option a target declares `secret` — is stored **encrypted**
+(AES-256-GCM) in `settings.json` and never sent back to the browser: an empty
+password field means "keep the stored one". Set `DOCYFIER_SECRET_KEY` to 32
+bytes of hex or base64 (`openssl rand -hex 32`) to control the encryption key;
+without it, `secret.key` is generated next to `settings.json` and belongs to
+your backups — lose it and the credentials have to be entered again.
 
 Every AI response is validated against the editor schema server-side (invalid
 output gets one retry) before it can touch a document.
@@ -136,7 +152,8 @@ output gets one retry) before it can touch a document.
 | MySQL | `documents` table | Same |
 
 Connection settings always stay in `settings.json` — they cannot live in the
-database they configure. Saving a database configuration is refused if the
+database they configure. The password is encrypted there like every other
+credential. Saving a database configuration is refused if the
 connection fails, so a typo cannot take the app down. After switching, **Import
 documents from files** copies what is still on disk into the database, skipping
 ids already present and never deleting the source files.
@@ -229,15 +246,23 @@ Ports are overridable: `just dev 4000`. Each recipe maps to an npm script, so
 ### Project layout
 
 - `src/components/Editor.tsx` — Tiptap editor, toolbar, autosave.
-- `src/components/extensions/` — custom nodes (callouts, charts, cards…).
+- `src/infrastructure/editor/` — the Tiptap adapter: custom nodes (callouts,
+  charts, cards…) and the schema AI output is validated against.
 - `src/components/AiPanel.tsx` / `SelectionAiMenu.tsx` / `GenerateHero.tsx` —
   the three AI surfaces.
 - `src/lib/ai/` — provider, prompts, schema validation, services.
 - `src/lib/store/` — document store: facade + files / PostgreSQL / MySQL drivers.
-- `src/lib/export/targets/` — export targets, one file each, listed in
-  `registry.ts`.
-- `src/lib/compose/composers/` — email and ticket composers, same plugin shape.
-- `src/lib/doc/` — import, markdown export, template validation.
+- `src/infrastructure/publishing/targets/` — export targets, one adapter each,
+  listed in `src/lib/export/registry.ts`.
+- `src/infrastructure/rendering/` — the document renderers: HTML, Markdown,
+  Jira, plain text.
+- `src/domain/composing/composers/` — email and ticket composers, same plugin
+  shape.
+- `src/domain/documents/` / `src/domain/authoring/` — the document rules with no
+  I/O in them: chart data, accepted import files, the deterministic formatter,
+  the block diff behind AI review.
+- `src/lib/import.ts` — file import, over the conversion adapters in
+  `src/infrastructure/documents/`.
 - `src/app/actions.ts` / `ai-actions.ts` — server actions.
 - `src/app/globals.css` — design system, editor chrome, A4 print rules.
 

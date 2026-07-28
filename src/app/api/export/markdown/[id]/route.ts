@@ -1,5 +1,5 @@
 import { getDocument } from "@/lib/store";
-import { docToMarkdown, markdownFilename } from "@/lib/doc/markdown";
+import { docToMarkdown, markdownFilename } from "@/infrastructure/rendering/markdown";
 import { isAuthorized } from "@/lib/auth";
 
 /** Download a document as markdown (PLAN.md STEP 3). Exports what is stored,

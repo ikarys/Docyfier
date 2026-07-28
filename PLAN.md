@@ -160,11 +160,11 @@ Acceptance (auth half):
 
 - Import markdown, plain text and docx to reformat ("beautify my existing doc")
   (#9). One conversion path for every format: source → HTML → ProseMirror JSON
-  parsed with the editor's own schema (`src/lib/doc/import.ts`). The import is
+  parsed with the editor's own schema (`src/lib/import.ts`). The import is
   faithful — structure only; the AI "make it pretty" pass is what reformats.
 - Export docx (#8, partial).
 - **Export targets as plugins:** Word, Confluence, Notion, Trilium (#8). One contract,
-  one file per target (`src/lib/export/targets/`), each enabled from the Settings
+  one adapter per target (`src/infrastructure/publishing/targets/`), each enabled from the Settings
   page. Payload only — the user copies it or downloads it; no API integration, so
   a target costs nothing to add and needs no credentials for a tool this instance
   may not even reach.
@@ -205,6 +205,9 @@ Acceptance (export targets):
 ### STEP 7 — BYO LLM
 
 - Per-org provider/model/API-key configuration on top of the STEP 0 abstraction (#12).
+- Done ahead of the STEP, instance-wide: several providers are configured in
+  Settings, the active one is switched from the header, and API keys are
+  encrypted at rest. What remains here is scoping that list per org (STEP 6).
 
 **Exit criteria:** an org admin switches provider without code changes.
 
@@ -214,7 +217,7 @@ Acceptance (export targets):
 - Ticket composer with per-tool formats: Jira, ServiceNow, GitLab issues (#14).
 
 **Composers as plugins:** one contract, one file per flow
-(`src/lib/compose/composers/`). A composer declares its form fields and builds
+(`src/domain/composing/composers/`). A composer declares its form fields and builds
 its prompt from them, and does nothing else — no AI client, no storage. The
 form, the menu and the server action all read the registry, so a new flow is a
 file plus a line.
@@ -268,16 +271,17 @@ Recommended order: **U1 → U4 → U3 → U2 → U5 → U6**.
 ### Ground rules for implementers (read before any U-STEP)
 
 - Read [AGENTS.md](AGENTS.md), then these files before writing code:
-  `src/components/Editor.tsx`, `src/components/extensions/Cards.ts` (the
+  `src/components/Editor.tsx`, `src/infrastructure/editor/cards.ts` (the
   canonical custom-node pattern — copy its structure for any new node),
-  `src/lib/ai/prompts.ts`, `src/lib/ai/doc-schema.ts`, `src/lib/ai/service.ts`,
+  `src/domain/authoring/prompts.ts`, `src/infrastructure/editor/schema.ts`, `src/lib/ai/service.ts`,
   `src/lib/store.ts`, `src/lib/themes.ts`, `src/app/globals.css`.
 - Stack: Next.js 15 (App Router + server actions), Tiptap v3, Vercel AI SDK v7,
   Tailwind v4. Documents are ProseMirror JSON on disk via `src/lib/store.ts`.
-- **Every new node type must be registered in three places** or AI output will
-  fail validation: the editor extensions (`Editor.tsx`), the server validation
-  schema (`src/lib/ai/doc-schema.ts`), and the AI format contract
-  (`src/lib/ai/prompts.ts`).
+- **Every new node type is registered in two places**: the document's
+  extensions (`src/infrastructure/editor/document-extensions.ts`), which the
+  editor and the validation schema share, and the AI format contract
+  (`src/domain/authoring/prompts.ts`) — a node missing from the contract is
+  never produced, one missing from the extensions fails validation.
 - No new UI libraries without maintainer approval — plain React + CSS in
   `globals.css`, matching the existing code. Tiptap official extensions are fine.
 - Small diffs, Conventional Commits, one concern per commit. Verify each
@@ -346,7 +350,7 @@ Instructions:
    provider rejects streaming.
 2. **Targeted whole-document transforms.** Replace the "resend the full doc,
    get the full doc back" contract of surface 2. New prompt in
-   `src/lib/ai/prompts.ts`: input = the document as a numbered list of
+   `src/domain/authoring/prompts.ts`: input = the document as a numbered list of
    top-level blocks (`index` + JSON); output = a JSON **array of ops**:
    `{"op":"replace","index":n,"blocks":[...]}`,
    `{"op":"insert_after","index":n,"blocks":[...]}`,

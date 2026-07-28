@@ -3,9 +3,8 @@
 import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
-import type { JSONContent } from "@tiptap/core";
-import { rewriteSelectionAction, type SelectionInput } from "@/app/ai-actions";
-import { toPlainJSON } from "@/lib/doc/plain";
+import { FormattingRow } from "./editor/FormattingRow";
+import { useSelectionRewrite } from "./editor/useSelectionRewrite";
 
 const QUICK_ACTIONS: { label: string; instruction: string }[] = [
   { label: "Rephrase", instruction: "Rephrase this to read better." },
@@ -13,138 +12,6 @@ const QUICK_ACTIONS: { label: string; instruction: string }[] = [
   { label: "Expand", instruction: "Expand this with more detail." },
   { label: "Formal", instruction: "Rewrite this in a more formal, professional tone." },
 ];
-
-const ALIGNMENTS: { value: string; icon: string; title: string }[] = [
-  { value: "left", icon: "⯇", title: "Align left" },
-  { value: "center", icon: "⯅", title: "Align center" },
-  { value: "right", icon: "⯈", title: "Align right" },
-];
-
-/** Prompt for a URL, applying it to the selection. Empty input clears it. */
-function setLink(editor: Editor): void {
-  const current = (editor.getAttributes("link").href as string | undefined) ?? "";
-  const url = window.prompt("Link URL", current);
-  if (url === null) return;
-  if (url.trim() === "") {
-    editor.chain().focus().unsetLink().run();
-    return;
-  }
-  editor.chain().focus().setLink({ href: url.trim() }).run();
-}
-
-const TEXT_COLORS = ["#3b5bdb", "#1f9d6b", "#c23b3b", "#b4690e", "#7048e8"];
-const HIGHLIGHT_COLORS = ["#fff3bf", "#e9f7f0", "#fbecec", "#eef2fe", "#f3f0ff"];
-
-/** Bold/italic/strike/code/badge + color swatches — the old toolbar's inline
- * formatting group, moved onto the selection so it's reachable without the
- * toolbar (PLAN.md STEP U1). */
-function FormattingRow({ editor }: { editor: Editor }) {
-  const active = (name: string, attrs?: Record<string, unknown>) =>
-    editor.isActive(name, attrs) ? "ai-bubble-btn is-active" : "ai-bubble-btn";
-
-  return (
-    <div className="ai-bubble-row ai-bubble-format">
-      <button
-        className={active("bold")}
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        title="Bold"
-      >
-        <strong>B</strong>
-      </button>
-      <button
-        className={active("italic")}
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        title="Italic"
-      >
-        <em>I</em>
-      </button>
-      <button
-        className={active("strike")}
-        onClick={() => editor.chain().focus().toggleStrike().run()}
-        title="Strikethrough"
-      >
-        <s>S</s>
-      </button>
-      <button
-        className={active("code")}
-        onClick={() => editor.chain().focus().toggleCode().run()}
-        title="Inline code"
-      >
-        {"</>"}
-      </button>
-      <button
-        className={active("underline")}
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-        title="Underline"
-      >
-        <u>U</u>
-      </button>
-      <button
-        className={active("badge")}
-        onClick={() => editor.chain().focus().toggleBadge("blue").run()}
-        title="Badge / pill"
-      >
-        ◆
-      </button>
-      <button
-        className={active("link")}
-        onClick={() => setLink(editor)}
-        title="Link"
-      >
-        🔗
-      </button>
-      <span className="ai-bubble-divider" aria-hidden />
-      {ALIGNMENTS.map((a) => (
-        <button
-          key={a.value}
-          className={
-            editor.isActive({ textAlign: a.value })
-              ? "ai-bubble-btn is-active"
-              : "ai-bubble-btn"
-          }
-          onClick={() => editor.chain().focus().setTextAlign(a.value).run()}
-          title={a.title}
-        >
-          {a.icon}
-        </button>
-      ))}
-      <span className="ai-bubble-divider" aria-hidden />
-      {TEXT_COLORS.map((color) => (
-        <button
-          key={color}
-          className="ai-bubble-swatch"
-          style={{ background: color }}
-          onClick={() => editor.chain().focus().setColor(color).run()}
-          title={`Text color ${color}`}
-        />
-      ))}
-      <button
-        className="ai-bubble-swatch ai-bubble-swatch-clear"
-        onClick={() => editor.chain().focus().unsetColor().run()}
-        title="Clear text color"
-      >
-        ✕
-      </button>
-      <span className="ai-bubble-divider" aria-hidden />
-      {HIGHLIGHT_COLORS.map((color) => (
-        <button
-          key={color}
-          className="ai-bubble-swatch"
-          style={{ background: color }}
-          onClick={() => editor.chain().focus().toggleHighlight({ color }).run()}
-          title={`Highlight ${color}`}
-        />
-      ))}
-      <button
-        className="ai-bubble-swatch ai-bubble-swatch-clear"
-        onClick={() => editor.chain().focus().unsetHighlight().run()}
-        title="Clear highlight"
-      >
-        ✕
-      </button>
-    </div>
-  );
-}
 
 /**
  * Surface 3 — floating menu over the current selection. Quick rewrite actions
@@ -160,71 +27,14 @@ export function SelectionAiMenu({
   /** Runs a whole-block replacement under the document's AI review bar. */
   onAiEdit: (apply: () => void) => void;
 }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
-
-  const run = async (instruction: string) => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-
-    const { state } = editor;
-    const { from, to, $from, $to } = state.selection;
-    const inline = $from.sameParent($to) && $from.parent.isTextblock;
-
-    let input: SelectionInput;
-    let range = { from, to };
-    if (inline) {
-      input = {
-        mode: "text",
-        text: state.doc.textBetween(from, to, "\n"),
-        instruction,
-      };
-    } else {
-      // Expand to whole top-level blocks so the replacement stays well-formed.
-      const start = $from.depth ? $from.before(1) : from;
-      const end = $to.depth ? $to.after(1) : to;
-      range = { from: start, to: end };
-      const blocks: JSONContent[] = [];
-      state.doc.nodesBetween(start, end, (node, _pos, parent) => {
-        if (parent === state.doc) {
-          blocks.push(node.toJSON() as JSONContent);
-          return false;
-        }
-        return true;
-      });
-      input = { mode: "blocks", blocks: toPlainJSON(blocks), instruction };
-    }
-
-    // `busy` gates the button, so it has to fall back whatever happens: a
-    // request that never returns would otherwise leave the menu spinning with
-    // no error and no way to retry short of reloading the page.
-    try {
-      const res = await rewriteSelectionAction(input);
-      if (!res.ok) {
-        setError(res.error);
-      } else if (res.mode === "text") {
-        // An inline fragment swap is small and locally visible; Tiptap undo is
-        // review enough. Only whole-block replacements go through the diff bar.
-        editor.chain().focus().insertContentAt(range, res.text).run();
-      } else {
-        onAiEdit(() => {
-          editor.chain().focus().insertContentAt(range, res.blocks).run();
-        });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "The AI request failed.");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { busy, error, rewrite } = useSelectionRewrite(editor, onAiEdit);
 
   const submitPrompt = () => {
     const instruction = prompt.trim();
     if (!instruction) return;
     setPrompt("");
-    void run(instruction);
+    void rewrite(instruction);
   };
 
   return (
@@ -248,7 +58,7 @@ export function SelectionAiMenu({
               <button
                 key={qa.label}
                 className="ai-bubble-btn"
-                onClick={() => void run(qa.instruction)}
+                onClick={() => void rewrite(qa.instruction)}
               >
                 {qa.label}
               </button>

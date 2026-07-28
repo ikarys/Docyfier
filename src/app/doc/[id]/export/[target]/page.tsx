@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
 import { getDocument } from "@/lib/store";
 import { availableExportTarget, renderExport } from "@/lib/export/service";
-import { exportFilename } from "@/lib/export/types";
+import { exportFilename } from "@/domain/publishing/export-filename";
 import { CopyBox } from "@/components/CopyBox";
 
 export const dynamic = "force-dynamic";

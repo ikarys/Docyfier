@@ -30,6 +30,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
+# test coverage
+/coverage
+
 # editor
 .vscode/*
 !.vscode/extensions.json

@@ -1,17 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
-import { transformDocumentAction } from "@/app/ai-actions";
-import { toPlainJSON } from "@/lib/doc/plain";
-import { applyOps } from "@/lib/doc/ops";
-
-interface PanelItem {
-  role: "user" | "ai";
-  text: string;
-  error?: boolean;
-}
+import { useDocumentAssistant } from "./editor/useDocumentAssistant";
 
 const QUICK_ACTIONS: { label: string; instruction: string }[] = [
   {
@@ -37,72 +29,14 @@ export function AiPanel({
   onApply: (content: JSONContent) => void;
   onClose: () => void;
 }) {
-  const [items, setItems] = useState<PanelItem[]>([]);
   const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const listRef = useRef<HTMLDivElement | null>(null);
-
-  const push = (item: PanelItem) => {
-    setItems((prev) => [...prev, item]);
-    requestAnimationFrame(() => {
-      listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-    });
-  };
-
-  const run = async (instruction: string, label?: string) => {
-    if (busy) return;
-    setBusy(true);
-    push({ role: "user", text: label ?? instruction });
-    const before = toPlainJSON(editor.getJSON());
-    // `busy` gates the composer, so it has to fall back whatever happens: a
-    // request that never returns would otherwise leave the panel spinning with
-    // no message and no way to retry short of reloading the page.
-    try {
-      const res = await transformDocumentAction(before, instruction);
-      if (!res.ok) {
-        push({ role: "ai", text: res.error, error: true });
-        return;
-      }
-
-      // The AI edits blocks by index; applying the ops here keeps everything it
-      // did not name byte-identical instead of trusting a rewritten document.
-      const next =
-        res.outcome.kind === "ops"
-          ? applyOps(before, res.outcome.ops)
-          : res.outcome.content;
-
-      if (JSON.stringify(next) === JSON.stringify(before)) {
-        push({
-          role: "ai",
-          text: "The AI returned the document unchanged — try a more specific instruction.",
-          error: true,
-        });
-      } else {
-        onApply(next);
-        const count = res.outcome.kind === "ops" ? res.outcome.ops.length : 0;
-        push({
-          role: "ai",
-          text: count
-            ? `Done — ${count} block${count > 1 ? "s" : ""} edited.`
-            : "Done — applied to the document.",
-        });
-      }
-    } catch (err) {
-      push({
-        role: "ai",
-        text: err instanceof Error ? err.message : "The AI request failed.",
-        error: true,
-      });
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { messages, busy, ask, thread } = useDocumentAssistant(editor, onApply);
 
   const submit = () => {
     const instruction = input.trim();
     if (!instruction) return;
     setInput("");
-    void run(instruction);
+    void ask(instruction);
   };
 
   return (
@@ -120,26 +54,26 @@ export function AiPanel({
             key={qa.label}
             className="chip"
             disabled={busy}
-            onClick={() => void run(qa.instruction, qa.label)}
+            onClick={() => void ask(qa.instruction, qa.label)}
           >
             {qa.label}
           </button>
         ))}
       </div>
 
-      <div className="ai-thread" ref={listRef}>
-        {items.length === 0 && (
+      <div className="ai-thread" ref={thread}>
+        {messages.length === 0 && (
           <p className="ai-empty">
-            Ask for changes to the whole document — restructure, shorten,
-            change tone, add sections…
+            Ask for changes to the whole document — restructure, shorten, change
+            tone, add sections…
           </p>
         )}
-        {items.map((item, i) => (
+        {messages.map((message, i) => (
           <div
             key={i}
-            className={`ai-msg ai-msg-${item.role}${item.error ? " ai-msg-error" : ""}`}
+            className={`ai-msg ai-msg-${message.role}${message.error ? " ai-msg-error" : ""}`}
           >
-            {item.text}
+            {message.text}
           </div>
         ))}
         {busy && (

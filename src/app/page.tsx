@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { listDocuments } from "@/lib/store";
+import { listAiProviders } from "@/lib/settings";
 import { requireAuth } from "@/lib/auth";
 import { GenerateHero } from "@/components/GenerateHero";
+import { ModelSwitcher } from "@/components/ModelSwitcher";
 import { DocumentList } from "@/components/DocumentList";
 import { SignOutButton } from "@/components/SignOutButton";
 
@@ -9,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   await requireAuth();
-  const docs = await listDocuments();
+  const [docs, ai] = await Promise.all([listDocuments(), listAiProviders()]);
 
   return (
     <>
@@ -18,6 +20,7 @@ export default async function HomePage() {
           Docy<span>fier</span>
         </span>
         <div className="toolbar">
+          <ModelSwitcher providers={ai.providers} activeId={ai.activeId} />
           <Link href="/compose" className="btn" title="Email and ticket composers">
             ✎ Compose
           </Link>

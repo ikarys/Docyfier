@@ -1,9 +1,9 @@
-import type { JSONContent } from "@tiptap/core";
-import { docToHtml } from "@/lib/doc/html";
-import { docToJira } from "@/lib/doc/jira";
-import { docToMarkdown } from "@/lib/doc/markdown";
-import { docToText } from "@/lib/doc/text";
-import type { ComposeFormat } from "./types";
+import type { DocumentBody } from "@/domain/documents/body";
+import { docToHtml } from "@/infrastructure/rendering/html";
+import { docToJira } from "@/infrastructure/rendering/jira";
+import { docToMarkdown } from "@/infrastructure/rendering/markdown";
+import { docToText } from "@/infrastructure/rendering/text";
+import type { ComposeFormat } from "@/domain/composing/clipboard-format";
 
 /**
  * The last step of a composer: the edited document, in the markup its
@@ -14,7 +14,7 @@ import type { ComposeFormat } from "./types";
  */
 export function composePayload(
   format: ComposeFormat,
-  doc: JSONContent,
+  doc: DocumentBody,
 ): { text: string; html?: string } {
   switch (format) {
     // A rich flavour for the destinations that accept one; the plain flavour
