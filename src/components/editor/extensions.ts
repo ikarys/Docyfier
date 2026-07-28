@@ -5,7 +5,7 @@ import {
   DOCUMENT_EXTENSIONS,
   VIEWED_NODES,
 } from "@/infrastructure/editor/document-extensions";
-import { ChartNode } from "../ChartView";
+import { ChartNode } from "../chart/ChartView";
 import { ImageNode } from "../ImageView";
 import { TocNode } from "../TocView";
 import { SlashCommand } from "./slash-command";

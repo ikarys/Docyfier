@@ -32,7 +32,15 @@ export default defineConfig({
         "src/infrastructure/**",
         "src/lib/**",
       ],
-      exclude: ["src/**/*.test.ts"],
+      exclude: [
+        "src/**/*.test.ts",
+        // The Tiptap node definitions are declarative schema — `Node.create`
+        // with parse and render rules that only an editor in a browser
+        // exercises. Their rules that a test can drive (chart data, icons,
+        // block diff) live in the domain, and the schema they build is covered
+        // through `schema.test.ts`.
+        "src/infrastructure/editor/!(schema).ts",
+      ],
       /**
        * A ratchet, not the target. AGENTS.md sets the destination at 80%
        * overall and 95% on the domain; these numbers only ever move up, and a

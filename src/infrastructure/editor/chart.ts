@@ -32,7 +32,7 @@ function parseJsonAttr<T>(el: HTMLElement, name: string, fallback: T): T {
  *
  * Schema only — no node view here, so the server-only validation schema can
  * import it without pulling React in. The editor uses `ChartNode` from
- * `src/components/ChartView.tsx`, which adds the rendering.
+ * `src/components/chart/ChartView.tsx`, which adds the rendering.
  */
 export const Chart = Node.create({
   name: "chart",

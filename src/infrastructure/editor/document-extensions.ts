@@ -64,7 +64,8 @@ export const DOCUMENT_EXTENSIONS = [
 /**
  * The nodes the editor draws with a React view. They are declared here like any
  * other, so the schema always has them; the editor swaps in the `.extend()`ed
- * version from `src/components/*View.tsx`, which carries the same node shape by
- * construction. A node that gains a view — or loses one — changes nothing here.
+ * version from the `View` component that draws it, which carries the same node
+ * shape by construction. A node that gains a view — or loses one — changes
+ * nothing here.
  */
 export const VIEWED_NODES = [Chart, DocImage, TableOfContents];
