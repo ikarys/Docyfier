@@ -1,6 +1,6 @@
-import { emailComposer } from "./composers/email";
-import { ticketComposer } from "./composers/ticket";
-import { toComposerInfo, type Composer, type ComposerInfo } from "./types";
+import { toComposerInfo, type Composer, type ComposerInfo } from "@/domain/composing/composer";
+import { emailComposer } from "@/domain/composing/composers/email";
+import { ticketComposer } from "@/domain/composing/composers/ticket";
 
 /**
  * The composers this build ships. The one place that knows the full list: the

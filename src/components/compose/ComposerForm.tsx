@@ -6,14 +6,14 @@ import { composeAction, type ComposeState } from "@/app/compose/actions";
 import { CopyButton } from "@/components/CopyBox";
 import { ComposeEditor, useComposeEditor } from "@/components/compose/ComposeEditor";
 import { composePayload } from "@/lib/compose/clipboard";
+import { clipboardFormat } from "@/domain/composing/clipboard-format";
+import type { ComposerField, ComposerInfo } from "@/domain/composing/composer";
 import {
-  clipboardFormat,
   GUIDANCE_KEY,
+  IMPROVE_INTENT,
   INTENT_KEY,
   REVISING_KEY,
-  type ComposerField,
-  type ComposerInfo,
-} from "@/lib/compose/types";
+} from "@/domain/composing/submission";
 import { docToMarkdown } from "@/infrastructure/rendering/markdown";
 
 /** A field whose value the form drives, rather than the DOM. */
@@ -224,7 +224,7 @@ export function ComposerForm({ composer }: { composer: ComposerInfo }) {
               className="btn btn-primary"
               type="submit"
               name={INTENT_KEY}
-              value="improve"
+              value={IMPROVE_INTENT}
               disabled={running || !guidance.trim()}
             >
               Improve

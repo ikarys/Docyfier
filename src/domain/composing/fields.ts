@@ -1,4 +1,4 @@
-import type { ComposeContext, ComposerField } from "./types";
+import type { ComposeContext, ComposerField } from "./composer";
 
 /**
  * Fields every composer needs, and the prompt line each one turns into.

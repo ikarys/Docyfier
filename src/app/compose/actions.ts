@@ -4,7 +4,7 @@ import type { JSONContent } from "@tiptap/core";
 import { requireAuth } from "@/lib/auth";
 import { findComposer } from "@/lib/compose/registry";
 import { compose } from "@/lib/compose/service";
-import { readComposeContext, readComposerValues } from "@/lib/compose/types";
+import { readComposeContext, readComposerValues } from "./form-submission";
 
 /** Server action behind the composers (PLAN.md STEP 8). */
 

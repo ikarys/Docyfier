@@ -1,11 +1,11 @@
 import { languageField, languageRule, revisionRule, section } from "../fields";
-import {
-  MARKDOWN_OUTPUT_RULES,
-  type ComposeContext,
-  type Composer,
-  type ComposerChoice,
-  type ComposerValues,
-} from "../types";
+import type {
+  ComposeContext,
+  Composer,
+  ComposerChoice,
+  ComposerValues,
+} from "../composer";
+import { MARKDOWN_OUTPUT_RULES } from "../output-rules";
 
 /**
  * The email composer (PLAN.md STEP 8, vision #13) — write a professional email

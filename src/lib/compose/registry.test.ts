@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { COMPOSERS, composerInfos, findComposer } from "./registry";
-import { clipboardFormat, fieldValue, type Composer, type ComposerValues } from "./types";
+import { clipboardFormat } from "@/domain/composing/clipboard-format";
+import { fieldValue, type Composer, type ComposerValues } from "@/domain/composing/composer";
 
 /** A form the user actually filled in: every free-text field carries something. */
 function filledValues(composer: Composer): ComposerValues {
