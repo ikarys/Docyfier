@@ -107,38 +107,6 @@ export function ListGroup({ editor }: { editor: Editor }) {
   );
 }
 
-/** Only rendered while the caret sits inside a table. */
-export function TableGroup({ editor }: { editor: Editor }) {
-  return (
-    <div className="tb-group">
-      <button
-        className="tb-btn"
-        onClick={() => editor.chain().focus().addColumnAfter().run()}
-        disabled={!editor.can().addColumnAfter()}
-        title="Add column"
-      >
-        +Col
-      </button>
-      <button
-        className="tb-btn"
-        onClick={() => editor.chain().focus().addRowAfter().run()}
-        disabled={!editor.can().addRowAfter()}
-        title="Add row"
-      >
-        +Row
-      </button>
-      <button
-        className="tb-btn"
-        onClick={() => editor.chain().focus().deleteTable().run()}
-        disabled={!editor.can().deleteTable()}
-        title="Delete table"
-      >
-        ✕Tbl
-      </button>
-    </div>
-  );
-}
-
 export function InsertGroup({ editor }: { editor: Editor }) {
   return (
     <>

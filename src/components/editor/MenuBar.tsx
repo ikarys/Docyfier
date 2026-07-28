@@ -2,13 +2,8 @@
 
 import { useState } from "react";
 import type { Editor } from "@tiptap/react";
-import {
-  HeadingGroup,
-  InsertGroup,
-  ListGroup,
-  MarkGroup,
-  TableGroup,
-} from "./FormatGroups";
+import { HeadingGroup, InsertGroup, ListGroup, MarkGroup } from "./FormatGroups";
+import { TableGroup } from "./TableGroup";
 import { SaveStatus } from "./SaveStatus";
 import { ShortcutHelp } from "./ShortcutHelp";
 import type { SaveState } from "./save-state";
