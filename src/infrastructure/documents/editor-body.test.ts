@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toPlainJSON } from "./plain";
+import { toPlainJSON } from "./editor-body";
 
 /**
  * The bug this guards: ProseMirror builds `attrs` with `Object.create(null)`,

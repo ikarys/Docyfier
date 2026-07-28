@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useEditor, type JSONContent } from "@tiptap/react";
 import type { JSONContent as DocJSON } from "@tiptap/core";
 import { setDocumentThemeAction } from "@/app/actions";
-import { imageFilesOf, insertUploadedImages } from "@/lib/doc/upload";
+import { imageFilesOf, insertUploadedImages } from "@/components/editor/image-upload";
 import { resolveTokens, tokenStyle, type DocumentTheme } from "@/lib/themes";
 import { AiPanel } from "./AiPanel";
 import { AiDiffBar } from "./AiDiffBar";

@@ -93,14 +93,19 @@ ports, the email and ticket flows) and `access` (the `Session` entity, the
 renderers — HTML, Markdown, Jira, plain text — are adapters too and live in
 `infrastructure/rendering/`. Composition roots stay under `src/lib/`: `store/`,
 `settings/{ai,storage,exports}`, `ai/service.ts`, `export/`, `compose/`,
-`auth.ts`.
+`auth.ts`, `import.ts`, `templates-check.ts`.
 
 No infrastructure adapter imports upward any more: the SQL repositories take the
 `StorageConnectionRecord` the domain declares, and the OpenAI-compatible adapters
 (`src/infrastructure/authoring/openai-compatible/`) receive the provider to talk
 to as an argument — `src/lib/ai/provider.ts` is the only module that resolves it
-from Settings. The editor components and the rest of `src/lib/doc/` (import,
-beautify, chart, diff, upload) have not moved yet, and that is the next step.
+from Settings. `src/lib/doc/` is gone: its rules went to the domain (`beautify`,
+`block-diff`, `chart`, `import-file`), its conversions to
+`infrastructure/documents/` (`source-html`, `html-body-parser`, `editor-body`),
+and its browser halves next to the editor components. What has not moved is the
+editor itself — the Tiptap extensions under `src/components/extensions/` are
+adapters living in the framework layer, which is why `src/lib/ai/doc-schema.ts`
+still composes the schema from there. That is the next step.
 
 - **The domain imports nothing.** No `next/*`, no `@tiptap/*`, no `react`, no
   `pg`/`mysql2`, no `ai`, no `node:fs`. If a domain file needs an import from

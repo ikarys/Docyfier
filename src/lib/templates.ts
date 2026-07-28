@@ -5,7 +5,7 @@ import type { JSONContent } from "@tiptap/react";
  * like a finished document, so a new document is three clicks away.
  *
  * Content is ProseMirror JSON in the editor's own schema, exactly like AI
- * output; `src/lib/doc/templates-check.ts` validates every template against
+ * output; `src/lib/templates-check.ts` validates every template against
  * that schema at build time, so a broken template can never reach a user.
  *
  * Client-safe: the gallery renders the metadata, the server action reads the

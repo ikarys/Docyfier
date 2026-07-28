@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TEMPLATES } from "@/lib/templates";
-import { assertTemplatesValid } from "@/lib/doc/templates-check";
+import { assertTemplatesValid } from "@/lib/templates-check";
 import { createFromTemplateAction, newDocumentAction } from "@/app/actions";
 import { ImportCard } from "@/components/ImportCard";
 import { requireAuth } from "@/lib/auth";

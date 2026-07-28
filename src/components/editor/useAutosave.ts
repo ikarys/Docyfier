@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor, JSONContent } from "@tiptap/react";
 import { saveDocumentAction } from "@/app/actions";
-import { toPlainJSON } from "@/lib/doc/plain";
+import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 import { clearDraft, readDraft, usableDraft, writeDraft } from "@/lib/editor/draft";
 import type { SaveState } from "./save-state";
 

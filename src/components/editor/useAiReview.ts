@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { Editor, JSONContent } from "@tiptap/react";
 import { changedBlocks } from "@/domain/authoring/block-diff";
-import { toPlainJSON } from "@/lib/doc/plain";
+import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 import type { Autosave } from "./useAutosave";
 
 /**

@@ -160,7 +160,7 @@ Acceptance (auth half):
 
 - Import markdown, plain text and docx to reformat ("beautify my existing doc")
   (#9). One conversion path for every format: source → HTML → ProseMirror JSON
-  parsed with the editor's own schema (`src/lib/doc/import.ts`). The import is
+  parsed with the editor's own schema (`src/lib/import.ts`). The import is
   faithful — structure only; the AI "make it pretty" pass is what reformats.
 - Export docx (#8, partial).
 - **Export targets as plugins:** Word, Confluence, Notion, Trilium (#8). One contract,

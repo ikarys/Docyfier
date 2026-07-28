@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { transformDocumentAction } from "@/app/ai-actions";
-import { toPlainJSON } from "@/lib/doc/plain";
+import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 import { applyOps } from "@/domain/authoring/ops";
 
 interface PanelItem {

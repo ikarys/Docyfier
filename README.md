@@ -257,7 +257,11 @@ Ports are overridable: `just dev 4000`. Each recipe maps to an npm script, so
   Jira, plain text.
 - `src/domain/composing/composers/` — email and ticket composers, same plugin
   shape.
-- `src/lib/doc/` — import, beautify, chart data, diff, uploads.
+- `src/domain/documents/` / `src/domain/authoring/` — the document rules with no
+  I/O in them: chart data, accepted import files, the deterministic formatter,
+  the block diff behind AI review.
+- `src/lib/import.ts` — file import, over the conversion adapters in
+  `src/infrastructure/documents/`.
 - `src/app/actions.ts` / `ai-actions.ts` — server actions.
 - `src/app/globals.css` — design system, editor chrome, A4 print rules.
 

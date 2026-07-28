@@ -11,8 +11,8 @@ import type {
   ComposerValues,
 } from "@/domain/composing/composer";
 import { completePlainText } from "@/lib/ai/service";
-import { docFromMarkdown } from "@/lib/doc/import";
-import { toPlainJSON } from "@/lib/doc/plain";
+import { docFromMarkdown } from "@/lib/import";
+import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 import { COMPOSERS } from "./registry";
 
 /**

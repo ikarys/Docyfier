@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Editor, JSONContent } from "@tiptap/react";
 import { deleteDocumentAction } from "@/app/actions";
 import { fillDocumentAction } from "@/app/ai-actions";
-import { ndjsonLines, stashGenerateError, takePrompt } from "@/lib/doc/generate-client";
+import { ndjsonLines, stashGenerateError, takePrompt } from "@/components/editor/generation-handover";
 import type { Autosave } from "./useAutosave";
 
 /**

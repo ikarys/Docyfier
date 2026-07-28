@@ -5,7 +5,7 @@ import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { JSONContent } from "@tiptap/core";
 import { rewriteSelectionAction, type SelectionInput } from "@/app/ai-actions";
-import { toPlainJSON } from "@/lib/doc/plain";
+import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 
 const QUICK_ACTIONS: { label: string; instruction: string }[] = [
   { label: "Rephrase", instruction: "Rephrase this to read better." },

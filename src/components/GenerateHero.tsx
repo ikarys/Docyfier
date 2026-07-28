@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startGeneratedDocumentAction } from "@/app/ai-actions";
-import { stashPrompt, takeGenerateError } from "@/lib/doc/generate-client";
+import { stashPrompt, takeGenerateError } from "@/components/editor/generation-handover";
 
 const EXAMPLES = [
   "A one-page status report for a cloud migration: summary, progress, risks, next steps",

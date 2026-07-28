@@ -2,7 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import type { Editor, Range } from "@tiptap/core";
-import { imageFilesOf, insertUploadedImages } from "@/lib/doc/upload";
+import { imageFilesOf, insertUploadedImages } from "@/components/editor/image-upload";
 
 export interface SlashItem {
   title: string;
