@@ -11,6 +11,7 @@ import {
 import { ChartNode } from "../chart/ChartView";
 import { ImageNode } from "../ImageView";
 import { TocNode } from "../TocView";
+import { Shortcuts } from "./shortcuts";
 import { SlashCommand } from "./slash-command";
 
 /**
@@ -41,6 +42,7 @@ export function editorExtensions({ smartTypography }: TypingPreferences) {
     ...DOCUMENT_EXTENSIONS,
     ...VIEWED_NODES.map((node) => VIEWS[node.name] ?? node),
     SlashCommand,
+    Shortcuts,
     AiDiff,
     Search,
     CharacterCount,

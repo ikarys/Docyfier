@@ -1,24 +1,13 @@
 "use client";
 
 import type { Editor } from "@tiptap/react";
+import { promptForLink } from "./link-prompt";
 
 const ALIGNMENTS: { value: string; icon: string; title: string }[] = [
   { value: "left", icon: "⯇", title: "Align left" },
   { value: "center", icon: "⯅", title: "Align center" },
   { value: "right", icon: "⯈", title: "Align right" },
 ];
-
-/** Prompt for a URL, applying it to the selection. Empty input clears it. */
-function setLink(editor: Editor): void {
-  const current = (editor.getAttributes("link").href as string | undefined) ?? "";
-  const url = window.prompt("Link URL", current);
-  if (url === null) return;
-  if (url.trim() === "") {
-    editor.chain().focus().unsetLink().run();
-    return;
-  }
-  editor.chain().focus().setLink({ href: url.trim() }).run();
-}
 
 const TEXT_COLORS = ["#3b5bdb", "#1f9d6b", "#c23b3b", "#b4690e", "#7048e8"];
 const HIGHLIGHT_COLORS = ["#fff3bf", "#e9f7f0", "#fbecec", "#eef2fe", "#f3f0ff"];
@@ -76,7 +65,7 @@ export function FormattingRow({ editor }: { editor: Editor }) {
       </button>
       <button
         className={active("link")}
-        onClick={() => setLink(editor)}
+        onClick={() => promptForLink(editor)}
         title="Link"
       >
         🔗

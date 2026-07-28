@@ -129,6 +129,19 @@ export function useAutosave(
     flushSave();
   }, [editor, id, flushSave]);
 
+  // `Mod-S` is what a writer presses when they want to be sure. Saving is
+  // already automatic, so this only skips the pause — and it answers wherever
+  // the caret is, which a keymap inside the editor could not.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key !== "s") return;
+      event.preventDefault();
+      saveNow();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [saveNow]);
+
   const setStreaming = useCallback((value: boolean) => {
     streaming.current = value;
   }, []);
