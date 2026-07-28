@@ -1,6 +1,8 @@
 import { StarterKit } from "@tiptap/starter-kit";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
 import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
+import { Subscript } from "@tiptap/extension-subscript";
+import { Superscript } from "@tiptap/extension-superscript";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
@@ -50,6 +52,8 @@ export const DOCUMENT_EXTENSIONS = [
   Color,
   Highlight.configure({ multicolor: true }),
   Badge,
+  Subscript,
+  Superscript,
   CardGrid,
   Card,
   ColumnList,

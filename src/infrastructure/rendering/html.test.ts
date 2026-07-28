@@ -56,6 +56,15 @@ describe("docToHtml", () => {
     expect(html(details)).toBe("<details open><summary>More</summary><p>body</p></details>");
   });
 
+  it("writes sub- and superscript with the tags HTML has for them", () => {
+    expect(html(p(text("H"), text("2", [{ type: "subscript" }]), text("O")))).toBe(
+      "<p>H<sub>2</sub>O</p>",
+    );
+    expect(html(p(text("m"), text("2", [{ type: "superscript" }])))).toBe(
+      "<p>m<sup>2</sup></p>",
+    );
+  });
+
   it("maps heading levels, falling back to h1 for a level HTML has no tag for", () => {
     expect(html({ type: "heading", attrs: { level: 2 }, content: [text("T")] })).toBe(
       "<h2>T</h2>",

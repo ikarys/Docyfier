@@ -2630,6 +2630,30 @@ body {
   cursor: grabbing;
 }
 
+/* ---- Emoji picker (":") --------------------------------------------------- */
+
+.emoji-menu {
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.3rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px -10px rgba(20, 22, 30, 0.3);
+}
+.emoji-item {
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.3rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+.emoji-item.is-selected {
+  background: var(--accent-soft);
+}
+
 /* ---- Slash command menu --------------------------------------------------- */
 
 .slash-menu {

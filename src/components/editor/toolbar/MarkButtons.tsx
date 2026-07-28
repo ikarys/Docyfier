@@ -43,6 +43,26 @@ const MARKS: MarkButton[] = [
     toggle: (editor) => editor.chain().focus().toggleCode().run(),
   },
   {
+    name: "superscript",
+    label: "Superscript",
+    shown: (
+      <span>
+        x<sup>2</sup>
+      </span>
+    ),
+    toggle: (editor) => editor.chain().focus().toggleSuperscript().run(),
+  },
+  {
+    name: "subscript",
+    label: "Subscript",
+    shown: (
+      <span>
+        x<sub>2</sub>
+      </span>
+    ),
+    toggle: (editor) => editor.chain().focus().toggleSubscript().run(),
+  },
+  {
     name: "badge",
     label: "Badge / pill",
     shown: "◍",

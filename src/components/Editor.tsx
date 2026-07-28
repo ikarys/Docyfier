@@ -37,6 +37,7 @@ export function DocumentEditor({
   initialUpdatedAt,
   presets,
   smartTypography,
+  emoji,
 }: {
   id: string;
   initialContent: JSONContent;
@@ -46,6 +47,8 @@ export function DocumentEditor({
   presets: Theme[];
   /** From the instance's writing style: what a keystroke produces. */
   smartTypography: boolean;
+  /** From the same settings: whether `:` offers emoji. */
+  emoji: boolean;
 }) {
   /** Only one side panel at a time — they share the same slot. */
   const [panel, setPanel] = useState<PanelName | null>("ai");
@@ -57,7 +60,7 @@ export function DocumentEditor({
   // Stable identity: inline `.configure(...)` calls would otherwise return a new
   // extension instance every render, which made useEditor think the config
   // changed and re-apply editor options on every save-state re-render.
-  const extensions = useRef(editorExtensions({ smartTypography })).current;
+  const extensions = useRef(editorExtensions({ smartTypography, emoji })).current;
 
   const editor = useEditor({
     immediatelyRender: false,

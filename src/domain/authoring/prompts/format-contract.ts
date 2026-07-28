@@ -42,7 +42,7 @@ Inline nodes (only inside heading/paragraph and table-cell paragraphs):
 - {"type":"hardBreak"}
 
 Marks:
-- {"type":"bold"} | {"type":"italic"} | {"type":"strike"} | {"type":"code"}
+- {"type":"bold"} | {"type":"italic"} | {"type":"strike"} | {"type":"code"} | {"type":"subscript"} | {"type":"superscript"} — sub/superscript for formulas, units and footnote markers only, never for emphasis
 - {"type":"textStyle","attrs":{"color":"#RRGGBB"}} — text color
 - {"type":"highlight","attrs":{"color":"#RRGGBB"}} — background highlight
 - {"type":"badge","attrs":{"variant":"gray"|"blue"|"green"|"yellow"|"red"|"purple"}} — small colored pill/tag for statuses, priorities, labels ("Done", "P1", "Beta")

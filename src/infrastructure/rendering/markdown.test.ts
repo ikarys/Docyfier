@@ -62,6 +62,11 @@ describe("docToMarkdown", () => {
     expect(md(p(text("x = 1", [{ type: "code" }])))).toBe("`x = 1`");
   });
 
+  it("falls back to the tags markdown passes through for sub- and superscript", () => {
+    expect(md(p(text("2", [{ type: "subscript" }])))).toBe("<sub>2</sub>");
+    expect(md(p(text("2", [{ type: "superscript" }])))).toBe("<sup>2</sup>");
+  });
+
   it("renders a badge as bold, the only emphasis markdown offers it", () => {
     expect(md(p(text("P1", [{ type: "badge" }])))).toBe("**P1**");
   });
