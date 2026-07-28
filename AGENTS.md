@@ -32,7 +32,7 @@ among three behind `src/lib/store/`, selected at runtime from the Settings page.
 with no source. Stack validated: Next.js + TypeScript + Tailwind v4 + Tiptap.
 Node is pinned via `.nvmrc` (nvm).
 
-Editor UX and rendering STEPS U1–U6 are in: slash menu and drag handles;
+Editor UX and rendering STEPS U1–U7 are in: slash menu and drag handles;
 streaming generation, op-based transforms and AI diff review; themes as
 adjustable token sets (accent, font pair, radius, density) with a Design panel;
 images, cover, table of contents and print control; charts, block icons and
@@ -44,7 +44,15 @@ under `src/infrastructure/publishing/targets/` plus a line in the registry at
 per scope (`/settings/{ai,storage,exports,access}`). STEP 8 is in: the email and
 ticket composers under `/compose`, same plugin shape in
 `src/domain/composing/composers/` —
-short-form writing that ends in the clipboard, not in a document. Next: STEP 6
+short-form writing that ends in the clipboard, not in a document. STEP U7 is in:
+a document is planned before it is written — one short call decides its kind,
+audience, tone, sections and art direction, and the writer then fills the
+skeleton of a **recipe** (`src/domain/authoring/recipes/`, same registry shape:
+one file plus one line). The art direction reaches the document as its theme,
+streamed ahead of the first block; `authoring` names a dress in its own
+vocabulary and `src/application/documents/theme-from-art.ts` is the only place
+it becomes a `DocumentTheme`. "Style for me" in the Design panel runs the same
+pass over an existing document. Next: STEP 6
 (multi-tenant) or STEP 9 (templates, themes, style settings). PDF stays
 print-based on purpose; a headless-Chromium renderer is the only open item of
 STEP 3 and was judged not worth its weight.
