@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDocument } from "@/lib/store";
-import { getBrandPresets } from "@/lib/settings";
+import { getBrandPresets, getStyleParameters } from "@/lib/settings";
 import { requireAuth } from "@/lib/auth";
 import { deleteDocumentAction } from "@/app/actions";
 import { BrandMark } from "@/components/BrandMark";
@@ -21,7 +21,7 @@ export default async function DocumentPage({
   const { id } = await params;
   const doc = await getDocument(id);
   if (!doc) notFound();
-  const presets = await getBrandPresets();
+  const [presets, style] = await Promise.all([getBrandPresets(), getStyleParameters()]);
 
   return (
     <>
@@ -67,6 +67,7 @@ export default async function DocumentPage({
         initialTheme={doc.theme}
         initialUpdatedAt={doc.updatedAt}
         presets={presets}
+        smartTypography={style.smartTypography}
       />
     </>
   );

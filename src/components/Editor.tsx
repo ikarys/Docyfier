@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import { useEditor, type JSONContent } from "@tiptap/react";
 import type { JSONContent as DocJSON } from "@tiptap/core";
-import { imageFilesOf, insertUploadedImages } from "@/components/editor/image-upload";
 import {
   presetSkin,
   resolveTokens,
@@ -14,10 +13,13 @@ import {
 import { AiPanel } from "./AiPanel";
 import { AiDiffBar } from "./AiDiffBar";
 import { DesignPanel } from "./DesignPanel";
+import { documentEditorProps } from "./editor/editor-props";
 import { EditorSurface } from "./editor/EditorSurface";
-import { EDITOR_EXTENSIONS } from "./editor/extensions";
+import { editorExtensions } from "./editor/extensions";
 import { MenuBar, type PanelName } from "./editor/MenuBar";
+import { SearchBar } from "./editor/SearchBar";
 import { useAiReview } from "./editor/useAiReview";
+import { useDocumentSearch } from "./editor/useDocumentSearch";
 import { useAutosave, type Autosave } from "./editor/useAutosave";
 import { useDocumentTheme } from "./editor/useDocumentTheme";
 import { useStreamedGeneration } from "./editor/useStreamedGeneration";
@@ -34,6 +36,7 @@ export function DocumentEditor({
   initialTheme,
   initialUpdatedAt,
   presets,
+  smartTypography,
 }: {
   id: string;
   initialContent: JSONContent;
@@ -41,6 +44,8 @@ export function DocumentEditor({
   initialUpdatedAt: string;
   /** The presets this instance saved, so a document wearing one resolves it. */
   presets: Theme[];
+  /** From the instance's writing style: what a keystroke produces. */
+  smartTypography: boolean;
 }) {
   /** Only one side panel at a time — they share the same slot. */
   const [panel, setPanel] = useState<PanelName | null>("ai");
@@ -52,32 +57,13 @@ export function DocumentEditor({
   // Stable identity: inline `.configure(...)` calls would otherwise return a new
   // extension instance every render, which made useEditor think the config
   // changed and re-apply editor options on every save-state re-render.
-  const extensions = useRef(EDITOR_EXTENSIONS).current;
+  const extensions = useRef(editorExtensions({ smartTypography })).current;
 
   const editor = useEditor({
     immediatelyRender: false,
     extensions,
     content: initialContent,
-    editorProps: {
-      attributes: { class: "doc doc-editor" },
-      // Images arrive by paste or drop, are uploaded, then inserted by URL.
-      // Returning true swallows the event so ProseMirror does not also insert
-      // the browser's own (base64 or file://) representation.
-      handlePaste: (view, event) => {
-        const files = imageFilesOf(event.clipboardData?.files ?? null);
-        if (files.length === 0) return false;
-        void insertUploadedImages(view, files, view.state.selection.from);
-        return true;
-      },
-      handleDrop: (view, event, _slice, moved) => {
-        if (moved) return false;
-        const files = imageFilesOf(event.dataTransfer?.files ?? null);
-        if (files.length === 0) return false;
-        const at = view.posAtCoords({ left: event.clientX, top: event.clientY });
-        void insertUploadedImages(view, files, at?.pos ?? view.state.selection.from);
-        return true;
-      },
-    },
+    editorProps: documentEditorProps(),
     onUpdate: ({ editor }) => autosaveRef.current?.scheduleSave(editor),
   });
 
@@ -85,6 +71,7 @@ export function DocumentEditor({
   autosaveRef.current = autosave;
   const generation = useStreamedGeneration(id, editor, autosave, changeTheme);
   const review = useAiReview(editor, autosave);
+  const search = useDocumentSearch(editor);
 
   if (!editor) return null;
 
@@ -101,6 +88,7 @@ export function DocumentEditor({
         onTogglePanel={(which) => setPanel((p) => (p === which ? null : which))}
         onSaveNow={autosave.saveNow}
       />
+      {search.open && <SearchBar search={search} />}
       <div className="editor-body" data-panel={panel !== null}>
         <main
           className="doc-shell"

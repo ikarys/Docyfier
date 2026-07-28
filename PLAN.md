@@ -5,8 +5,10 @@ original P\* where justified; the "Was → Now" column tracks every change.
 
 **MVP = STEPS 0–4.** Everything after is post-MVP.
 
-The UX & rendering upgrade STEPS **U1–U7** ([Part C](#part-c--ux--rendering-upgrade-steps-u1u7))
+The UX & rendering upgrade STEPS **U1–U7** ([Part C](#part-c--ux--rendering-upgrade-steps-u1u12))
 slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 → U5 → U6 → U7.
+The editing STEPS **U8–U12** continue Part C and run **before STEP 6**:
+U8 → U9 → U10 → U11 → U12.
 
 ## Part A — Prioritized needs
 
@@ -21,7 +23,7 @@ slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 
 | 7 | Export Markdown + PDF | P1 | **P0** | Without export, documents are trapped in the tool; PDF is the #1 professional sharing format |
 | 8 | Export docx, slides, Confluence | P1 | P1 | Post-MVP; docx/slides fidelity is genuinely hard |
 | 9 | Import existing documents to rework/reformat | P1 | P1 | First post-MVP step: "reformat my ugly doc" is a killer demo |
-| 10 | Project/team management, collaboration, change tracking | P0 | **P1** | Heavy; not needed to validate core value — MVP is mono-user (decided) |
+| 10 | Project/team management, collaboration, change tracking | P0 | **P1** | Heavy; not needed to validate core value — MVP is mono-user (decided). Change tracking split out into [STEP U12](#step-u12--comments-suggestions--history), which works mono-user and hands STEP 6 real identities |
 | 11 | Organizations, users, access levels & permissions | P0 | **P1** | Same reasoning; designed post-MVP as one coherent multi-tenant step |
 | 12 | Bring-your-own LLM per org/team | P0 | **P1** | Org-level config UI is post-MVP; **mitigation:** LLM provider abstraction built day 1 so this stays cheap |
 | 13 | Email writing/rephrasing section with tone choices | P1 | P1 | Quick win on top of the same AI engine |
@@ -31,7 +33,7 @@ slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 
 | 17 | Custom styles & themes for corporate visual identity | P2 | P2 | |
 | 18 | Cloud storage integration (Drive, Dropbox, OneDrive…) | P2 | P2 | |
 | 19 | Advanced search across documents | P2 | P2 | |
-| 20 | Version history / rollback | P3 | **P2** | Near-free if documents are stored as structured snapshots — storage model chosen accordingly in STEP 0 |
+| 20 | Version history / rollback | P3 | **P2** | Near-free if documents are stored as structured snapshots — storage model chosen accordingly in STEP 0. Delivered in [STEP U12](#step-u12--comments-suggestions--history) |
 | 21 | Read/create/update (no delete) on Confluence, Jira, Notion, Drive with enterprise permission inheritance | P3 | P3 | |
 
 ## Part B — Roadmap STEPS
@@ -284,7 +286,7 @@ Acceptance:
 
 **Exit criteria:** per integration: connect, list, import, push update without leaving the app.
 
-## Part C — UX & rendering upgrade STEPS (U1–U7)
+## Part C — UX & rendering upgrade STEPS (U1–U12)
 
 Motivation: the current editor produces correct but classic documents; the UX is
 toolbar-only; themes are four fixed presets; whole-document AI transforms are
@@ -294,6 +296,13 @@ templates (U5), add data-viz blocks (U6) and put the theme and the shape of a
 generated document in the model's hands (U7). They slot between STEP 2b and
 STEP 3 and pull parts of STEP 9 and STEP 10 forward.
 Recommended order: **U1 → U4 → U3 → U2 → U5 → U6 → U7**.
+
+U1–U7 delivered a rich palette of layout blocks. **U8–U12** close the gap
+between that palette and what a document editor is expected to do around it in
+2026: find and replace, paste from anywhere, checkboxes and collapsible
+sections, images that behave like figures, AI at the caret, and a record of who
+changed what. They run **after U7 and before STEP 6**, in the order
+**U8 → U9 → U10 → U11 → U12**.
 
 ### Ground rules for implementers (read before any U-STEP)
 
@@ -307,8 +316,17 @@ Recommended order: **U1 → U4 → U3 → U2 → U5 → U6 → U7**.
 - **Every new node type is registered in two places**: the document's
   extensions (`src/infrastructure/editor/document-extensions.ts`), which the
   editor and the validation schema share, and the AI format contract
-  (`src/domain/authoring/prompts.ts`) — a node missing from the contract is
-  never produced, one missing from the extensions fails validation.
+  (`src/domain/authoring/prompts/format-contract.ts`) — a node missing from the
+  contract is never produced, one missing from the extensions fails validation.
+  Everything else is *recommended*, not required, because an unknown type
+  degrades to its children rather than disappearing: an entry in the HTML and
+  Markdown renderers (`src/infrastructure/rendering/{html,markdown}/blocks.ts`,
+  from which Notion and Trilium inherit for free), a case in the Word target
+  (`src/infrastructure/publishing/targets/docx/blocks.ts`, its own render tree),
+  a line in the print `break-inside: avoid` list, and — when the block carries
+  rules of its own — attribute validation in `schema.ts` the way `chart` has it.
+  Jira and plain text are optional. `ops.ts`, the document body model and the
+  export registry never change for a node type.
 - No new UI libraries without maintainer approval — plain React + CSS in
   `globals.css`, matching the existing code. Tiptap official extensions are fine.
 - Small diffs, Conventional Commits, one concern per commit. Verify each
@@ -642,3 +660,240 @@ Acceptance:
 - [ ] A garbage brief (unknown kind, bad accent, missing sections) still produces a document: every field falls back, nothing throws
 - [ ] The planning call is short enough that the first streamed block still arrives quickly; a provider that fails the planning call still writes the document with the default recipe
 - [ ] "Style for me" restyles an existing document without touching one byte of its content
+
+---
+
+### STEP U8 — Editing ergonomics (search, paste, tables, shortcuts)
+
+**Goal:** what is expected of an editor before the first block is even
+discussed — find a word, paste from anywhere, drive a table, know how long the
+document is.
+
+**Why:** the palette is rich and the plumbing around it is thin. There is no
+find and replace at all; a pasted spreadsheet arrives as a wall of text and a
+pasted markdown as literal `##`; the table bar offers three commands (add a
+column, add a row, drop the table) and no way to delete a row or merge two
+cells; no shortcut belongs to the product — `Mod-S`, `Mod-F`, `Mod-K` do
+nothing. None of it touches the schema, so none of it can hurt an existing
+document.
+
+Instructions:
+
+1. **Find & replace.** The rule is pure and lives in the domain:
+   `src/domain/documents/text-matches.ts` — document text plus a query and its
+   options in, ranges out, tested in Node with no DOM. The ProseMirror plugin
+   that decorates the ranges and the `Mod-F` bar stay in
+   `src/components/editor/`. Replace and replace-all are one transaction, so
+   one undo takes them back.
+2. **Paste that understands what it is given.** `handlePaste` already claims
+   image files (`src/components/Editor.tsx`); a testable
+   `src/components/editor/paste-conversion.ts` takes the rest: markdown text
+   through the import path that exists (`marked` → HTML → `parseHtmlBody`, see
+   `src/lib/import.ts`), web HTML stripped of everything the schema does not
+   know, and the TSV a spreadsheet puts on the clipboard as a real table.
+3. **A table bar worth the name.** Delete row, delete column, toggle the header
+   row, merge and split cells, column alignment — every command already ships
+   with `@tiptap/extension-table`; `FormatGroups.tsx` simply does not call them.
+4. **Input rules.** `@tiptap/extension-typography` for quotes, dashes and
+   ellipses, plus the markdown rules still missing. Automatic typography is a
+   style decision, so it answers to `StyleParameters`
+   (`src/domain/authoring/style-parameters.ts`), not to a hardcoded default.
+5. **Length.** Words and reading time from `@tiptap/extension-character-count`,
+   in the toolbar's right cluster beside the save status.
+6. **Shortcuts that belong to the product.** `Mod-S` (save now), `Mod-K` (link),
+   `Mod-F` (find), declared in one extension rather than scattered — and
+   **listed in `ShortcutHelp.tsx`**, which today shows Tiptap's defaults and
+   nothing else.
+
+**Out of scope:** search across documents (#19, STEP 10) — this is one document.
+
+Acceptance:
+
+- [ ] `Mod-F` highlights every occurrence, `Enter` walks them, and replace-all is a single undo
+- [ ] A spreadsheet range pastes as a table, markdown text pastes as blocks, a screenshot still pastes as an image
+- [ ] A row and a column can be deleted and two cells merged from the table bar
+- [ ] The word count follows typing, and reading time is derived from it — not from a second traversal
+- [ ] Automatic typography follows the Style setting; off means the characters typed are the characters stored
+- [ ] Every shortcut the product adds appears in the shortcut overlay
+
+---
+
+### STEP U9 — The blocks a 2026 editor is expected to have
+
+**Goal:** checkboxes, collapsible sections, math, highlighted code, sub- and
+superscript, emoji. None is a house layout block: they are official Tiptap
+extensions, so the work is not the editor — it is making them survive HTML,
+Markdown, Word and print.
+
+**Why:** a task list is how a document holds actions, a collapsible section is
+how a long spec stays readable, and a code block without a language is a
+screenshot of code. Their absence is what makes the palette read as limited
+even though the layout blocks are unusually rich.
+
+Instructions — one block per commit, each following the registration rules
+above:
+
+1. **Task list** — `TaskList` / `TaskItem` from `@tiptap/extension-list`,
+   already present through StarterKit. Markdown has a native form (`- [ ]`);
+   Word gets a symbol plus text.
+2. **Collapsible section** — `@tiptap/extension-details`. Everything outside the
+   editor renders it **open**: an export never hides content behind a triangle.
+3. **Math** — `@tiptap/extension-mathematics` with `katex`, inline and block,
+   `$…$` and `$$…$$` in Markdown.
+4. **Highlighted code** — `@tiptap/extension-code-block-lowlight` with
+   `lowlight`: a language picker on the block, and colours that survive print.
+5. **Superscript / subscript** — two marks, two buttons in `FormattingRow`.
+6. **Emoji** — `@tiptap/extension-emoji`, a `:` picker on the same
+   `@tiptap/suggestion` the slash menu already uses. It obeys the Style
+   parameter: emoji off means the picker never opens, matching the rule
+   `beautify` already enforces on model output.
+
+Each block also earns its slash-menu item (English and French keywords, like
+every existing one) and its line in the print `break-inside` list.
+
+**Out of scope:** diagrams (Mermaid and friends) — they stay STEP 10, as
+decided; and any block that would need a new UI library.
+
+Acceptance:
+
+- [ ] Each block inserts from `/`, survives a reload, and comes out right in HTML, Markdown, Word and PDF
+- [ ] The model emits each new block when asked for it, and `validateDocJson` accepts what it emits
+- [ ] A collapsible section exports open, with its summary as a heading
+- [ ] A code block keeps its language after a reload and prints highlighted
+- [ ] Emoji off: the `:` picker does not open, and nothing strips emoji already typed by hand
+- [ ] `npm ls` shows only the extensions this STEP added — no transitive UI library came with them
+
+---
+
+### STEP U10 — Images, media and placement
+
+**Goal:** an image is an `<img>` with an alt text and four fixed widths. Make it
+a figure: a caption, a place on the page, a size the writer chooses — and open
+the family to the other things people drop into a document.
+
+**Why:** the document surface is print-shaped, and print is where an unplaced
+image hurts most. Everything here is already half-built: upload, paste and drop
+work, `chart` already models a caption, and `cards.ts` is the isolating-block
+pattern a gallery copies.
+
+Instructions:
+
+1. **Caption.** A `caption` attribute on `doc-image.ts`, shaped like the one
+   `chart` carries, edited beside the alt text in `ImageView.tsx`, rendered as
+   `<figure>` / `<figcaption>`.
+2. **Placement.** An `align` attribute (left / center / right / full) and text
+   wrap, expressed in theme tokens rather than fixed CSS, and honoured in print.
+3. **Free resize.** A drag handle beside the four presets, storing a percentage
+   of the text column — never pixels, since the theme and the paper decide the
+   real width. The drag state is a module a test can drive, not component state.
+4. **Gallery.** An `imageRow` block holding two to four images, isolating, same
+   shape as `cardGrid`.
+5. **Paste and upload, finished.** An image URL pasted becomes an image instead
+   of a link; a failed upload reports in place, replacing the `window.alert` in
+   `image-upload.ts`; a multi-file drop shows progress.
+6. **Embeds.** `@tiptap/extension-youtube` plus a generic `embed` block over a
+   domain allowlist — never an arbitrary `iframe`. Exports render a titled link:
+   a dead frame is worse than a link.
+7. **Attachments.** `src/lib/uploads.ts` widens its MIME list and size to carry
+   PDFs and documents, and an `attachment` node renders the file row. **SVG
+   stays excluded** for the XSS reason already written there, and the serving
+   route keeps its `default-src 'none'; sandbox` CSP.
+
+**Out of scope:** an image library or media manager across documents (STEP 10
+territory), and image generation.
+
+Acceptance:
+
+- [ ] A captioned image aligned right, with text flowing around it, prints as it renders
+- [ ] A freely resized image keeps its width after a reload, and still fits the page in print
+- [ ] A three-image gallery exports to HTML, Word and PDF without collapsing to one column
+- [ ] Pasting an image URL inserts an image; pasting a page URL still inserts a link
+- [ ] A rejected upload (too large, wrong type) is reported inside the document, not in an alert, and no node is left behind
+- [ ] An embed exports as a titled clickable link; an SVG upload is still refused
+
+---
+
+### STEP U11 — AI at the caret
+
+**Goal:** the assistant lives in a side panel and in a selection bubble. Bring it
+where the cursor is: a prompt anywhere, a continuation, an action per block, a
+question about the document.
+
+**Why:** the expensive half already shipped — NDJSON streaming
+(`/api/transform`, `src/lib/ai/transform-stream.ts`), op-by-op application
+(`src/components/editor/streamed-transform.ts`) and Accept/Reject review
+(`useAiReview`, `AiDiffBar`). What is missing is the surface, and the habit it
+serves: nobody opens a panel to rewrite one paragraph.
+
+Instructions:
+
+1. **`Mod-K` anywhere.** A floating prompt at the caret, in an empty document as
+   in the middle of a paragraph; the answer streams in and lands under the
+   existing review.
+2. **Continue writing.** A continuation from the text above, shown as ghost text,
+   accepted with `Tab`, discarded with `Escape`. Context comes from
+   `document-digest.ts`, not the whole document.
+3. **Per-block actions.** On the drag handle: rewrite, shorten, expand, and
+   *turn into* (table, steps, key figures, chart). One op on one index — never a
+   whole-document pass.
+4. **Ask the document.** An answer grounded on the digest, citing the sections it
+   used, changing nothing until an insertion is asked for.
+5. **One contract.** Every surface goes through `authoringDeps`
+   (`src/lib/ai/service.ts`), `validateDocJson` and `beautify`. A surface that
+   talks to a model on its own is a defect, not a shortcut.
+
+**Out of scope:** agentic multi-step editing, and any AI that writes without a
+review step.
+
+Acceptance:
+
+- [ ] `Mod-K` in an empty document writes a first block, streamed, reviewable
+- [ ] "Continue" offers a suggestion accepted with `Tab` and undone in one undo
+- [ ] Turning a paragraph into key figures leaves every other block byte-identical
+- [ ] A malformed op is rejected whole — never half-applied — with the existing retry
+- [ ] A provider without streaming falls back to the blocking path and still answers
+- [ ] Asking a question inserts nothing until the answer is explicitly inserted
+
+---
+
+### STEP U12 — Comments, suggestions & history
+
+**Goal:** the record of the work: comment on a passage, propose a change rather
+than make it, and go back to what the document was yesterday.
+
+**Why:** this is the only axis that adds data of its own, and the only one that
+prepares STEP 6 — a comment needs an author, and STEP 6 is where authors become
+plural. Mono-user for now: the author is the instance, and the model is built so
+that STEP 6 substitutes real identities without touching the document format.
+
+Instructions:
+
+1. **A `collaboration` bounded context.** `src/domain/collaboration/`:
+   `Comment` and `Thread` entities (anchor, author, date, resolved), a
+   `ThreadRepository` port, and files / PostgreSQL / MySQL adapters behind the
+   same driver contract suite the document repositories already pass unchanged.
+2. **Anchoring.** A `comment` mark carries the thread id inside the document
+   JSON; the thread itself lives outside it. A thread whose anchor is gone is
+   **orphaned, not lost** — a domain rule with a test, and a visible state in
+   the UI.
+3. **Suggestions.** `insertion` and `deletion` marks reusing the decorator built
+   for AI diffs (`ai-diff.ts`), accepted or rejected through `AiDiffBar`.
+   Accepting produces exactly the proposed text.
+4. **History.** A snapshot per server write — `saveDocumentAction` already knows
+   the base version and the new `updatedAt` — with bounded retention, a version
+   list, a comparison built on `block-diff.ts`, and a restore that writes a new
+   version instead of erasing any.
+5. **Exports stay editorial-free.** An export carries the accepted text, without
+   comment or suggestion marks. Including them can become a target option later.
+
+**Out of scope:** real-time collaborative editing (deferred until demanded, as
+STEP 6 records), notifications, and per-user permissions on a thread — STEP 6.
+
+Acceptance:
+
+- [ ] Comment a selection, reply, resolve; the thread survives a reload and follows the text as it is edited
+- [ ] Deleting the anchored text leaves the thread orphaned and visible, never silently dropped
+- [ ] Accepting a suggestion yields exactly the proposed text; rejecting restores the prior JSON deep-equal
+- [ ] Restoring an old version creates a new version and destroys none
+- [ ] No export contains a comment or suggestion mark, in any target
+- [ ] The three storage drivers pass the same thread contract suite, unchanged

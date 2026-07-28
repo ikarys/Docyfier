@@ -60,9 +60,15 @@ one file plus one line). The art direction reaches the document as its theme,
 streamed ahead of the first block; `authoring` names a dress in its own
 vocabulary and `src/application/documents/theme-from-art.ts` is the only place
 it becomes a `DocumentTheme`. "Style for me" in the Design panel runs the same
-pass over an existing document. Next: STEP 6 (multi-tenant). PDF stays
-print-based on purpose; a headless-Chromium renderer is the only open item of
-STEP 3 and was judged not worth its weight.
+pass over an existing document.
+
+What the editor still cannot do is written down as STEPS **U8–U12** in PLAN.md:
+find and replace, paste that understands markdown or a spreadsheet, a table bar
+past three commands, checkboxes, collapsible sections, math, highlighted code,
+images with a caption and a place on the page, AI at the caret, and comments,
+suggestions and version history. Next: **STEP U8**, then U9 → U12, then STEP 6
+(multi-tenant). PDF stays print-based on purpose; a headless-Chromium renderer
+is the only open item of STEP 3 and was judged not worth its weight.
 
 ## Working conventions
 

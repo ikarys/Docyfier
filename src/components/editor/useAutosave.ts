@@ -5,6 +5,7 @@ import type { Editor, JSONContent } from "@tiptap/react";
 import { saveDocumentAction } from "@/app/actions";
 import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 import { clearDraft, readDraft, usableDraft, writeDraft } from "@/lib/editor/draft";
+import { useWindowShortcut } from "./useWindowShortcut";
 import type { SaveState } from "./save-state";
 
 /**
@@ -128,6 +129,10 @@ export function useAutosave(
     pending.current = draft.content;
     flushSave();
   }, [editor, id, flushSave]);
+
+  // `Mod-S` is what a writer presses when they want to be sure; saving is
+  // already automatic, so it only skips the pause.
+  useWindowShortcut("s", saveNow);
 
   const setStreaming = useCallback((value: boolean) => {
     streaming.current = value;
