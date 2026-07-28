@@ -30,7 +30,7 @@ describe("Document.create", () => {
 
   it("keeps the theme it is given, repaired", () => {
     expect(created(undefined, "corporate").theme).toEqual({ preset: "corporate" });
-    expect(created(undefined, { preset: "nope" }).theme).toEqual({
+    expect(created(undefined, { preset: 42 }).theme).toEqual({
       preset: DEFAULT_PRESET,
     });
   });
