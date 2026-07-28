@@ -164,7 +164,7 @@ Acceptance (auth half):
   faithful — structure only; the AI "make it pretty" pass is what reformats.
 - Export docx (#8, partial).
 - **Export targets as plugins:** Word, Confluence, Notion, Trilium (#8). One contract,
-  one file per target (`src/lib/export/targets/`), each enabled from the Settings
+  one adapter per target (`src/infrastructure/publishing/targets/`), each enabled from the Settings
   page. Payload only — the user copies it or downloads it; no API integration, so
   a target costs nothing to add and needs no credentials for a tool this instance
   may not even reach.
@@ -217,7 +217,7 @@ Acceptance (export targets):
 - Ticket composer with per-tool formats: Jira, ServiceNow, GitLab issues (#14).
 
 **Composers as plugins:** one contract, one file per flow
-(`src/lib/compose/composers/`). A composer declares its form fields and builds
+(`src/domain/composing/composers/`). A composer declares its form fields and builds
 its prompt from them, and does nothing else — no AI client, no storage. The
 form, the menu and the server action all read the registry, so a new flow is a
 file plus a line.

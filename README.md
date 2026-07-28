@@ -69,7 +69,8 @@ transcript you reformat by hand.
   carries layout, not structure.
 - **Export**: Word (`.docx`), Markdown, Confluence, Notion, Trilium, and PDF
   through the browser print dialog against an A4 stylesheet. Targets are
-  plugins: one file in `src/lib/export/targets/` plus a line in the registry.
+  plugins: one adapter in `src/infrastructure/publishing/targets/` plus a line
+  in the registry.
 - **Compose**: short-form writing that ends in the clipboard instead of a
   document — an email from a brief in a chosen tone, or a ticket in the markup
   Jira, ServiceNow or GitLab expects.
@@ -250,10 +251,13 @@ Ports are overridable: `just dev 4000`. Each recipe maps to an npm script, so
   the three AI surfaces.
 - `src/lib/ai/` — provider, prompts, schema validation, services.
 - `src/lib/store/` — document store: facade + files / PostgreSQL / MySQL drivers.
-- `src/lib/export/targets/` — export targets, one file each, listed in
-  `registry.ts`.
-- `src/lib/compose/composers/` — email and ticket composers, same plugin shape.
-- `src/lib/doc/` — import, markdown export, template validation.
+- `src/infrastructure/publishing/targets/` — export targets, one adapter each,
+  listed in `src/lib/export/registry.ts`.
+- `src/infrastructure/rendering/` — the document renderers: HTML, Markdown,
+  Jira, plain text.
+- `src/domain/composing/composers/` — email and ticket composers, same plugin
+  shape.
+- `src/lib/doc/` — import, beautify, chart data, diff, uploads.
 - `src/app/actions.ts` / `ai-actions.ts` — server actions.
 - `src/app/globals.css` — design system, editor chrome, A4 print rules.
 

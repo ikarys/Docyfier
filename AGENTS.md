@@ -36,10 +36,12 @@ adjustable token sets (accent, font pair, radius, density) with a Design panel;
 images, cover, table of contents and print control; charts, block icons and
 dashboard stat cards; templates gallery with search/rename/duplicate in the
 document list; file import (md / txt / docx) and pluggable export targets
-(Word, Confluence, Notion, Trilium) from STEP 5 — see `src/lib/export/`, where
-adding a target is one file plus a line in the registry. Settings is one route
+(Word, Confluence, Notion, Trilium) from STEP 5 — adding a target is one adapter
+under `src/infrastructure/publishing/targets/` plus a line in the registry at
+`src/lib/export/registry.ts`. Settings is one route
 per scope (`/settings/{ai,storage,exports,access}`). STEP 8 is in: the email and
-ticket composers under `/compose`, same plugin shape in `src/lib/compose/` —
+ticket composers under `/compose`, same plugin shape in
+`src/domain/composing/composers/` —
 short-form writing that ends in the clipboard, not in a document. Next: STEP 6
 (multi-tenant) or STEP 9 (templates, themes, style settings). PDF stays
 print-based on purpose; a headless-Chromium renderer is the only open item of
@@ -74,18 +76,24 @@ domain/        entities, value objects, domain services, ports (interfaces)
 infrastructure/ adapters implementing domain ports: SQL, fs, LLM, crypto, HTTP
 ```
 
-Four bounded contexts already live this way and are the reference to copy:
+Five bounded contexts already live this way and are the reference to copy:
 `documents` (the `Document` entity, the `DocumentRepository` port, the files /
 PostgreSQL / MySQL / in-memory adapters), `configuration` (the `AiProvider` and
 `ProviderCatalog` entities, the `StorageConnection` value object, the
 `SecretCipher` and repository ports, the settings-file adapters), `authoring`
 (what models get wrong on the way out, the prompts, the op contract, the
-`TextGenerator` port and its OpenAI-compatible adapter) and `publishing` (the
-`ExportConfiguration`). Composition roots stay under `src/lib/`: `store/`,
-`settings/{ai,storage,exports}`, `ai/service.ts`.
+`TextGenerator` port and its OpenAI-compatible adapter), `publishing` (the
+`ExportConfiguration`, the `ExportTarget` port and its four adapters) and
+`composing` (the `Composer` contract, the `AnswerWriter` and `AnswerParser`
+ports, the email and ticket flows). The document renderers — HTML, Markdown,
+Jira, plain text — are adapters too and live in `infrastructure/rendering/`.
+Composition roots stay under `src/lib/`: `store/`, `settings/{ai,storage,exports}`,
+`ai/service.ts`, `export/`, `compose/`.
 
-The editor components, the document conversions in `src/lib/doc/`, the export
-targets and the composers have not moved yet.
+The editor components and the rest of `src/lib/doc/` (import, beautify, chart,
+diff, upload) have not moved yet. Four infrastructure adapters still import
+upward from `src/lib/` — the SQL repositories and the OpenAI-compatible
+generator — and that is the next inversion to break.
 
 - **The domain imports nothing.** No `next/*`, no `@tiptap/*`, no `react`, no
   `pg`/`mysql2`, no `ai`, no `node:fs`. If a domain file needs an import from
