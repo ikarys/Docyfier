@@ -32,6 +32,30 @@ describe("docToHtml", () => {
     expect(html(p(text("a")))).toBe("<p>a</p>");
   });
 
+  it("writes a task list as a list whose state is readable anywhere", () => {
+    const task = (value: string, checked: boolean) => ({
+      type: "taskItem",
+      attrs: { checked },
+      content: [p(text(value))],
+    });
+
+    expect(html({ type: "taskList", content: [task("done", true), task("todo", false)] })).toBe(
+      "<ul>\n<li>\u2611 done</li>\n<li>\u2610 todo</li>\n</ul>",
+    );
+  });
+
+  it("exports a collapsible section already open", () => {
+    const details = {
+      type: "details",
+      content: [
+        { type: "detailsSummary", content: [text("More")] },
+        { type: "detailsContent", content: [p(text("body"))] },
+      ],
+    };
+
+    expect(html(details)).toBe("<details open><summary>More</summary><p>body</p></details>");
+  });
+
   it("maps heading levels, falling back to h1 for a level HTML has no tag for", () => {
     expect(html({ type: "heading", attrs: { level: 2 }, content: [text("T")] })).toBe(
       "<h2>T</h2>",

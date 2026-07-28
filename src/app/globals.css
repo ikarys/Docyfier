@@ -782,6 +782,79 @@ body {
   background: var(--paper);
 }
 
+/* ---- Checklists and collapsible sections (STEP U9) ----------------------- */
+
+.doc ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2rem;
+}
+.doc li[data-type="taskItem"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+.doc li[data-type="taskItem"] > label {
+  flex: none;
+  /* Line the box up with the first line of text, not with its middle. */
+  margin-top: 0.28em;
+}
+.doc li[data-type="taskItem"] input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.doc li[data-type="taskItem"] > div {
+  flex: 1;
+  min-width: 0;
+}
+/* A done item steps back without becoming unreadable. */
+.doc li[data-type="taskItem"][data-checked="true"] > div {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+}
+
+.doc [data-type="details"] {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-shell);
+}
+.doc [data-type="details"] > button {
+  flex: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.doc [data-type="details"] > button::before {
+  content: "▸";
+}
+.doc [data-type="details"].is-open > button::before {
+  content: "▾";
+}
+.doc [data-type="detailsSummary"] {
+  font-weight: 600;
+}
+.doc [data-type="detailsContent"] > *:last-child {
+  margin-bottom: 0;
+}
+/* Printing never folds: a reader on paper cannot open anything. */
+@media print {
+  .doc [data-type="detailsContent"] {
+    display: block !important;
+  }
+  .doc [data-type="details"] > button {
+    display: none;
+  }
+}
+
 /* ---- Callout blocks (Tiptap node <div class="callout">) ------------------ */
 
 .doc .callout {
@@ -2828,7 +2901,9 @@ body {
   .doc .pyramid,
   .doc .doc-cover,
   .doc .doc-toc,
-  .doc .doc-image {
+  .doc .doc-image,
+  .doc .details,
+  .doc .task-item {
     break-inside: avoid;
   }
   /* Editing affordances that live inside the document, not in `.no-print`. */

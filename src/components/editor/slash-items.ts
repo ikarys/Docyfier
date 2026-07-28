@@ -51,6 +51,20 @@ export const SLASH_ITEMS: SlashItem[] = [
       editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
   },
   {
+    title: "Checklist",
+    icon: "☑",
+    keywords: ["task", "todo", "checkbox", "tache", "case", "checklist"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleTaskList().run(),
+  },
+  {
+    title: "Collapsible section",
+    icon: "▸",
+    keywords: ["details", "toggle", "fold", "repliable", "accordeon", "section"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setDetails().run(),
+  },
+  {
     title: "Quote",
     icon: "❝",
     keywords: ["quote", "blockquote", "citation"],

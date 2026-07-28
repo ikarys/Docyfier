@@ -27,6 +27,37 @@ async function documentXml(content: DocumentNode[], values = {}): Promise<string
 }
 
 describe("docxTarget", () => {
+  it("carries a task list into Word as boxes, checked or not", async () => {
+    const task = (value: string, checked: boolean): DocumentNode => ({
+      type: "taskItem",
+      attrs: { checked },
+      content: [p(value)],
+    });
+    const xml = await documentXml([
+      { type: "taskList", content: [task("done", true), task("todo", false)] },
+    ]);
+
+    expect(xml).toContain("\u2611 ");
+    expect(xml).toContain("\u2610 ");
+    expect(xml).toContain("done");
+    expect(xml).toContain("todo");
+  });
+
+  it("unfolds a collapsible section: its summary leads what it held", async () => {
+    const xml = await documentXml([
+      {
+        type: "details",
+        content: [
+          { type: "detailsSummary", content: [{ type: "text", text: "Appendix" }] },
+          { type: "detailsContent", content: [p("raw logs")] },
+        ],
+      },
+    ]);
+
+    expect(xml).toContain("Appendix");
+    expect(xml).toContain("raw logs");
+  });
+
   it("gives a heading Word's own style, not a bold paragraph", async () => {
     const xml = await documentXml([
       { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Titre" }] },

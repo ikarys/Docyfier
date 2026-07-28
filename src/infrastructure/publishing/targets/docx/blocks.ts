@@ -80,6 +80,31 @@ export function blockBuilder(d: DocxModule, baseUrl: string) {
         return [paragraph(node.content)];
       case "bulletList":
         return list(node, false, 0);
+      case "taskList":
+        // Word has no checkbox in a body paragraph: the box is the character,
+        // which prints and reads the same everywhere. Only the first paragraph
+        // of an item carries it; the rest are continuation lines.
+        return (node.content ?? []).flatMap((item) =>
+          (item.content ?? []).map((child, index) =>
+            index === 0
+              ? paragraph(
+                  [
+                    { type: "text", text: item.attrs?.checked ? "☑ " : "☐ " },
+                    ...(child.content ?? []),
+                  ],
+                  { indent: { left: INDENT_STEP } },
+                )
+              : paragraph(child.content, { indent: { left: INDENT_STEP } }),
+          ),
+        );
+      case "details":
+        // Nothing folds in a document that is printed: the summary becomes the
+        // lead line of what it held.
+        return (node.content ?? []).flatMap((child) =>
+          child.type === "detailsSummary"
+            ? [paragraph(child.content, { heading: HEADING_BY_LEVEL[2] })]
+            : blocks(child.content ?? []),
+        );
       case "orderedList":
         return list(node, true, 0);
       case "blockquote":

@@ -1,4 +1,6 @@
 import { StarterKit } from "@tiptap/starter-kit";
+import { TaskList, TaskItem } from "@tiptap/extension-list";
+import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
@@ -35,6 +37,11 @@ export const DOCUMENT_EXTENSIONS = [
   // caret, not navigate away from the document being written.
   StarterKit.configure({ link: { openOnClick: false } }),
   Callout,
+  TaskList,
+  TaskItem.configure({ nested: true }),
+  Details.configure({ persist: true }),
+  DetailsSummary,
+  DetailsContent,
   Table.configure({ resizable: true }),
   TableRow,
   TableHeader,

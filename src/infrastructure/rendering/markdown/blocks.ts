@@ -92,6 +92,22 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
   },
   paragraph: (node) => inlineToMarkdown(node.content),
   bulletList: (node) => markedList(node, () => "- "),
+  taskList: (node) =>
+    (node.content ?? [])
+      .map(
+        (item) =>
+          `- [${item.attrs?.checked ? "x" : " "}] ${blocksToMarkdown(item.content ?? [])}`,
+      )
+      .join("\n"),
+  details: (node) => {
+    const summary = (node.content ?? []).find((child) => child.type === "detailsSummary");
+    const body = (node.content ?? []).filter((child) => child.type !== "detailsSummary");
+    // Markdown has no fold: the summary becomes the heading of what it held.
+    return [`**${inlineToMarkdown(summary?.content)}**`, blocksToMarkdown(body)]
+      .filter(Boolean)
+      .join("\n\n");
+  },
+  detailsContent: childrenOnly,
   orderedList: (node) => markedList(node, (index) => `${index + 1}. `),
   blockquote: (node) => prefixLines(blocksToMarkdown(node.content ?? []), "> ", "> "),
   codeBlock: (node) => {

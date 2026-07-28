@@ -23,6 +23,8 @@ Block nodes:
 - {"type":"bulletList","content":[{"type":"listItem","content":[blocks]}]}
 - {"type":"orderedList","content":[{"type":"listItem","content":[blocks]}]}
 - {"type":"blockquote","content":[blocks]}
+- {"type":"taskList","content":[{"type":"taskItem","attrs":{"checked":true|false},"content":[blocks]}]} — actions, acceptance criteria, checklists. Use it whenever the items are things to DO, not things to read; a plain bulletList otherwise.
+- {"type":"details","content":[{"type":"detailsSummary","content":[inline]},{"type":"detailsContent","content":[blocks]}]} — a section the reader opens: long appendices, raw logs, an aside that would break the flow. Never hide the point of the document inside one.
 - {"type":"codeBlock","attrs":{"language":"<lang>"},"content":[{"type":"text","text":"..."}]} — plain text only, no marks
 - {"type":"horizontalRule"}
 - {"type":"callout","attrs":{"variant":"note"|"tip"|"warn"|"danger"},"content":[blocks]} — colored highlight box for key information
