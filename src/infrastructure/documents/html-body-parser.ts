@@ -1,5 +1,6 @@
 import { DOMParser as PMDOMParser, type Schema } from "@tiptap/pm/model";
 import { emptyBody, type DocumentBody, type DocumentNode } from "@/domain/documents/body";
+import { stripUnsupportedHtml } from "./untrusted-html";
 
 /**
  * HTML into document JSON, read with the editor's own schema (PLAN.md STEP 5).
@@ -8,18 +9,6 @@ import { emptyBody, type DocumentBody, type DocumentNode } from "@/domain/docume
  * HTML, not which nodes the editor offers. Everything imported lands on the
  * same node types and inherits the schema's parse rules for free.
  */
-
-/**
- * Drop what must never reach a document: images (their `src` would point at a
- * file this instance does not serve — same rule the AI contract enforces),
- * and anything executable or presentational carried by the source file.
- */
-function stripUnsupportedHtml(html: string): string {
-  return html
-    .replace(/<(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\/\1>/gi, "")
-    .replace(/<img[^>]*>/gi, "")
-    .replace(/<input[^>]*>/gi, "");
-}
 
 /** The editor offers levels 1-3; deeper headings from the source collapse
  * onto 3 rather than rendering as an unstyled outlier. */

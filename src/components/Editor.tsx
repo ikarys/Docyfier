@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useEditor, type JSONContent } from "@tiptap/react";
 import type { JSONContent as DocJSON } from "@tiptap/core";
 import { imageFilesOf, insertUploadedImages } from "@/components/editor/image-upload";
+import { insertPastedText } from "@/components/editor/paste-insert";
 import {
   presetSkin,
   resolveTokens,
@@ -67,9 +68,15 @@ export function DocumentEditor({
       // the browser's own (base64 or file://) representation.
       handlePaste: (view, event) => {
         const files = imageFilesOf(event.clipboardData?.files ?? null);
-        if (files.length === 0) return false;
-        void insertUploadedImages(view, files, view.state.selection.from);
-        return true;
+        if (files.length > 0) {
+          void insertUploadedImages(view, files, view.state.selection.from);
+          return true;
+        }
+        // Then text that deserves better than a wall of characters: a
+        // spreadsheet range, a markdown snippet.
+        return event.clipboardData
+          ? insertPastedText(view, event.clipboardData)
+          : false;
       },
       handleDrop: (view, event, _slice, moved) => {
         if (moved) return false;
