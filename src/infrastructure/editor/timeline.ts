@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { ACCENT_CYCLE } from "@/domain/authoring/accents";
 import type { CardAccent } from "./cards";
 import { deleteLayoutBlockOnBackspace } from "./layout-delete";
 
@@ -46,7 +47,7 @@ export const Timeline = Node.create({
             type: this.name,
             content: Array.from({ length: count }, (_, i) => ({
               type: "timelineItem",
-              attrs: { accent: (["blue", "green", "purple", "yellow"] as const)[i % 4] },
+              attrs: { accent: ACCENT_CYCLE[i % ACCENT_CYCLE.length] },
               content: [
                 { type: "paragraph", content: [{ type: "text", text: `Phase ${i + 1}` }] },
                 {

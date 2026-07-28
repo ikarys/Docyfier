@@ -10,8 +10,11 @@
  * not: that is `src/lib/themes.ts`, on the presentation side.
  */
 
-export type ThemeRadius = "sharp" | "soft" | "round";
-export type ThemeDensity = "compact" | "normal" | "airy";
+export const THEME_RADII = ["sharp", "soft", "round"] as const;
+export const THEME_DENSITIES = ["compact", "normal", "airy"] as const;
+
+export type ThemeRadius = (typeof THEME_RADII)[number];
+export type ThemeDensity = (typeof THEME_DENSITIES)[number];
 
 export interface ThemeTokens {
   /** Document accent, `#rrggbb`. Everything else derives from it. */
@@ -33,6 +36,12 @@ export interface Theme {
   label: string;
   /** One-line description shown in the picker. */
   hint: string;
+  /**
+   * The built-in preset whose untokenized look this one borrows — heading
+   * underlines, sheet treatment, the parts CSS still keys on `data-theme`.
+   * Absent on the built-ins themselves, which are their own skin.
+   */
+  skin?: string;
   tokens: ThemeTokens;
 }
 
@@ -149,11 +158,34 @@ export const ACCENT_SWATCHES: readonly string[] = [
   "#111827",
 ];
 
-export function findPreset(id: unknown): Theme {
+/**
+ * The shape of a preset id. Presets are no longer a closed list — the instance
+ * saves its own (STEP 9) — so what the domain can still decide alone is whether
+ * a stored value *looks* like an id at all.
+ */
+const PRESET_ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
+
+export function isPresetId(value: unknown): value is string {
+  return typeof value === "string" && PRESET_ID.test(value);
+}
+
+/**
+ * The preset behind an id, built-ins first so a saved preset can never shadow
+ * one. `extra` is the instance's own list; unknown ids resolve to the default,
+ * which is what makes a deleted preset render instead of crash.
+ */
+export function findPreset(id: unknown, extra: readonly Theme[] = []): Theme {
   return (
     THEMES.find((t) => t.id === id) ??
+    extra.find((t) => t.id === id) ??
     THEMES.find((t) => t.id === DEFAULT_PRESET)!
   );
+}
+
+/** The `data-theme` value a preset renders under. */
+export function presetSkin(id: unknown, extra: readonly Theme[] = []): string {
+  const preset = findPreset(id, extra);
+  return preset.skin ?? preset.id;
 }
 
 export function findFontPair(id: unknown): FontPair {
@@ -169,33 +201,43 @@ function sanitizeOverrides(value: unknown): Partial<ThemeTokens> | undefined {
   const out: Partial<ThemeTokens> = {};
   if (typeof raw.accent === "string" && HEX.test(raw.accent)) out.accent = raw.accent;
   if (FONT_PAIRS.some((p) => p.id === raw.fontPair)) out.fontPair = raw.fontPair as string;
-  if (raw.radius === "sharp" || raw.radius === "soft" || raw.radius === "round") {
-    out.radius = raw.radius;
-  }
-  if (raw.density === "compact" || raw.density === "normal" || raw.density === "airy") {
-    out.density = raw.density;
+  if (THEME_RADII.includes(raw.radius as ThemeRadius)) out.radius = raw.radius as ThemeRadius;
+  if (THEME_DENSITIES.includes(raw.density as ThemeDensity)) {
+    out.density = raw.density as ThemeDensity;
   }
   return Object.keys(out).length ? out : undefined;
 }
 
 /**
  * Coerce anything found on disk into a usable theme. Accepts the legacy string
- * form written before U3 (`"corporate"` → `{ preset: "corporate" }`); unknown
- * presets and garbage overrides silently fall back to the defaults.
+ * form written before U3 (`"corporate"` → `{ preset: "corporate" }`).
+ *
+ * An id this module does not know is **kept**: since STEP 9 the instance saves
+ * presets of its own, and normalization runs where they are not in reach, so
+ * dropping the unknown here would erase a document's brand preset on the next
+ * save. What cannot be an id at all — a number, an object, a sentence — still
+ * falls back, and so does resolution when the id names nothing.
  */
 export function normalizeTheme(theme: unknown): DocumentTheme {
-  if (typeof theme === "string") return { preset: findPreset(theme).id };
+  if (isPresetId(theme)) return { preset: theme };
   if (typeof theme === "object" && theme !== null) {
     const raw = theme as Record<string, unknown>;
+    const preset = isPresetId(raw.preset) ? raw.preset : DEFAULT_PRESET;
     const overrides = sanitizeOverrides(raw.overrides);
-    return overrides
-      ? { preset: findPreset(raw.preset).id, overrides }
-      : { preset: findPreset(raw.preset).id };
+    return overrides ? { preset, overrides } : { preset };
   }
   return { preset: DEFAULT_PRESET };
 }
 
+/** A full token set read from outside: whatever is valid, on top of a fallback. */
+export function themeTokens(raw: unknown, fallback: ThemeTokens): ThemeTokens {
+  return { ...fallback, ...(sanitizeOverrides(raw) ?? {}) };
+}
+
 /** Preset tokens with the document's overrides applied on top. */
-export function resolveTokens(theme: DocumentTheme): ThemeTokens {
-  return { ...findPreset(theme.preset).tokens, ...(theme.overrides ?? {}) };
+export function resolveTokens(
+  theme: DocumentTheme,
+  extra: readonly Theme[] = [],
+): ThemeTokens {
+  return { ...findPreset(theme.preset, extra).tokens, ...(theme.overrides ?? {}) };
 }

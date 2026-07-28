@@ -32,7 +32,7 @@ among three behind `src/lib/store/`, selected at runtime from the Settings page.
 with no source. Stack validated: Next.js + TypeScript + Tailwind v4 + Tiptap.
 Node is pinned via `.nvmrc` (nvm).
 
-Editor UX and rendering STEPS U1–U6 are in: slash menu and drag handles;
+Editor UX and rendering STEPS U1–U7 are in: slash menu and drag handles;
 streaming generation, op-based transforms and AI diff review; themes as
 adjustable token sets (accent, font pair, radius, density) with a Design panel;
 images, cover, table of contents and print control; charts, block icons and
@@ -41,11 +41,26 @@ document list; file import (md / txt / docx) and pluggable export targets
 (Word, Confluence, Notion, Trilium) from STEP 5 — adding a target is one adapter
 under `src/infrastructure/publishing/targets/` plus a line in the registry at
 `src/lib/export/registry.ts`. Settings is one route
-per scope (`/settings/{ai,storage,exports,access}`). STEP 8 is in: the email and
+per scope (`/settings/{ai,storage,style,exports,access}`). STEP 8 is in: the email and
 ticket composers under `/compose`, same plugin shape in
 `src/domain/composing/composers/` —
-short-form writing that ends in the clipboard, not in a document. Next: STEP 6
-(multi-tenant) or STEP 9 (templates, themes, style settings). PDF stays
+short-form writing that ends in the clipboard, not in a document. STEP 9 is in:
+the instance has a `Brand` (`src/domain/documents/brand.ts`) — the theme new
+documents start in, plus presets it saved for itself, referenced by id so
+editing one repaints the documents wearing it — and a `StyleParameters`
+(`src/domain/authoring/style-parameters.ts`) that decides emoji, keyword
+bolding, status badges and the writing language. The style guide is a function
+of those parameters, and emoji-off is enforced in `beautify` rather than only
+asked for. Both live in `/settings/style`; a template and an art direction still
+win over the brand, which dresses what nobody else dressed. STEP U7 is in:
+a document is planned before it is written — one short call decides its kind,
+audience, tone, sections and art direction, and the writer then fills the
+skeleton of a **recipe** (`src/domain/authoring/recipes/`, same registry shape:
+one file plus one line). The art direction reaches the document as its theme,
+streamed ahead of the first block; `authoring` names a dress in its own
+vocabulary and `src/application/documents/theme-from-art.ts` is the only place
+it becomes a `DocumentTheme`. "Style for me" in the Design panel runs the same
+pass over an existing document. Next: STEP 6 (multi-tenant). PDF stays
 print-based on purpose; a headless-Chromium renderer is the only open item of
 STEP 3 and was judged not worth its weight.
 

@@ -233,8 +233,34 @@ body {
   margin: 0 0 calc(1.1rem * var(--doc-space));
   padding-left: 1.4rem;
 }
+/* Tailwind's preflight strips the marker off every list on the page. The
+   document is the one place that needs them back — without this, a bulleted
+   list renders as indented text and an ordered one loses its numbers. */
+.doc ul {
+  list-style: disc outside;
+}
+.doc ol {
+  list-style: decimal outside;
+}
+.doc ul ul {
+  list-style: circle outside;
+}
+.doc ul ul ul {
+  list-style: square outside;
+}
+.doc ol ol {
+  list-style: lower-alpha outside;
+}
 .doc li {
   margin: 0.3rem 0;
+}
+/* Tiptap wraps each item's content in a paragraph; its bottom margin would
+   otherwise double the gap between two items. */
+.doc li > p {
+  margin: 0;
+}
+.doc li > p + p {
+  margin-top: 0.4rem;
 }
 .doc li::marker {
   color: var(--ink-faint);
@@ -709,6 +735,9 @@ body {
     0 10px 24px -18px rgba(20, 22, 30, 0.25);
   border-top: 3px solid var(--card-c);
   min-width: 0;
+  /* On the card, not on its paragraphs: a list inside a card is card-sized
+     text too. */
+  font-size: 0.92rem;
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .doc-editor .card:hover {
@@ -742,7 +771,10 @@ body {
   color: color-mix(in srgb, var(--card-c) 75%, var(--ink));
 }
 .doc .card > p {
-  font-size: 0.92rem;
+  margin: 0 0 0.6rem;
+}
+.doc .card ul,
+.doc .card ol {
   margin: 0 0 0.6rem;
 }
 .doc .card > *:last-child {
@@ -1976,6 +2008,12 @@ body {
   line-height: 1.5;
   color: var(--ink-faint);
 }
+.design-restyle {
+  align-self: flex-start;
+}
+.design-error {
+  color: var(--danger);
+}
 
 /* ---- Selection bubble menu ------------------------------------------------ */
 
@@ -2972,4 +3010,63 @@ body {
 }
 .login-card {
   gap: 1rem;
+}
+
+/* ---- Style settings: the instance's identity (STEP 9) -------------------- */
+
+.settings-heading {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 1.75rem 0 0.75rem;
+}
+.settings-heading:first-of-type {
+  margin-top: 0.5rem;
+}
+.brand-preview {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: var(--paper);
+}
+.brand-preview-sheet {
+  font-family: var(--doc-font-body);
+}
+.brand-preview-title {
+  font-family: var(--doc-font-heading);
+  color: var(--doc-accent);
+  font-size: 1.4rem;
+  margin: 0 0 0.4rem;
+}
+.brand-preview-line {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+.preset-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.preset-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+}
+.preset-list-item .preset-name {
+  flex: 1;
+}
+.preset-save-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+.preset-save-row .field-input {
+  flex: 1;
 }

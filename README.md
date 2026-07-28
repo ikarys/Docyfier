@@ -57,6 +57,12 @@ transcript you reformat by hand.
 - **Themes**: presets that are adjustable token sets — accent color, font pair,
   corner radius, density — edited live in a Design panel. Themes are
   presentation only and never touch document content.
+- **House identity**: the instance sets the theme new documents start in and
+  saves its own presets, which sit beside the built-in ones. A saved preset is
+  referenced, not copied: changing the house accent repaints every document
+  wearing it.
+- **Writing style**: emoji policy, keyword bolding, statuses as badges and a
+  writing language — set once, applied to everything the assistant writes.
 - **Autosave**, debounced, with a save indicator.
 
 **Getting content in and out**
@@ -108,7 +114,7 @@ With [`just`](https://github.com/casey/just): `just setup && just dev`.
 
 Every setting below resolves in the same order: **Settings page > environment
 variables > defaults**. The Settings page (`/settings`) is split by scope —
-`ai`, `storage`, `exports`, `access` — and writes to `settings.json` next to
+`ai`, `storage`, `style`, `exports`, `access` — and writes to `settings.json` next to
 the document store, so nothing here requires a rebuild or a restart.
 
 ### AI providers
@@ -167,6 +173,16 @@ ids already present and never deleting the source files.
 | `DOCYFIER_DB_PASSWORD` | — | Database password |
 | `DOCYFIER_DB_NAME` | — | Database name |
 | `DOCYFIER_DB_SSL` | `0` | `1` connects over TLS (certificates verified) |
+
+### Style
+
+`/settings/style` holds what every document inherits: the theme new documents
+start in, the presets this instance saved, and how the assistant writes — emoji
+policy, keyword bolding, statuses as badges, writing language. There is no
+environment variable for any of it; it is a look, and a look is chosen on
+screen. A document from a template keeps the template's preset, and a generated
+document keeps the theme its plan chose: the house theme dresses what nobody
+else dressed.
 
 ### Access control
 
@@ -272,10 +288,10 @@ it; that is the intended extension point.
 ## Roadmap
 
 Shipped so far: the editor, the AI surfaces, themes, templates, import/export,
-the composers, and single-user auth. Next up: multi-tenant workspaces with
-per-user permissions, corporate themes and style settings (automatic emphasis
-rules, emoji policy), diagrams, and print-quality PDF through headless
-Chromium — today's PDF goes through the browser print dialog on purpose.
+the composers, single-user auth, and the instance's own identity and writing
+style. Next up: multi-tenant workspaces with per-user permissions, diagrams, and
+print-quality PDF through headless Chromium — today's PDF goes through the
+browser print dialog on purpose.
 
 [PLAN.md](PLAN.md) holds the ordered roadmap; [docs/vision.md](docs/vision.md)
 holds the product intent behind it.

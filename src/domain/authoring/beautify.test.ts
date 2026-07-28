@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DocumentNode } from "@/domain/documents/body";
 import { beautify } from "./beautify";
+import { StyleParameters } from "./style-parameters";
 
 const text = (value: string, marks?: DocumentNode["marks"]) => ({
   type: "text",
@@ -132,6 +133,37 @@ describe("beautify", () => {
     const out = beautify(doc(nested)).content?.[0] as DocumentNode;
 
     expect(out.content?.[0].content?.[0]).not.toHaveProperty("marks");
+  });
+
+  it("colors the cards of a grid the model handed over grey", () => {
+    const out = beautify(
+      doc({
+        type: "cardGrid",
+        attrs: { cols: 3 },
+        content: [{ type: "card" }, { type: "card" }, { type: "card" }],
+      }),
+    );
+
+    expect(out.content?.[0].content?.map((c) => c.attrs?.accent)).toEqual([
+      "blue",
+      "green",
+      "purple",
+    ]);
+  });
+
+  it("removes the emoji the model sent anyway when the instance forbids them", () => {
+    const out = beautify(
+      doc({ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "\u{1F389} Results" }] }),
+    );
+    expect(out.content?.[0].content?.[0].text).toBe("Results");
+  });
+
+  it("leaves emoji alone when the instance allows them", () => {
+    const out = beautify(
+      doc({ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "\u{1F389} Results" }] }),
+      StyleParameters.restore({ emoji: true }),
+    );
+    expect(out.content?.[0].content?.[0].text).toBe("\u{1F389} Results");
   });
 
   it("returns anything that is not a document unchanged", () => {

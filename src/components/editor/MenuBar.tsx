@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { THEMES, type DocumentTheme } from "@/lib/themes";
+import { THEMES, type DocumentTheme, type Theme } from "@/lib/themes";
 import {
   HeadingGroup,
   InsertGroup,
@@ -30,6 +30,7 @@ export function MenuBar({
   panel,
   onTogglePanel,
   theme,
+  presets,
   onChangeTheme,
   onSaveNow,
 }: {
@@ -38,6 +39,7 @@ export function MenuBar({
   panel: PanelName | null;
   onTogglePanel: (which: PanelName) => void;
   theme: DocumentTheme;
+  presets: Theme[];
   onChangeTheme: (theme: DocumentTheme) => void;
   onSaveNow: () => void;
 }) {
@@ -62,7 +64,7 @@ export function MenuBar({
           onChange={(e) => onChangeTheme({ ...theme, preset: e.target.value })}
           title="Document theme"
         >
-          {THEMES.map((t) => (
+          {[...THEMES, ...presets].map((t) => (
             <option key={t.id} value={t.id} title={t.hint}>
               {t.label}
             </option>

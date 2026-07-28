@@ -1,5 +1,6 @@
-import type { DocumentDeps } from "@/application/documents/deps";
+import type { BrandDeps, DocumentDeps } from "@/application/documents/deps";
 import type { Clock, IdGenerator } from "@/domain/shared/clock";
+import { InMemoryBrandRepository } from "@/infrastructure/configuration/in-memory-brand-repository";
 import { InMemoryDocumentRepository } from "@/infrastructure/documents/in-memory-repository";
 
 /**
@@ -35,10 +36,11 @@ export class SequentialIds implements IdGenerator {
   }
 }
 
-export interface TestDeps extends DocumentDeps {
+export interface TestDeps extends DocumentDeps, BrandDeps {
   repository: InMemoryDocumentRepository;
   clock: FixedClock;
   ids: SequentialIds;
+  brand: InMemoryBrandRepository;
 }
 
 export function testDeps(): TestDeps {
@@ -46,5 +48,6 @@ export function testDeps(): TestDeps {
     repository: new InMemoryDocumentRepository(),
     clock: new FixedClock(),
     ids: new SequentialIds(),
+    brand: new InMemoryBrandRepository(),
   };
 }

@@ -5,11 +5,16 @@ import {
   languageModel,
   timeoutMessage,
 } from "@/lib/ai/provider";
-import { GENERATE_SYSTEM } from "@/domain/authoring/prompts";
+import { themeFromArt } from "@/application/documents/theme-from-art";
+import { parseModelJson } from "@/domain/authoring/model-answer";
+import { writerSystem } from "@/domain/authoring/prompts";
+import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
+import { planDocument } from "@/lib/ai/service";
 import { validateDocJson } from "@/infrastructure/editor/schema";
 import { BlockScanner } from "@/lib/ai/stream-blocks";
 import { beautify } from "@/domain/authoring/beautify";
-import { getAiSettings } from "@/lib/settings";
+import { getAiSettings, getStyleParameters } from "@/lib/settings";
+import type { StyleParameters } from "@/domain/authoring/style-parameters";
 import { isAuthorized } from "@/lib/auth";
 
 /**
@@ -40,9 +45,9 @@ function message(err: unknown): string {
  * validation, then the deterministic formatter. Both rules `beautify` applies
  * are block-local, so a single-block document is a faithful wrapper.
  */
-function prepare(raw: string): unknown {
-  const doc = validateDocJson({ type: "doc", content: [JSON.parse(raw)] });
-  const polished = beautify(doc);
+function prepare(raw: string, style: StyleParameters): unknown {
+  const doc = validateDocJson({ type: "doc", content: [parseModelJson(raw)] });
+  const polished = beautify(doc, style);
   return (validateDocJson(polished).content ?? [])[0];
 }
 
@@ -60,6 +65,13 @@ export async function POST(req: Request): Promise<Response> {
   let firstText: string | null = null;
   let openError: unknown = null;
 
+  // The plan comes first and blocks: what the document is decides the prompt
+  // the writing stream is opened with. It is one short call, and a model that
+  // cannot produce it hands back the default brief rather than failing.
+  const brief = await planDocument(prompt);
+  const recipe = findRecipe(brief.kind) ?? DEFAULT_RECIPE;
+  const style = await getStyleParameters();
+
   try {
     const model = await languageModel();
     const { maxOutputTokens } = await getAiSettings();
@@ -68,7 +80,7 @@ export async function POST(req: Request): Promise<Response> {
     // server would otherwise look like a perfectly successful empty document.
     parts = streamText({
       model,
-      system: GENERATE_SYSTEM,
+      system: writerSystem(recipe, brief, style),
       prompt,
       temperature: 0.7,
       maxOutputTokens,
@@ -118,7 +130,7 @@ export async function POST(req: Request): Promise<Response> {
 
       const emit = (raw: string) => {
         try {
-          controller.enqueue(encoder.encode(line({ block: prepare(raw) })));
+          controller.enqueue(encoder.encode(line({ block: prepare(raw, style) })));
           blocks++;
         } catch (err) {
           // A block the schema rejects is dropped rather than aborting the
@@ -130,6 +142,10 @@ export async function POST(req: Request): Promise<Response> {
 
       try {
         let failure: string | null = null;
+        // The dress before the first block: the document is styled while it is
+        // still being written, rather than changing look once it is done.
+        const theme = themeFromArt(brief.art);
+        if (theme) controller.enqueue(encoder.encode(line({ theme })));
         for (const raw of scanner.push(firstText)) emit(raw);
 
         while (!scanner.finished) {

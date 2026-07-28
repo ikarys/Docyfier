@@ -3,13 +3,22 @@
 import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
+import type { DocumentTheme } from "@/lib/themes";
 import { useDocumentAssistant } from "./editor/useDocumentAssistant";
+import { useRestyle } from "./editor/useRestyle";
 
-const QUICK_ACTIONS: { label: string; instruction: string }[] = [
+const QUICK_ACTIONS: {
+  label: string;
+  instruction: string;
+  /** Also ask the model to dress the document — restructuring it without ever
+   * revisiting its accent or its typeface is half the job. */
+  restyles?: true;
+}[] = [
   {
     label: "✦ Make it pretty",
     instruction:
       "Restructure and reformat this document so it looks professional and modern: clear heading hierarchy, tables where data is tabular, callouts for key points and risks, lists where appropriate. Preserve the meaning and all information.",
+    restyles: true,
   },
   { label: "Shorten", instruction: "Shorten the document while keeping all key information." },
   { label: "More formal", instruction: "Rewrite the document in a more formal, professional tone." },
@@ -23,20 +32,28 @@ const QUICK_ACTIONS: { label: string; instruction: string }[] = [
 export function AiPanel({
   editor,
   onApply,
+  onChangeTheme,
   onClose,
 }: {
   editor: Editor;
   onApply: (content: JSONContent) => void;
+  onChangeTheme: (theme: DocumentTheme) => void;
   onClose: () => void;
 }) {
   const [input, setInput] = useState("");
   const { messages, busy, ask, thread } = useDocumentAssistant(editor, onApply);
+  const restyle = useRestyle(editor, onChangeTheme);
 
   const submit = () => {
     const instruction = input.trim();
     if (!instruction) return;
     setInput("");
     void ask(instruction);
+  };
+
+  const runQuickAction = async (action: (typeof QUICK_ACTIONS)[number]) => {
+    await ask(action.instruction, action.label);
+    if (action.restyles) await restyle.run();
   };
 
   return (
@@ -53,8 +70,8 @@ export function AiPanel({
           <button
             key={qa.label}
             className="chip"
-            disabled={busy}
-            onClick={() => void ask(qa.instruction, qa.label)}
+            disabled={busy || restyle.busy}
+            onClick={() => void runQuickAction(qa)}
           >
             {qa.label}
           </button>

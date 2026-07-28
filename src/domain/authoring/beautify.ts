@@ -1,4 +1,7 @@
 import type { DocumentBody, DocumentNode } from "@/domain/documents/body";
+import { ACCENT_CYCLE, paintAccents } from "./accents";
+import { stripEmoji } from "./emoji";
+import { StyleParameters } from "./style-parameters";
 
 /**
  * Deterministic formatter (hybrid "make it pretty", PLAN.md STEP 2b groundwork).
@@ -11,14 +14,14 @@ import type { DocumentBody, DocumentNode } from "@/domain/documents/body";
  * - strip hardcoded text/highlight colors off headings — heading color belongs
  *   to the document THEME, never to inline hex the model invented;
  * - turn a two-column "label / value" table into a statRow (numeric values) or
- *   a cardGrid (prose values), every time, so the same input always upgrades.
+ *   a cardGrid (prose values), every time, so the same input always upgrades;
+ * - paint the accents of a layout block the model left grey;
+ * - remove the emoji an instance that turned them off keeps being sent anyway.
  *
  * Pure and side-effect free: same input → same output. Output is re-validated
  * against the editor schema by the caller; anything it can't safely upgrade it
  * leaves untouched.
  */
-
-const CARD_ACCENTS = ["blue", "green", "purple", "yellow"] as const;
 
 /** A short figure like "42", "42%", "3x", "−73%", "1.2M€" — statRow material. */
 function isFigure(text: string): boolean {
@@ -93,7 +96,7 @@ function twoColumnTableToLayout(table: DocumentNode): DocumentNode | null {
       type: "statRow",
       content: body.map((_, i) => ({
         type: "stat",
-        attrs: { accent: CARD_ACCENTS[i % CARD_ACCENTS.length], trend: "flat" },
+        attrs: { accent: ACCENT_CYCLE[i % ACCENT_CYCLE.length], trend: "flat" },
         content: [
           { type: "paragraph", content: cellInline(values[i]) },
           { type: "paragraph", content: cellInline(labels[i]) },
@@ -107,7 +110,7 @@ function twoColumnTableToLayout(table: DocumentNode): DocumentNode | null {
     attrs: { cols: body.length },
     content: body.map((_, i) => ({
       type: "card",
-      attrs: { accent: CARD_ACCENTS[i % CARD_ACCENTS.length] },
+      attrs: { accent: ACCENT_CYCLE[i % ACCENT_CYCLE.length] },
       content: [heading3(cellInline(labels[i])), ...cellBlocks(values[i])],
     })),
   };
@@ -137,13 +140,19 @@ function stripHeadingColors(node: DocumentNode): DocumentNode {
   return next;
 }
 
-/** Apply every deterministic upgrade to a whole document. */
-export function beautify(doc: DocumentBody): DocumentBody {
+/** Apply every deterministic upgrade to a whole document. The style parameters
+ * decide the rules the model was only *asked* to follow — an instance with
+ * emoji off gets them removed, not merely discouraged. */
+export function beautify(
+  doc: DocumentBody,
+  style: StyleParameters = StyleParameters.defaults(),
+): DocumentBody {
   if (doc?.type !== "doc" || !Array.isArray(doc.content)) return doc;
   const content = doc.content.map((block) => {
     const upgraded =
       block.type === "table" ? twoColumnTableToLayout(block) : null;
-    return stripHeadingColors(upgraded ?? block);
+    return paintAccents(stripHeadingColors(upgraded ?? block));
   });
-  return { ...doc, content };
+  const polished = { ...doc, content };
+  return style.emoji ? polished : stripEmoji(polished);
 }

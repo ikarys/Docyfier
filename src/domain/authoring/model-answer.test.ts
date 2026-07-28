@@ -43,6 +43,29 @@ describe("jsonFromAnswer", () => {
     expect(() => jsonFromAnswer("I cannot do that.")).toThrow(/No JSON/);
     expect(() => jsonFromAnswer("{ unbalanced")).toThrow();
   });
+
+  it("repairs the trailing comma models leave behind", () => {
+    expect(jsonFromAnswer('{"type":"doc","content":[],}')).toEqual({
+      type: "doc",
+      content: [],
+    });
+    expect(jsonFromAnswer('{"content":[{"type":"paragraph"},]}')).toEqual({
+      content: [{ type: "paragraph" }],
+    });
+    expect(jsonFromAnswer('{\n "a": 1,\n "b": [1, 2,],\n}')).toEqual({ a: 1, b: [1, 2] });
+  });
+
+  it("leaves a comma that is part of the text alone", () => {
+    expect(jsonFromAnswer('{"text":"one, two,","n":1}')).toEqual({
+      text: "one, two,",
+      n: 1,
+    });
+    expect(jsonFromAnswer('{"text":"a \\", }","n":1}')).toEqual({ text: 'a ", }', n: 1 });
+  });
+
+  it("still refuses what no repair can fix", () => {
+    expect(() => jsonFromAnswer("{'a': 1}")).toThrow();
+  });
 });
 
 describe("wrapInDoc", () => {

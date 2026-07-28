@@ -6,7 +6,9 @@ import {
   findFontPair,
   findPreset,
   normalizeTheme,
+  presetSkin,
   resolveTokens,
+  type Theme,
 } from "./theme";
 
 /**
@@ -19,14 +21,19 @@ describe("normalizeTheme", () => {
     expect(normalizeTheme("corporate")).toEqual({ preset: "corporate" });
   });
 
-  it("falls back to the default preset for anything unusable", () => {
+  it("falls back to the default preset for anything that is not an id", () => {
     expect(normalizeTheme(undefined)).toEqual({ preset: DEFAULT_PRESET });
     expect(normalizeTheme(null)).toEqual({ preset: DEFAULT_PRESET });
     expect(normalizeTheme(42)).toEqual({ preset: DEFAULT_PRESET });
-    expect(normalizeTheme("no-such-preset")).toEqual({ preset: DEFAULT_PRESET });
-    expect(normalizeTheme({ preset: "no-such-preset" })).toEqual({
+    expect(normalizeTheme("Not An Id")).toEqual({ preset: DEFAULT_PRESET });
+    expect(normalizeTheme({ preset: { id: "corporate" } })).toEqual({
       preset: DEFAULT_PRESET,
     });
+  });
+
+  it("keeps an id it does not know, because the instance saves presets of its own", () => {
+    expect(normalizeTheme("acme-2026")).toEqual({ preset: "acme-2026" });
+    expect(normalizeTheme({ preset: "acme-2026" })).toEqual({ preset: "acme-2026" });
   });
 
   it("keeps the overrides that are valid tokens", () => {
@@ -73,6 +80,14 @@ describe("normalizeTheme", () => {
   });
 });
 
+const SAVED: Theme = {
+  id: "acme-2026",
+  label: "Acme 2026",
+  hint: "The house style.",
+  skin: "corporate",
+  tokens: { accent: "#008060", fontPair: "grotesk", radius: "round", density: "airy" },
+};
+
 describe("findPreset", () => {
   it("finds a preset by id", () => {
     expect(findPreset("corporate").id).toBe("corporate");
@@ -81,6 +96,29 @@ describe("findPreset", () => {
   it("always returns a theme, so no caller has to handle undefined", () => {
     expect(findPreset("nope").id).toBe(DEFAULT_PRESET);
     expect(findPreset(undefined).id).toBe(DEFAULT_PRESET);
+  });
+
+  it("finds a preset the instance saved", () => {
+    expect(findPreset("acme-2026", [SAVED])).toBe(SAVED);
+  });
+
+  it("never lets a saved preset shadow a built-in one", () => {
+    const impostor = { ...SAVED, id: "corporate" };
+    expect(findPreset("corporate", [impostor]).label).toBe("Corporate");
+  });
+});
+
+describe("presetSkin", () => {
+  it("gives a built-in preset its own id", () => {
+    expect(presetSkin("minimal")).toBe("minimal");
+  });
+
+  it("gives a saved preset the look it borrows", () => {
+    expect(presetSkin("acme-2026", [SAVED])).toBe("corporate");
+  });
+
+  it("falls back with the preset when the id names nothing", () => {
+    expect(presetSkin("acme-2026")).toBe(DEFAULT_PRESET);
   });
 });
 
@@ -100,6 +138,14 @@ describe("resolveTokens", () => {
     const tokens = resolveTokens({ preset: "corporate", overrides: { accent: "#123456" } });
     expect(tokens.accent).toBe("#123456");
     expect(tokens.fontPair).toBe(findPreset("corporate").tokens.fontPair);
+  });
+
+  it("resolves a saved preset, so editing it repaints every document using it", () => {
+    expect(resolveTokens({ preset: "acme-2026" }, [SAVED])).toEqual(SAVED.tokens);
+  });
+
+  it("falls back to the default tokens when the saved preset is gone", () => {
+    expect(resolveTokens({ preset: "acme-2026" })).toEqual(findPreset(DEFAULT_PRESET).tokens);
   });
 });
 

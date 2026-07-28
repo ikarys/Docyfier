@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { ACCENT_CYCLE } from "@/domain/authoring/accents";
 import { iconAttribute, renderWithIcon } from "./icon";
 import { deleteLayoutBlockOnBackspace } from "./layout-delete";
 
@@ -67,7 +68,7 @@ export const CardGrid = Node.create({
             attrs: { cols: cards },
             content: Array.from({ length: cards }, (_, i) => ({
               type: "card",
-              attrs: { accent: (["blue", "green", "purple", "yellow"] as const)[i % 4] },
+              attrs: { accent: ACCENT_CYCLE[i % ACCENT_CYCLE.length] },
               content: [
                 {
                   type: "heading",

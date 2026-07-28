@@ -16,6 +16,13 @@ export {
 } from "@/domain/configuration/storage-connection";
 
 export type {
+  BrandPresetRecord,
+  BrandRecord,
+} from "@/domain/documents/brand";
+
+export type { StyleParametersRecord } from "@/domain/authoring/style-parameters";
+
+export type {
   ExportSettings,
   ExportSettingsSummary,
   ExportTargetSettings,

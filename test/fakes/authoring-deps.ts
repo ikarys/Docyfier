@@ -1,4 +1,5 @@
 import type { AuthoringDeps } from "@/application/authoring/deps";
+import { StyleParameters } from "@/domain/authoring/style-parameters";
 import type {
   GeneratedText,
   GenerationRequest,
@@ -54,6 +55,7 @@ export function authoringDeps(
     generator,
     validator: permissiveValidator(),
     polisher: { polish: (body) => body },
+    style: StyleParameters.defaults(),
     ...overrides,
   };
 }

@@ -6,5 +6,7 @@
  * This index only re-exports; pages and actions may import a scope directly.
  */
 export * from "./ai";
+export * from "./brand";
 export * from "./exports";
 export * from "./storage";
+export * from "./style";

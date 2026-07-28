@@ -9,6 +9,7 @@ import {
   fileRepository,
   repositoryFor,
 } from "@/infrastructure/documents/repository-factory";
+import { FileBrandRepository } from "@/infrastructure/configuration/file-brand-repository";
 import { systemClock, uuidIds } from "@/infrastructure/shared/system-clock";
 import { getStorageSettings } from "@/lib/settings/storage";
 
@@ -44,7 +45,10 @@ export async function createDocument(
   content?: unknown,
   theme?: unknown,
 ): Promise<DocumentRecord> {
-  const document = await write.createDocument(await deps(), { body: content, theme });
+  const document = await write.createDocument(
+    { ...(await deps()), brand: new FileBrandRepository() },
+    { body: content, theme },
+  );
   return document.toRecord();
 }
 

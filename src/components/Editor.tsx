@@ -1,11 +1,16 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useEditor, type JSONContent } from "@tiptap/react";
 import type { JSONContent as DocJSON } from "@tiptap/core";
-import { setDocumentThemeAction } from "@/app/actions";
 import { imageFilesOf, insertUploadedImages } from "@/components/editor/image-upload";
-import { resolveTokens, tokenStyle, type DocumentTheme } from "@/lib/themes";
+import {
+  presetSkin,
+  resolveTokens,
+  tokenStyle,
+  type DocumentTheme,
+  type Theme,
+} from "@/lib/themes";
 import { AiPanel } from "./AiPanel";
 import { AiDiffBar } from "./AiDiffBar";
 import { DesignPanel } from "./DesignPanel";
@@ -14,6 +19,7 @@ import { EDITOR_EXTENSIONS } from "./editor/extensions";
 import { MenuBar, type PanelName } from "./editor/MenuBar";
 import { useAiReview } from "./editor/useAiReview";
 import { useAutosave, type Autosave } from "./editor/useAutosave";
+import { useDocumentTheme } from "./editor/useDocumentTheme";
 import { useStreamedGeneration } from "./editor/useStreamedGeneration";
 
 /**
@@ -22,24 +28,23 @@ import { useStreamedGeneration } from "./editor/useStreamedGeneration";
  * hook — this component wires them together and renders.
  */
 
-/** Theme writes are debounced: the accent color input fires per pixel. */
-const THEME_DEBOUNCE_MS = 400;
-
 export function DocumentEditor({
   id,
   initialContent,
   initialTheme,
   initialUpdatedAt,
+  presets,
 }: {
   id: string;
   initialContent: JSONContent;
   initialTheme: DocumentTheme;
   initialUpdatedAt: string;
+  /** The presets this instance saved, so a document wearing one resolves it. */
+  presets: Theme[];
 }) {
   /** Only one side panel at a time — they share the same slot. */
   const [panel, setPanel] = useState<PanelName | null>("ai");
-  const [theme, setTheme] = useState(initialTheme);
-  const themeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { theme, changeTheme } = useDocumentTheme(id, initialTheme);
   /** The editor is created before the hook that saves it, and its `onUpdate`
    * only fires once both exist — hence the indirection rather than an order. */
   const autosaveRef = useRef<Autosave | null>(null);
@@ -78,19 +83,8 @@ export function DocumentEditor({
 
   const autosave = useAutosave(id, editor, initialUpdatedAt);
   autosaveRef.current = autosave;
-  const generation = useStreamedGeneration(id, editor, autosave);
+  const generation = useStreamedGeneration(id, editor, autosave, changeTheme);
   const review = useAiReview(editor, autosave);
-
-  const changeTheme = useCallback(
-    (next: DocumentTheme) => {
-      setTheme(next);
-      if (themeTimer.current) clearTimeout(themeTimer.current);
-      themeTimer.current = setTimeout(() => {
-        void setDocumentThemeAction(id, next);
-      }, THEME_DEBOUNCE_MS);
-    },
-    [id],
-  );
 
   if (!editor) return null;
 
@@ -106,14 +100,15 @@ export function DocumentEditor({
         panel={panel}
         onTogglePanel={(which) => setPanel((p) => (p === which ? null : which))}
         theme={theme}
+        presets={presets}
         onChangeTheme={changeTheme}
         onSaveNow={autosave.saveNow}
       />
       <div className="editor-body" data-panel={panel !== null}>
         <main
           className="doc-shell"
-          data-theme={theme.preset}
-          style={tokenStyle(resolveTokens(theme))}
+          data-theme={presetSkin(theme.preset, presets)}
+          style={tokenStyle(resolveTokens(theme, presets))}
         >
           <EditorSurface
             editor={editor}
@@ -125,12 +120,15 @@ export function DocumentEditor({
           <AiPanel
             editor={editor}
             onApply={applyDocument}
+            onChangeTheme={changeTheme}
             onClose={() => setPanel(null)}
           />
         )}
         {panel === "design" && (
           <DesignPanel
+            editor={editor}
             theme={theme}
+            presets={presets}
             onChange={changeTheme}
             onClose={() => setPanel(null)}
           />

@@ -3,9 +3,9 @@ import {
   plainFromAnswer,
 } from "@/domain/authoring/model-answer";
 import {
-  SELECTION_BLOCKS_SYSTEM,
   SELECTION_TEXT_SYSTEM,
   selectionBlocksPrompt,
+  selectionBlocksSystem,
   selectionTextPrompt,
 } from "@/domain/authoring/prompts";
 import type { DocumentNode } from "@/domain/documents/body";
@@ -21,7 +21,7 @@ export async function rewriteSelectionBlocks(
   instruction: string,
 ): Promise<DocumentNode[]> {
   const body = await askDocument(deps, {
-    system: SELECTION_BLOCKS_SYSTEM,
+    system: selectionBlocksSystem(deps.style),
     prompt: selectionBlocksPrompt(blocks, instruction),
     temperature: 0.3,
   });
