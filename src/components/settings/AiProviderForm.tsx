@@ -7,12 +7,16 @@ import {
   testChatAction,
 } from "@/app/settings/ai/actions";
 import type { AiProviderSummary } from "@/lib/settings-types";
-
-type Probe =
-  | { state: "idle" }
-  | { state: "loading" }
-  | { state: "ok"; models: string[]; via?: "chat" }
-  | { state: "error"; message: string; status?: number };
+import { ProviderModelField } from "./ProviderModelField";
+import { ProviderOutputFields } from "./ProviderOutputFields";
+import {
+  afterChat,
+  afterModelList,
+  missingModelId,
+  type Probe,
+} from "./provider-probe";
+import { WriteOnlySecretField } from "./WriteOnlySecretField";
+import { noSecretTyped } from "./write-only-secret";
 
 /** One LLM endpoint: name, server, model picker, optional API key. Used both to
  * add a provider and to edit an existing one — the stored API key never comes
@@ -26,47 +30,27 @@ export function AiProviderForm({
 }) {
   const [saveState, formAction, saving] = useActionState(saveAiProviderAction, null);
   const [baseUrl, setBaseUrl] = useState(initial.baseUrl);
-  const [apiKey, setApiKey] = useState("");
-  const [keyCleared, setKeyCleared] = useState(false);
+  const [apiKey, setApiKey] = useState(noSecretTyped);
   const [model, setModel] = useState(initial.model);
   const [probe, setProbe] = useState<Probe>({ state: "idle" });
   const [manualModel, setManualModel] = useState(false);
 
-  const test = async (url = baseUrl, key = apiKey, useManual = manualModel) => {
+  const test = async (url = baseUrl, key = apiKey.value, useManual = manualModel) => {
     setProbe({ state: "loading" });
 
-    // Manual model id: /models is irrelevant (proxy may not expose it), so
-    // validate the real path — a minimal chat completion.
     if (useManual) {
-      if (!model.trim()) {
-        setProbe({ state: "error", message: "Enter a model id to test." });
-        return;
-      }
-      const res = await testChatAction(url, key, model, initial.id);
-      setProbe(
-        res.ok
-          ? { state: "ok", models: [model], via: "chat" }
-          : { state: "error", message: res.error },
-      );
+      const complaint = missingModelId(model);
+      setProbe(complaint ?? afterChat(await testChatAction(url, key, model, initial.id), model));
       return;
     }
 
-    const res = await listModelsAction(url, key, initial.id);
-    if (res.ok) {
-      setProbe({ state: "ok", models: res.models.map((m) => m.id) });
+    const plan = afterModelList(await listModelsAction(url, key, initial.id), model);
+    if ("manual" in plan) setManualModel(true);
+    if ("retryAsChat" in plan) {
+      void test(url, key, true);
       return;
     }
-    // Server has no /models endpoint (e.g. some OpenAI-compatible proxies):
-    // switch to manual entry, and if a model id is set, prove it via chat
-    // instead of surfacing the misleading 404.
-    if (res.status === 404) {
-      setManualModel(true);
-      if (model.trim()) {
-        void test(url, key, true);
-        return;
-      }
-    }
-    setProbe({ state: "error", message: res.error, status: res.status });
+    setProbe(plan.probe);
   };
 
   // Probe the configured server once on mount to populate the model picker.
@@ -81,9 +65,6 @@ export function AiProviderForm({
     if (saveState?.saved && !saving) onDone?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saveState, saving]);
-
-  const models = probe.state === "ok" ? probe.models : [];
-  const knownModel = model === "" || models.includes(model);
 
   return (
     <form action={formAction} className="settings-card">
@@ -115,151 +96,29 @@ export function AiProviderForm({
         </span>
       </label>
 
-      <label className="field">
-        <span className="field-label">API key (optional)</span>
-        <input type="hidden" name="apiKeyCleared" value={keyCleared ? "1" : "0"} />
-        <input
-          className="field-input"
-          name="apiKey"
-          type="password"
-          value={apiKey}
-          onChange={(e) => {
-            setApiKey(e.target.value);
-            if (e.target.value) setKeyCleared(false);
-          }}
-          placeholder={
-            initial.hasApiKey && !keyCleared
-              ? "•••••••• saved — leave empty to keep it"
-              : "Not needed for LM Studio"
-          }
-          autoComplete="off"
-        />
-        <span className="field-help">
-          Stored encrypted; it never leaves the server once saved.
-          {initial.hasApiKey && !keyCleared && !apiKey && (
-            <>
-              {" "}
-              <button
-                type="button"
-                className="link-button"
-                onClick={() => setKeyCleared(true)}
-              >
-                Remove the saved key
-              </button>
-            </>
-          )}
-          {keyCleared && " The saved key will be removed on save."}
-        </span>
-      </label>
+      <WriteOnlySecretField
+        label="API key (optional)"
+        name="apiKey"
+        noun="key"
+        secret={apiKey}
+        stored={initial.hasApiKey}
+        emptyPlaceholder="Not needed for LM Studio"
+        change={setApiKey}
+      />
 
-      <div className="field">
-        <span className="field-label">Model</span>
-        <div className="field-row">
-          {manualModel ? (
-            <input
-              className="field-input"
-              name="model"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder="Model id, e.g. gpt-4o"
-              spellCheck={false}
-            />
-          ) : (
-            <>
-              <input type="hidden" name="model" value={model} />
-              <select
-                className="field-input"
-                value={knownModel ? model : "__custom"}
-                onChange={(e) => {
-                  if (e.target.value !== "__custom") setModel(e.target.value);
-                }}
-              >
-                <option value="">Auto — first model on the server</option>
-                {models.map((id) => (
-                  <option key={id} value={id}>
-                    {id}
-                  </option>
-                ))}
-                {!knownModel && (
-                  <option value="__custom">{model} (saved)</option>
-                )}
-              </select>
-            </>
-          )}
-          <button
-            type="button"
-            className="btn"
-            disabled={probe.state === "loading"}
-            onClick={() => void test()}
-          >
-            {probe.state === "loading" ? (
-              <>
-                <span className="spinner" aria-hidden /> Testing…
-              </>
-            ) : (
-              "Test connection"
-            )}
-          </button>
-        </div>
-        <label className="field-help field-checkbox">
-          <input
-            type="checkbox"
-            checked={manualModel}
-            onChange={(e) => setManualModel(e.target.checked)}
-          />
-          Enter model id manually (for servers without a /models endpoint)
-        </label>
-        {probe.state === "ok" && (
-          <span className="field-help field-ok">
-            {probe.via === "chat"
-              ? "✓ Connected — model responded"
-              : `✓ Connected — ${probe.models.length} model${
-                  probe.models.length === 1 ? "" : "s"
-                } available`}
-          </span>
-        )}
-        {probe.state === "error" && (
-          <span className="field-help field-error">✕ {probe.message}</span>
-        )}
-      </div>
+      <ProviderModelField
+        model={model}
+        setModel={setModel}
+        manual={manualModel}
+        setManual={setManualModel}
+        probe={probe}
+        test={() => void test()}
+      />
 
-      <label className="field">
-        <span className="field-label">Max output tokens</span>
-        <input
-          className="field-input"
-          name="maxOutputTokens"
-          type="number"
-          min={256}
-          step={256}
-          defaultValue={initial.maxOutputTokens}
-        />
-        <span className="field-help">
-          Ceiling per AI response. Whole-document edits need room: large
-          documents may require 16k-64k. Higher = slower on local models.
-        </span>
-      </label>
-
-      <div className="field">
-        <span className="field-label">Structured output</span>
-        <label className="field-help field-checkbox">
-          <input
-            type="checkbox"
-            name="structuredOutput"
-            defaultChecked={initial.structuredOutput}
-          />
-          Constrain answers with a JSON schema
-        </label>
-        <span className="field-help">
-          Stops models that wrap their answer in fences or commentary — but only
-          on servers that implement JSON-schema output. Docyfier falls back to
-          plain text parsing when the provider refuses.
-        </span>
-      </div>
+      <ProviderOutputFields initial={initial} />
 
       <div className="settings-actions">
-        {saveState?.error && (
-          <span className="field-error">{saveState.error}</span>
-        )}
+        {saveState?.error && <span className="field-error">{saveState.error}</span>}
         {onDone && (
           <button className="btn" type="button" onClick={onDone}>
             Cancel

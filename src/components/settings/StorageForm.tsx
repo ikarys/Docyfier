@@ -26,8 +26,8 @@ export function StorageForm({ initial }: { initial: StorageSettingsSummary }) {
   const test = () =>
     probe.run(() =>
       testStorageAction(
-        { ...fields, port: Number(fields.port) },
-        fields.passwordCleared,
+        { ...fields, port: Number(fields.port), password: fields.password.value },
+        fields.password.cleared,
       ),
     );
 

@@ -3,15 +3,16 @@ import {
   type StorageDriver,
   type StorageSettingsSummary,
 } from "@/lib/settings-types";
+import { noSecretTyped, type WriteOnlySecret } from "./write-only-secret";
 
 /**
  * What the storage form holds while it is being edited, and the rules that
  * decide what a change means.
  *
- * Ports and passwords both behave in ways a reader would not guess: a port the
- * user never chose follows the driver, and an empty password field means "keep
- * the stored one" rather than "no password". Both rules live here, where a test
- * can state them, and not inside a change handler.
+ * A port the user never chose follows the driver — a rule a reader would not
+ * guess, so it lives here where a test can state it rather than inside a change
+ * handler. The password obeys the rule every stored credential obeys, in
+ * `write-only-secret`.
  */
 export interface ConnectionFields {
   driver: StorageDriver;
@@ -20,8 +21,7 @@ export interface ConnectionFields {
   port: string;
   user: string;
   database: string;
-  password: string;
-  passwordCleared: boolean;
+  password: WriteOnlySecret;
   ssl: boolean;
 }
 
@@ -33,8 +33,7 @@ export function connectionFrom(initial: StorageSettingsSummary): ConnectionField
     user: initial.user,
     database: initial.database,
     ssl: initial.ssl,
-    password: "",
-    passwordCleared: false,
+    password: noSecretTyped(),
   };
 }
 
@@ -47,24 +46,4 @@ export function withDriver(
   const port =
     driver !== "files" && untouched ? String(DEFAULT_PORTS[driver]) : fields.port;
   return { ...fields, driver, port };
-}
-
-/** Typing a password takes back a pending removal — the intent is to replace it. */
-export function withPassword(
-  fields: ConnectionFields,
-  password: string,
-): ConnectionFields {
-  return { ...fields, password, passwordCleared: password ? false : fields.passwordCleared };
-}
-
-export function withClearedPassword(fields: ConnectionFields): ConnectionFields {
-  return { ...fields, passwordCleared: true };
-}
-
-/** Removing a stored password is only offered while nothing else would replace it. */
-export function offersToForgetPassword(
-  fields: ConnectionFields,
-  initial: { hasPassword: boolean },
-): boolean {
-  return initial.hasPassword && !fields.passwordCleared && !fields.password;
 }

@@ -1,11 +1,7 @@
 "use client";
 
-import {
-  offersToForgetPassword,
-  withClearedPassword,
-  withPassword,
-  type ConnectionFields,
-} from "./connection-fields";
+import { WriteOnlySecretField } from "./WriteOnlySecretField";
+import type { ConnectionFields } from "./connection-fields";
 
 /** Everything a SQL backend needs to be reached. Hidden when documents are files. */
 export function StorageConnectionFields({
@@ -17,7 +13,7 @@ export function StorageConnectionFields({
   hasSavedPassword: boolean;
   change: (fields: ConnectionFields) => void;
 }) {
-  const { host, port, user, password, passwordCleared, database, ssl } = fields;
+  const { host, port, user, password, database, ssl } = fields;
 
   return (
     <>
@@ -58,39 +54,14 @@ export function StorageConnectionFields({
         />
       </label>
 
-      <label className="field">
-        <span className="field-label">Password</span>
-        <input type="hidden" name="passwordCleared" value={passwordCleared ? "1" : "0"} />
-        <input
-          className="field-input"
-          name="password"
-          type="password"
-          value={password}
-          onChange={(e) => change(withPassword(fields, e.target.value))}
-          placeholder={
-            hasSavedPassword && !passwordCleared
-              ? "•••••••• saved — leave empty to keep it"
-              : ""
-          }
-          autoComplete="off"
-        />
-        <span className="field-help">
-          Stored encrypted; it never leaves the server once saved.
-          {offersToForgetPassword(fields, { hasPassword: hasSavedPassword }) && (
-            <>
-              {" "}
-              <button
-                type="button"
-                className="link-button"
-                onClick={() => change(withClearedPassword(fields))}
-              >
-                Remove the saved password
-              </button>
-            </>
-          )}
-          {passwordCleared && " The saved password will be removed on save."}
-        </span>
-      </label>
+      <WriteOnlySecretField
+        label="Password"
+        name="password"
+        noun="password"
+        secret={password}
+        stored={hasSavedPassword}
+        change={(password) => change({ ...fields, password })}
+      />
 
       <label className="field">
         <span className="field-label">Database</span>
