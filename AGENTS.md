@@ -18,8 +18,8 @@ tables, code, callouts), with autosave and PDF-via-print export. STEP 2 AI
 surfaces are in: prompt-to-document (home), whole-document assistant panel
 ("make it pretty", tone, restructure), and selection-scoped rewrites (bubble
 menu). LLM = any OpenAI-compatible endpoint via Vercel AI SDK (`src/lib/ai/`);
-several providers can be saved and the active one switched from Settings or the
-header picker; AI output is schema-validated ProseMirror JSON. Every stored
+several providers can be saved and the active one switched from Settings, the
+only place that choice lives; AI output is schema-validated ProseMirror JSON. Every stored
 credential (LLM keys, DB password, `secret` export options) is encrypted at rest
 via `src/infrastructure/configuration/aes-gcm-cipher.ts` and write-only in the UI
 — never send one to a client component. The instance password is not encrypted
