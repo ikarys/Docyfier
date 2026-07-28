@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listDocuments } from "@/lib/store";
 import { listAiProviders } from "@/lib/settings";
 import { requireAuth } from "@/lib/auth";
+import { BrandMark } from "@/components/BrandMark";
 import { GenerateHero } from "@/components/GenerateHero";
 import { ModelSwitcher } from "@/components/ModelSwitcher";
 import { DocumentList } from "@/components/DocumentList";
@@ -16,9 +17,7 @@ export default async function HomePage() {
   return (
     <>
       <header className="app-header">
-        <span className="brand">
-          Docy<span>fier</span>
-        </span>
+        <BrandMark />
         <div className="toolbar">
           <ModelSwitcher providers={ai.providers} activeId={ai.activeId} />
           <Link href="/compose" className="btn" title="Email and ticket composers">

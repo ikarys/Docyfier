@@ -89,13 +89,38 @@ body {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ink);
   text-decoration: none;
 }
-.brand span {
+.brand-name span {
   color: var(--accent);
+}
+/* Sized in `em` so the mark follows whatever type size the surface sets. */
+.brand-logo {
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+}
+
+.brand-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.app-version {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .toolbar {
@@ -3004,8 +3029,7 @@ body {
   max-width: 24rem;
   margin-top: 5rem;
 }
-.login-page .brand {
-  display: inline-block;
+.login-page .brand-line {
   margin-bottom: 1.5rem;
 }
 .login-card {

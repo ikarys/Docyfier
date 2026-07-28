@@ -4,6 +4,7 @@ import { getDocument } from "@/lib/store";
 import { getBrandPresets, listAiProviders } from "@/lib/settings";
 import { requireAuth } from "@/lib/auth";
 import { deleteDocumentAction } from "@/app/actions";
+import { BrandMark } from "@/components/BrandMark";
 import { DocumentEditor } from "@/components/Editor";
 import { ModelSwitcher } from "@/components/ModelSwitcher";
 import { PrintButton } from "@/components/PrintButton";
@@ -25,9 +26,7 @@ export default async function DocumentPage({
   return (
     <>
       <header className="app-header">
-        <Link className="brand" href="/">
-          Docy<span>fier</span>
-        </Link>
+        <BrandMark href="/" />
         <span className="doc-title" title={doc.title}>
           {doc.title}
         </span>

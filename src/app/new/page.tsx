@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TEMPLATES } from "@/lib/templates";
 import { assertTemplatesValid } from "@/lib/templates-check";
 import { createFromTemplateAction, newDocumentAction } from "@/app/actions";
+import { BrandMark } from "@/components/BrandMark";
 import { ImportCard } from "@/components/ImportCard";
 import { requireAuth } from "@/lib/auth";
 
@@ -21,9 +22,7 @@ export default async function NewDocumentPage() {
   return (
     <>
       <header className="app-header">
-        <Link href="/" className="brand">
-          Docy<span>fier</span>
-        </Link>
+        <BrandMark href="/" />
         <Link href="/settings" className="btn" title="Settings">
           ⚙ Settings
         </Link>

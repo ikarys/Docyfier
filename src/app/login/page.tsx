@@ -5,6 +5,7 @@ import {
   isAuthEnabled,
   isPasswordSet,
 } from "@/lib/auth";
+import { BrandMark } from "@/components/BrandMark";
 import { LoginForm } from "@/components/LoginForm";
 
 export const dynamic = "force-dynamic";
@@ -18,9 +19,7 @@ export default async function LoginPage() {
 
   return (
     <main className="picker login-page">
-      <span className="brand">
-        Docy<span>fier</span>
-      </span>
+      <BrandMark />
       <h1>{configured ? "Sign in" : "Choose a password"}</h1>
       <p className="lede">
         {configured

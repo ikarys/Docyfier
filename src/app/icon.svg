@@ -1,0 +1,14 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <title>Docyfier</title>
+  <!-- The mark redrawn for 16px: the two cards and three chart bars survive,
+       the stat cards and the callout do not — at a favicon's size they are mud. -->
+  <rect width="64" height="64" rx="14" fill="#1e2327"/>
+  <rect x="-14" y="-19" width="28" height="38" rx="5" fill="#5b6270"
+        transform="translate(28,32) rotate(-8)"/>
+  <rect x="22" y="13" width="30" height="38" rx="5" fill="#eef3f8"/>
+  <path d="M44 13 L52 13 L52 21 Z" fill="#c17a54"/>
+  <rect x="27" y="19" width="16" height="3" rx="1.5" fill="#7c8896"/>
+  <rect x="27" y="34" width="5" height="10" rx="1.5" fill="#4fd1c5"/>
+  <rect x="35" y="30" width="5" height="14" rx="1.5" fill="#f6ad55"/>
+  <rect x="43" y="37" width="5" height="7" rx="1.5" fill="#8b7cf6"/>
+</svg>
