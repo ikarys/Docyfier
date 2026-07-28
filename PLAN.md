@@ -5,8 +5,8 @@ original P\* where justified; the "Was → Now" column tracks every change.
 
 **MVP = STEPS 0–4.** Everything after is post-MVP.
 
-The UX & rendering upgrade STEPS **U1–U6** ([Part C](#part-c--ux--rendering-upgrade-steps-u1u6))
-slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 → U5 → U6.
+The UX & rendering upgrade STEPS **U1–U7** ([Part C](#part-c--ux--rendering-upgrade-steps-u1u7))
+slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 → U5 → U6 → U7.
 
 ## Part A — Prioritized needs
 
@@ -258,15 +258,16 @@ Acceptance:
 
 **Exit criteria:** per integration: connect, list, import, push update without leaving the app.
 
-## Part C — UX & rendering upgrade STEPS (U1–U6)
+## Part C — UX & rendering upgrade STEPS (U1–U7)
 
 Motivation: the current editor produces correct but classic documents; the UX is
 toolbar-only; themes are four fixed presets; whole-document AI transforms are
 slow and token-hungry. These STEPS modernize the editing UX (U1), make AI fast
-and safe (U4), make themes customizable (U3), enrich rendering (U2) and add
-templates (U5) and add data-viz blocks (U6). They slot between STEP 2b and
+and safe (U4), make themes customizable (U3), enrich rendering (U2), add
+templates (U5), add data-viz blocks (U6) and put the theme and the shape of a
+generated document in the model's hands (U7). They slot between STEP 2b and
 STEP 3 and pull parts of STEP 9 and STEP 10 forward.
-Recommended order: **U1 → U4 → U3 → U2 → U5 → U6**.
+Recommended order: **U1 → U4 → U3 → U2 → U5 → U6 → U7**.
 
 ### Ground rules for implementers (read before any U-STEP)
 
@@ -565,3 +566,53 @@ Acceptance:
 - [ ] Cover with chips + meta line, and a `layout: "row"` stat card, match the reference layouts
 - [ ] "Make it pretty" on a document containing a figures table adds a chart **only** when the numbers already exist in the document
 - [ ] `npm ls` shows the five dead dependencies gone and the app still builds
+
+### STEP U7 — Art direction & document recipes
+
+**Goal:** a generated document arrives already dressed and already shaped like
+what it is — a postmortem does not come out looking like a roadmap, and nobody
+has to open the Design panel to fix the accent and the font every time.
+
+**Why:** the generation is correct but generic. Three causes, all structural:
+the model is never asked to choose the document's theme (a generated document
+always gets the default preset, while a document from a template gets the
+template's), the style guide forbids it any color of its own (rightly — color
+belongs to the theme), and one prompt describing twenty available blocks makes
+every document reach for the same five. The fix is not a longer prompt: it is a
+planning pass that decides what the document *is* before writing it.
+
+Instructions:
+
+1. **Recipes.** `src/domain/authoring/recipes/`, registry shape (contract file,
+   one file per recipe, one registry line — same as export targets and
+   composers). Eight kinds: report, one-pager, spec, status, postmortem,
+   roadmap, guide, note. A recipe carries a `hint` (what the kind is for, read
+   by the planning prompt), a `skeleton` (the block sequence the writer fills)
+   and a default `art`.
+2. **Planning pass.** `planDocument` use case: one short call returning a
+   `DocumentBrief` — kind, audience, tone, language, the section list with the
+   block chosen for each, and the art direction. Parsed through a factory that
+   validates every field and falls back rather than throwing: an unknown kind
+   becomes `note`, a malformed accent is simply absent.
+3. **Art direction.** The brief's `art` maps to a `DocumentTheme` (preset plus
+   accent / font pair / radius / density overrides) and is applied to the
+   document as it is created. `ArtDirection` is authoring vocabulary; the
+   mapping to the `documents` theme happens in the application layer, so the two
+   bounded contexts still do not import each other.
+4. **Writer prompt.** The generation system prompt becomes format contract +
+   style guide + the chosen recipe's skeleton + the brief. The model fills a
+   plan instead of picking from a catalogue.
+5. **Restyle on demand.** The same art pass, run against an existing document,
+   behind a "Style for me" button in the Design panel — and after a
+   "make it pretty" transform, which today changes structure but never dress.
+
+**Out of scope:** per-theme custom presets saved by the user (STEP 9), and any
+style parameter the user sets once for every document (#15, also STEP 9).
+
+Acceptance:
+
+- [ ] A generated document opens with a theme chosen for its subject — accent, font pair, radius and density — and the Design panel still overrides all four
+- [ ] Two different kinds asked for in a row (a postmortem, then a roadmap) come out with visibly different skeletons, not the same one reskinned
+- [ ] A garbage brief (unknown kind, bad accent, missing sections) still produces a document: every field falls back, nothing throws
+- [ ] The planning call is short enough that the first streamed block still arrives quickly; a provider that fails the planning call still writes the document with the default recipe
+- [ ] "Style for me" restyles an existing document without touching one byte of its content
