@@ -8,6 +8,10 @@ import { defineConfig } from "vitest/config";
  * boundary.
  */
 export default defineConfig({
+  // `tsconfig.json` leaves JSX to Next (`preserve`), which the test transformer
+  // cannot parse. Tests reaching a module that imports a component need it
+  // compiled rather than passed through.
+  oxc: { jsx: { runtime: "automatic" } },
   resolve: {
     // `@/*` comes from tsconfig.json — one source of truth for both compilers.
     tsconfigPaths: true,

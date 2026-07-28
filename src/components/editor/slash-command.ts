@@ -1,4 +1,5 @@
 import { Extension } from "@tiptap/core";
+import { PluginKey } from "@tiptap/pm/state";
 import Suggestion, {
   exitSuggestion,
   type SuggestionKeyDownProps,
@@ -21,6 +22,8 @@ export const SlashCommand = Extension.create({
   addOptions() {
     return {
       suggestion: {
+        /** Named, so it cannot collide with another suggestion plugin. */
+        pluginKey: new PluginKey("slashSuggestion"),
         char: "/",
         startOfLine: false,
         items: ({ query }) => filterSlashItems(query),
