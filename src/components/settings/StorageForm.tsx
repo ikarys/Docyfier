@@ -2,27 +2,14 @@
 
 import { useActionState, useState } from "react";
 import {
-  importDocumentsAction,
   saveStorageSettingsAction,
   testStorageAction,
 } from "@/app/settings/storage/actions";
-import {
-  DEFAULT_PORTS,
-  type StorageDriver,
-  type StorageSettingsSummary,
-} from "@/lib/settings-types";
-
-type Probe =
-  | { state: "idle" }
-  | { state: "loading" }
-  | { state: "ok"; documents: number }
-  | { state: "error"; message: string };
-
-type Import =
-  | { state: "idle" }
-  | { state: "loading" }
-  | { state: "ok"; imported: number; skipped: number }
-  | { state: "error"; message: string };
+import type { StorageDriver, StorageSettingsSummary } from "@/lib/settings-types";
+import { FilesImportSection } from "./FilesImportSection";
+import { StorageConnectionFields } from "./StorageConnectionFields";
+import { connectionFrom, withDriver } from "./connection-fields";
+import { useAttempt } from "./useAttempt";
 
 const DRIVER_LABELS: Record<StorageDriver, string> = {
   files: "Files on disk (default)",
@@ -32,54 +19,17 @@ const DRIVER_LABELS: Record<StorageDriver, string> = {
 
 /** Where documents are stored: on disk, or in a PostgreSQL / MySQL database. */
 export function StorageForm({ initial }: { initial: StorageSettingsSummary }) {
-  const [saveState, formAction, saving] = useActionState(
-    saveStorageSettingsAction,
-    null,
-  );
-  const [driver, setDriver] = useState<StorageDriver>(initial.driver);
-  const [host, setHost] = useState(initial.host);
-  const [port, setPort] = useState(String(initial.port || DEFAULT_PORTS.postgres));
-  const [user, setUser] = useState(initial.user);
-  // Write-only: the stored password stays on the server, so an empty field
-  // means "keep it" and only the explicit clear removes it.
-  const [password, setPassword] = useState("");
-  const [passwordCleared, setPasswordCleared] = useState(false);
-  const [database, setDatabase] = useState(initial.database);
-  const [ssl, setSsl] = useState(initial.ssl);
-  const [probe, setProbe] = useState<Probe>({ state: "idle" });
-  const [imported, setImported] = useState<Import>({ state: "idle" });
+  const [saveState, formAction, saving] = useActionState(saveStorageSettingsAction, null);
+  const [fields, setFields] = useState(() => connectionFrom(initial));
+  const probe = useAttempt<{ documents: number }>();
 
-  const isSql = driver !== "files";
-
-  /** Follow the driver's default port unless the user typed their own. */
-  const changeDriver = (next: StorageDriver) => {
-    const wasDefault = Object.values(DEFAULT_PORTS).includes(Number(port));
-    setDriver(next);
-    if (next !== "files" && wasDefault) setPort(String(DEFAULT_PORTS[next]));
-  };
-
-  const test = async () => {
-    setProbe({ state: "loading" });
-    const res = await testStorageAction(
-      { driver, host, port: Number(port), user, password, database, ssl },
-      passwordCleared,
+  const test = () =>
+    probe.run(() =>
+      testStorageAction(
+        { ...fields, port: Number(fields.port) },
+        fields.passwordCleared,
+      ),
     );
-    setProbe(
-      res.ok
-        ? { state: "ok", documents: res.documents }
-        : { state: "error", message: res.error },
-    );
-  };
-
-  const runImport = async () => {
-    setImported({ state: "loading" });
-    const res = await importDocumentsAction();
-    setImported(
-      res.ok
-        ? { state: "ok", imported: res.imported, skipped: res.skipped }
-        : { state: "error", message: res.error },
-    );
-  };
 
   return (
     <form action={formAction} className="settings-card">
@@ -88,8 +38,8 @@ export function StorageForm({ initial }: { initial: StorageSettingsSummary }) {
         <select
           className="field-input"
           name="driver"
-          value={driver}
-          onChange={(e) => changeDriver(e.target.value as StorageDriver)}
+          value={fields.driver}
+          onChange={(e) => setFields(withDriver(fields, e.target.value as StorageDriver))}
         >
           {(Object.keys(DRIVER_LABELS) as StorageDriver[]).map((id) => (
             <option key={id} value={id}>
@@ -104,119 +54,12 @@ export function StorageForm({ initial }: { initial: StorageSettingsSummary }) {
         </span>
       </label>
 
-      {isSql && (
-        <>
-          <label className="field">
-            <span className="field-label">Host</span>
-            <input
-              className="field-input"
-              name="host"
-              value={host}
-              onChange={(e) => setHost(e.target.value)}
-              placeholder="localhost"
-              spellCheck={false}
-            />
-          </label>
-
-          <label className="field">
-            <span className="field-label">Port</span>
-            <input
-              className="field-input"
-              name="port"
-              type="number"
-              min={1}
-              max={65535}
-              value={port}
-              onChange={(e) => setPort(e.target.value)}
-            />
-          </label>
-
-          <label className="field">
-            <span className="field-label">User</span>
-            <input
-              className="field-input"
-              name="user"
-              value={user}
-              onChange={(e) => setUser(e.target.value)}
-              spellCheck={false}
-              autoComplete="off"
-            />
-          </label>
-
-          <label className="field">
-            <span className="field-label">Password</span>
-            <input
-              type="hidden"
-              name="passwordCleared"
-              value={passwordCleared ? "1" : "0"}
-            />
-            <input
-              className="field-input"
-              name="password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (e.target.value) setPasswordCleared(false);
-              }}
-              placeholder={
-                initial.hasPassword && !passwordCleared
-                  ? "•••••••• saved — leave empty to keep it"
-                  : ""
-              }
-              autoComplete="off"
-            />
-            <span className="field-help">
-              Stored encrypted; it never leaves the server once saved.
-              {initial.hasPassword && !passwordCleared && !password && (
-                <>
-                  {" "}
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={() => setPasswordCleared(true)}
-                  >
-                    Remove the saved password
-                  </button>
-                </>
-              )}
-              {passwordCleared && " The saved password will be removed on save."}
-            </span>
-          </label>
-
-          <label className="field">
-            <span className="field-label">Database</span>
-            <input
-              className="field-input"
-              name="database"
-              value={database}
-              onChange={(e) => setDatabase(e.target.value)}
-              placeholder="docyfier"
-              spellCheck={false}
-            />
-            <span className="field-help">
-              The database must already exist. Docyfier creates its
-              <code> documents </code> table on first connection.
-            </span>
-          </label>
-
-          <div className="field">
-            <span className="field-label">TLS</span>
-            <label className="field-help field-checkbox">
-              <input
-                type="checkbox"
-                name="ssl"
-                checked={ssl}
-                onChange={(e) => setSsl(e.target.checked)}
-              />
-              Connect over TLS (required by most hosted databases)
-            </label>
-            <span className="field-help">
-              Certificates are verified: a self-signed certificate must be
-              trusted by the system.
-            </span>
-          </div>
-        </>
+      {fields.driver !== "files" && (
+        <StorageConnectionFields
+          fields={fields}
+          hasSavedPassword={initial.hasPassword}
+          change={setFields}
+        />
       )}
 
       <div className="field">
@@ -224,10 +67,10 @@ export function StorageForm({ initial }: { initial: StorageSettingsSummary }) {
           <button
             type="button"
             className="btn"
-            disabled={probe.state === "loading"}
+            disabled={probe.attempt.state === "running"}
             onClick={() => void test()}
           >
-            {probe.state === "loading" ? (
+            {probe.attempt.state === "running" ? (
               <>
                 <span className="spinner" aria-hidden /> Testing…
               </>
@@ -236,14 +79,14 @@ export function StorageForm({ initial }: { initial: StorageSettingsSummary }) {
             )}
           </button>
         </div>
-        {probe.state === "ok" && (
+        {probe.attempt.state === "done" && (
           <span className="field-help field-ok">
-            ✓ Connected — {probe.documents} document
-            {probe.documents === 1 ? "" : "s"} in this backend
+            ✓ Connected — {probe.attempt.result.documents} document
+            {probe.attempt.result.documents === 1 ? "" : "s"} in this backend
           </span>
         )}
-        {probe.state === "error" && (
-          <span className="field-help field-error">✕ {probe.message}</span>
+        {probe.attempt.state === "failed" && (
+          <span className="field-help field-error">✕ {probe.attempt.message}</span>
         )}
       </div>
 
@@ -255,40 +98,7 @@ export function StorageForm({ initial }: { initial: StorageSettingsSummary }) {
         </button>
       </div>
 
-      {initial.driver !== "files" && (
-        <div className="field">
-          <span className="field-label">Import from files</span>
-          <div className="field-row">
-            <button
-              type="button"
-              className="btn"
-              disabled={imported.state === "loading"}
-              onClick={() => void runImport()}
-            >
-              {imported.state === "loading" ? (
-                <>
-                  <span className="spinner" aria-hidden /> Importing…
-                </>
-              ) : (
-                "Import documents from files"
-              )}
-            </button>
-          </div>
-          <span className="field-help">
-            Copies the documents still stored on disk into the database.
-            Documents already there are skipped, and the files are never
-            deleted.
-          </span>
-          {imported.state === "ok" && (
-            <span className="field-help field-ok">
-              ✓ {imported.imported} imported, {imported.skipped} already present
-            </span>
-          )}
-          {imported.state === "error" && (
-            <span className="field-help field-error">✕ {imported.message}</span>
-          )}
-        </div>
-      )}
+      {initial.driver !== "files" && <FilesImportSection />}
     </form>
   );
 }
