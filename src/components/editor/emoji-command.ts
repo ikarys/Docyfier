@@ -1,6 +1,7 @@
 "use client";
 
 import { Extension } from "@tiptap/core";
+import { PluginKey } from "@tiptap/pm/state";
 import Suggestion, {
   exitSuggestion,
   type SuggestionKeyDownProps,
@@ -25,6 +26,10 @@ export const EmojiCommand = Extension.create({
   addOptions() {
     return {
       suggestion: {
+        // Every suggestion plugin needs a key of its own: two sharing the
+        // default one are two instances of the same key, which ProseMirror
+        // refuses outright — the editor then fails to mount at all.
+        pluginKey: new PluginKey("emojiSuggestion"),
         char: ":",
         startOfLine: false,
         // Two characters before offering anything: ":" opens far too often in
