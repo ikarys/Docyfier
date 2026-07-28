@@ -17,7 +17,9 @@ import { DesignPanel } from "./DesignPanel";
 import { EditorSurface } from "./editor/EditorSurface";
 import { EDITOR_EXTENSIONS } from "./editor/extensions";
 import { MenuBar, type PanelName } from "./editor/MenuBar";
+import { SearchBar } from "./editor/SearchBar";
 import { useAiReview } from "./editor/useAiReview";
+import { useDocumentSearch } from "./editor/useDocumentSearch";
 import { useAutosave, type Autosave } from "./editor/useAutosave";
 import { useDocumentTheme } from "./editor/useDocumentTheme";
 import { useStreamedGeneration } from "./editor/useStreamedGeneration";
@@ -85,6 +87,7 @@ export function DocumentEditor({
   autosaveRef.current = autosave;
   const generation = useStreamedGeneration(id, editor, autosave, changeTheme);
   const review = useAiReview(editor, autosave);
+  const search = useDocumentSearch(editor);
 
   if (!editor) return null;
 
@@ -101,6 +104,7 @@ export function DocumentEditor({
         onTogglePanel={(which) => setPanel((p) => (p === which ? null : which))}
         onSaveNow={autosave.saveNow}
       />
+      {search.open && <SearchBar search={search} />}
       <div className="editor-body" data-panel={panel !== null}>
         <main
           className="doc-shell"

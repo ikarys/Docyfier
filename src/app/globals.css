@@ -1662,6 +1662,53 @@ body {
   cursor: pointer;
 }
 
+/* ---- Find & replace ------------------------------------------------------ */
+
+.search-bar {
+  position: sticky;
+  /* Under the toolbar, which is itself under the app header. */
+  top: 6.4rem;
+  z-index: 14;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1.25rem;
+  background: color-mix(in srgb, var(--paper) 96%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+}
+.search-field {
+  font: inherit;
+  font-size: 0.8rem;
+  height: 2rem;
+  padding: 0 0.55rem;
+  width: 12rem;
+  border-radius: 6px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--ink);
+}
+.search-field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.search-count {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  min-width: 5rem;
+  font-variant-numeric: tabular-nums;
+}
+/* Every occurrence is tinted; the one being visited is the accent itself. */
+.search-match {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.search-match.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* ---- ProseMirror editing surface ---------------------------------------- */
 
 .doc-editor {

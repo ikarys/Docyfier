@@ -1,6 +1,7 @@
 import type { AnyExtension } from "@tiptap/core";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { AiDiff } from "@/infrastructure/editor/ai-diff";
+import { Search } from "@/infrastructure/editor/search";
 import {
   DOCUMENT_EXTENSIONS,
   VIEWED_NODES,
@@ -32,6 +33,7 @@ export const EDITOR_EXTENSIONS = [
   ...VIEWED_NODES.map((node) => VIEWS[node.name] ?? node),
   SlashCommand,
   AiDiff,
+  Search,
   Placeholder.configure({
     placeholder: "Write your document, or press the toolbar to add structure…",
   }),
