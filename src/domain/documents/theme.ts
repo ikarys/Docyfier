@@ -10,8 +10,11 @@
  * not: that is `src/lib/themes.ts`, on the presentation side.
  */
 
-export type ThemeRadius = "sharp" | "soft" | "round";
-export type ThemeDensity = "compact" | "normal" | "airy";
+export const THEME_RADII = ["sharp", "soft", "round"] as const;
+export const THEME_DENSITIES = ["compact", "normal", "airy"] as const;
+
+export type ThemeRadius = (typeof THEME_RADII)[number];
+export type ThemeDensity = (typeof THEME_DENSITIES)[number];
 
 export interface ThemeTokens {
   /** Document accent, `#rrggbb`. Everything else derives from it. */
@@ -169,11 +172,9 @@ function sanitizeOverrides(value: unknown): Partial<ThemeTokens> | undefined {
   const out: Partial<ThemeTokens> = {};
   if (typeof raw.accent === "string" && HEX.test(raw.accent)) out.accent = raw.accent;
   if (FONT_PAIRS.some((p) => p.id === raw.fontPair)) out.fontPair = raw.fontPair as string;
-  if (raw.radius === "sharp" || raw.radius === "soft" || raw.radius === "round") {
-    out.radius = raw.radius;
-  }
-  if (raw.density === "compact" || raw.density === "normal" || raw.density === "airy") {
-    out.density = raw.density;
+  if (THEME_RADII.includes(raw.radius as ThemeRadius)) out.radius = raw.radius as ThemeRadius;
+  if (THEME_DENSITIES.includes(raw.density as ThemeDensity)) {
+    out.density = raw.density as ThemeDensity;
   }
   return Object.keys(out).length ? out : undefined;
 }

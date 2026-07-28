@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ScriptedGenerator, authoringDeps } from "@test/fakes/authoring-deps";
+import { defaultBrief } from "@/domain/authoring/brief";
 import { generateDocument, transformDocument } from "./write-documents";
 
 const paragraph = (text: string) => ({
@@ -14,9 +15,36 @@ describe("generateDocument", () => {
   it("hands back the document the model wrote", async () => {
     const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
 
-    expect(await generateDocument(authoringDeps(generator), "Write a note")).toEqual(
+    expect(await generateDocument(authoringDeps(generator), "Write a note", defaultBrief())).toEqual(
       doc(paragraph("Bonjour")),
     );
+  });
+
+  it("writes against the shape of the kind the plan chose", async () => {
+    const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
+
+    await generateDocument(authoringDeps(generator), "Write up yesterday's outage", {
+      ...defaultBrief(),
+      kind: "postmortem",
+      audience: "the on-call team",
+      sections: [{ heading: "Impact", block: "callout" }],
+    });
+
+    const { system } = generator.requests[0];
+    expect(system).toContain("Root cause");
+    expect(system).toContain("the on-call team");
+    expect(system).toContain("1. Impact — as a callout");
+  });
+
+  it("writes against the default shape when the plan named no kind it knows", async () => {
+    const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
+
+    await generateDocument(authoringDeps(generator), "Write a note", {
+      ...defaultBrief(),
+      kind: "haiku",
+    });
+
+    expect(generator.requests[0].system).toContain("SHORT NOTE");
   });
 
   it("reads an answer wrapped in prose and a fence", async () => {
@@ -24,7 +52,7 @@ describe("generateDocument", () => {
       "Sure!\n```json\n" + answer(doc(paragraph("Bonjour"))) + "\n```",
     ]);
 
-    expect(await generateDocument(authoringDeps(generator), "Write a note")).toEqual(
+    expect(await generateDocument(authoringDeps(generator), "Write a note", defaultBrief())).toEqual(
       doc(paragraph("Bonjour")),
     );
   });
@@ -35,7 +63,7 @@ describe("generateDocument", () => {
       answer(doc(paragraph("Second try"))),
     ]);
 
-    const body = await generateDocument(authoringDeps(generator), "Write a note");
+    const body = await generateDocument(authoringDeps(generator), "Write a note", defaultBrief());
 
     expect(body).toEqual(doc(paragraph("Second try")));
     expect(generator.requests[1].prompt).toContain("rejected");
@@ -48,7 +76,7 @@ describe("generateDocument", () => {
     ]);
 
     await expect(
-      generateDocument(authoringDeps(generator), "Write a note"),
+      generateDocument(authoringDeps(generator), "Write a note", defaultBrief()),
     ).rejects.toThrow(/invalid answer/);
     expect(generator.requests).toHaveLength(2);
   });
@@ -59,7 +87,7 @@ describe("generateDocument", () => {
     const generator = new ScriptedGenerator(["I cannot do that."]);
 
     await expect(
-      generateDocument(authoringDeps(generator), "Write a note"),
+      generateDocument(authoringDeps(generator), "Write a note", defaultBrief()),
     ).rejects.toThrow(/No JSON/);
     expect(generator.requests).toHaveLength(1);
   });
@@ -68,7 +96,7 @@ describe("generateDocument", () => {
     const generator = new ScriptedGenerator([{ text: "{", truncated: true }]);
 
     await expect(
-      generateDocument(authoringDeps(generator), "Write a note"),
+      generateDocument(authoringDeps(generator), "Write a note", defaultBrief()),
     ).rejects.toThrow(/too large/);
     expect(generator.requests).toHaveLength(1);
   });
@@ -79,14 +107,14 @@ describe("generateDocument", () => {
       polisher: { polish: () => ({ type: "not-a-doc" }) },
     });
 
-    expect(await generateDocument(deps, "Write a note")).toEqual(doc(paragraph("Bonjour")));
+    expect(await generateDocument(deps, "Write a note", defaultBrief())).toEqual(doc(paragraph("Bonjour")));
   });
 
   it("uses the provider's JSON mode when it has one", async () => {
     const generator = new ScriptedGenerator([]);
     generator.jsonAnswers = [doc(paragraph("Structured"))];
 
-    expect(await generateDocument(authoringDeps(generator), "Write a note")).toEqual(
+    expect(await generateDocument(authoringDeps(generator), "Write a note", defaultBrief())).toEqual(
       doc(paragraph("Structured")),
     );
   });

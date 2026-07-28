@@ -1,21 +1,33 @@
+import type { DocumentBrief } from "@/domain/authoring/brief";
 import { parseOps, type DocOp } from "@/domain/authoring/ops";
 import {
-  GENERATE_SYSTEM,
   TRANSFORM_OPS_SYSTEM,
   transformOpsPrompt,
+  writerSystem,
 } from "@/domain/authoring/prompts";
+import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
 import { blocksOf, type DocumentBody, type DocumentNode } from "@/domain/documents/body";
 import { askDocument, askJson, bodyFromJson, polished } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
 /** The two whole-document AI surfaces: writing one, and editing one. */
 
-/** Surface 1 — prompt-to-document. */
+/**
+ * Surface 1 — prompt-to-document, written to the shape its brief chose. A brief
+ * the planning pass could not produce still names a kind, so there is always a
+ * recipe to write against.
+ */
 export function generateDocument(
   deps: AuthoringDeps,
   prompt: string,
+  brief: DocumentBrief,
 ): Promise<DocumentBody> {
-  return askDocument(deps, { system: GENERATE_SYSTEM, prompt, temperature: 0.7 });
+  const recipe = findRecipe(brief.kind) ?? DEFAULT_RECIPE;
+  return askDocument(deps, {
+    system: writerSystem(recipe, brief),
+    prompt,
+    temperature: 0.7,
+  });
 }
 
 /**

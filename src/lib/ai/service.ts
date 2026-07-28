@@ -6,12 +6,15 @@ import {
   rewriteSelectionBlocks as rewriteBlocks,
   rewriteSelectionText as rewriteText,
 } from "@/application/authoring/rewrite-selection";
+import { planDocument as planBrief } from "@/application/authoring/plan-document";
 import {
   generateDocument as writeDocument,
   transformDocument as editDocument,
   type TransformOutcome,
 } from "@/application/authoring/write-documents";
+import type { DocumentBrief } from "@/domain/authoring/brief";
 import type { DocumentNode } from "@/domain/documents/body";
+import { artVocabulary } from "@/lib/ai/art-vocabulary";
 import { createOpenAiCompatibleGenerator } from "@/infrastructure/authoring/openai-compatible/generator";
 import { activeEndpoint } from "@/lib/ai/provider";
 import { beautify } from "@/domain/authoring/beautify";
@@ -37,9 +40,20 @@ function deps(): AuthoringDeps {
   };
 }
 
-/** Surface 1 — prompt-to-document. */
-export function generateDocument(prompt: string): Promise<JSONContent> {
-  return writeDocument(deps(), prompt);
+/**
+ * Surface 1, planning pass — what kind of document this is and how it should be
+ * dressed. Exposed on its own because the streaming route needs the brief
+ * before it opens the writing stream.
+ */
+export function planDocument(prompt: string): Promise<DocumentBrief> {
+  return planBrief(deps(), prompt, artVocabulary());
+}
+
+/** Surface 1 — prompt-to-document, planned then written. */
+export async function generateDocument(prompt: string): Promise<JSONContent> {
+  const authoring = deps();
+  const brief = await planBrief(authoring, prompt, artVocabulary());
+  return writeDocument(authoring, prompt, brief);
 }
 
 /** Surface 2 — whole-document transform (side panel, "make it pretty"). */

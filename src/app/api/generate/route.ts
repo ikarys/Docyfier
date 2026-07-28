@@ -5,7 +5,9 @@ import {
   languageModel,
   timeoutMessage,
 } from "@/lib/ai/provider";
-import { GENERATE_SYSTEM } from "@/domain/authoring/prompts";
+import { writerSystem } from "@/domain/authoring/prompts";
+import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
+import { planDocument } from "@/lib/ai/service";
 import { validateDocJson } from "@/infrastructure/editor/schema";
 import { BlockScanner } from "@/lib/ai/stream-blocks";
 import { beautify } from "@/domain/authoring/beautify";
@@ -60,6 +62,12 @@ export async function POST(req: Request): Promise<Response> {
   let firstText: string | null = null;
   let openError: unknown = null;
 
+  // The plan comes first and blocks: what the document is decides the prompt
+  // the writing stream is opened with. It is one short call, and a model that
+  // cannot produce it hands back the default brief rather than failing.
+  const brief = await planDocument(prompt);
+  const recipe = findRecipe(brief.kind) ?? DEFAULT_RECIPE;
+
   try {
     const model = await languageModel();
     const { maxOutputTokens } = await getAiSettings();
@@ -68,7 +76,7 @@ export async function POST(req: Request): Promise<Response> {
     // server would otherwise look like a perfectly successful empty document.
     parts = streamText({
       model,
-      system: GENERATE_SYSTEM,
+      system: writerSystem(recipe, brief),
       prompt,
       temperature: 0.7,
       maxOutputTokens,
