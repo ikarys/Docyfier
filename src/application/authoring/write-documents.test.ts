@@ -81,15 +81,30 @@ describe("generateDocument", () => {
     expect(generator.requests).toHaveLength(2);
   });
 
-  /** An answer with no JSON in it at all is a different failure: there is
-   * nothing to quote back, so it surfaces as it is rather than as a retry. */
-  it("says plainly when the answer holds no JSON", async () => {
-    const generator = new ScriptedGenerator(["I cannot do that."]);
+  /** Unreadable is as retryable as invalid: a model that answered prose, or
+   * JSON with a trailing comma, usually answers JSON when told so. */
+  it("re-asks when the answer holds no JSON at all", async () => {
+    const generator = new ScriptedGenerator([
+      "I cannot do that.",
+      answer(doc(paragraph("Second try"))),
+    ]);
+
+    const body = await generateDocument(
+      authoringDeps(generator),
+      "Write a note",
+      defaultBrief(),
+    );
+
+    expect(body).toEqual(doc(paragraph("Second try")));
+    expect(generator.requests[1].prompt).toContain("No JSON");
+  });
+
+  it("never puts a parser's own words in front of the user", async () => {
+    const generator = new ScriptedGenerator(['{"type":"doc",,}', "still not json"]);
 
     await expect(
       generateDocument(authoringDeps(generator), "Write a note", defaultBrief()),
-    ).rejects.toThrow(/No JSON/);
-    expect(generator.requests).toHaveLength(1);
+    ).rejects.toThrow(/invalid answer/);
   });
 
   it("refuses an answer cut short instead of retrying it", async () => {

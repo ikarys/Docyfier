@@ -10,6 +10,50 @@ import type { DocumentNode } from "@/domain/documents/body";
  * what stands between one retry and a broken document.
  */
 
+/**
+ * A trailing comma is the one malformation models produce often enough to be
+ * worth repairing rather than spending a retry on — `{"a":1,}` costs the whole
+ * document otherwise. Commas inside strings are left alone, which is why this
+ * tracks string and escape state instead of running a regex over the text.
+ */
+function withoutTrailingCommas(json: string): string {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < json.length; i++) {
+    const char = json[i];
+    if (inString) {
+      out += char;
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    if (char === ",") {
+      const next = json.slice(i + 1).match(/^\s*([}\]])/);
+      if (next) continue;
+    }
+    out += char;
+  }
+  return out;
+}
+
+/** Model JSON, with the malformation models actually produce forgiven. */
+export function parseModelJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    try {
+      return JSON.parse(withoutTrailingCommas(text));
+    } catch {
+      // The repair changed nothing that mattered: report the original fault.
+      throw err;
+    }
+  }
+}
+
 /** The JSON value inside a model answer, fences and prose included. */
 export function jsonFromAnswer(raw: string): unknown {
   let text = raw.trim();
@@ -24,7 +68,7 @@ export function jsonFromAnswer(raw: string): unknown {
   if (start === -1 || end <= start) {
     throw new Error("No JSON found in model output");
   }
-  return JSON.parse(text.slice(start, end + 1));
+  return parseModelJson(text.slice(start, end + 1));
 }
 
 /**

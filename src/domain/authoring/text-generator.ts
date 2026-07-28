@@ -50,6 +50,18 @@ export class ModelUnavailable extends Error {
 }
 
 /**
+ * The answer hit the output ceiling. Distinct from any other bad answer because
+ * asking again produces the same truncation: what has to change is the size of
+ * the request, which only the user can do.
+ */
+export class AnswerTruncated extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AnswerTruncated";
+  }
+}
+
+/**
  * Proof that a body is one the editor can render — the port over the editor
  * schema. Implementations throw with a description a retry prompt can quote.
  */

@@ -6,6 +6,7 @@ import {
   timeoutMessage,
 } from "@/lib/ai/provider";
 import { themeFromArt } from "@/application/documents/theme-from-art";
+import { parseModelJson } from "@/domain/authoring/model-answer";
 import { writerSystem } from "@/domain/authoring/prompts";
 import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
 import { planDocument } from "@/lib/ai/service";
@@ -44,7 +45,7 @@ function message(err: unknown): string {
  * are block-local, so a single-block document is a faithful wrapper.
  */
 function prepare(raw: string): unknown {
-  const doc = validateDocJson({ type: "doc", content: [JSON.parse(raw)] });
+  const doc = validateDocJson({ type: "doc", content: [parseModelJson(raw)] });
   const polished = beautify(doc);
   return (validateDocJson(polished).content ?? [])[0];
 }

@@ -4,7 +4,11 @@ import {
   wrapInDoc,
 } from "@/domain/authoring/model-answer";
 import { retryPrompt } from "@/domain/authoring/prompts";
-import type { GenerationRequest } from "@/domain/authoring/text-generator";
+import {
+  AnswerTruncated,
+  ModelUnavailable,
+  type GenerationRequest,
+} from "@/domain/authoring/text-generator";
 import type { DocumentBody, DocumentNode } from "@/domain/documents/body";
 import type { AuthoringDeps } from "./deps";
 
@@ -27,15 +31,24 @@ async function jsonAnswer(
 
   const { text, truncated } = await deps.generator.generate(request);
   if (truncated) {
-    // Retrying cannot help: the answer does not fit the output budget.
-    throw new Error(
+    throw new AnswerTruncated(
       "The document is too large for a whole-document edit — select the section to change and use the selection menu instead.",
     );
   }
   return jsonFromAnswer(text);
 }
 
-/** Ask for JSON, hand it to `read`, and re-ask once with the parse error. */
+/**
+ * Ask for JSON, hand it to `read`, and re-ask once with the reason it failed.
+ *
+ * Reading the answer is inside the retry, not around it: an answer that is not
+ * JSON at all is exactly as retryable as one the schema rejects, and letting a
+ * parser error escape puts "Expected double-quoted property name at position
+ * 1021" in front of the user instead of a second, valid document.
+ *
+ * The two failures a second attempt cannot fix — an unreachable model, an
+ * answer cut off by the output ceiling — are handed straight back.
+ */
 export async function askJson<T>(
   deps: AuthoringDeps,
   request: GenerationRequest,
@@ -45,10 +58,10 @@ export async function askJson<T>(
   for (let attempt = 0; attempt < 2; attempt++) {
     const prompt =
       attempt === 0 ? request.prompt : retryPrompt(request.prompt, lastError);
-    const json = await jsonAnswer(deps, { ...request, prompt });
     try {
-      return read(json);
+      return read(await jsonAnswer(deps, { ...request, prompt }));
     } catch (err) {
+      if (err instanceof ModelUnavailable || err instanceof AnswerTruncated) throw err;
       lastError = err instanceof Error ? err.message : String(err);
     }
   }
