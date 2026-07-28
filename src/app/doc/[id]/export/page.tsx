@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
 import { getDocument } from "@/lib/store";
 import { enabledExportTargets } from "@/lib/export/service";
+import { BrandMark } from "@/components/BrandMark";
 
 export const dynamic = "force-dynamic";
 
@@ -23,9 +24,7 @@ export default async function ExportIndexPage({
   return (
     <>
       <header className="app-header">
-        <Link href="/" className="brand">
-          Docy<span>fier</span>
-        </Link>
+        <BrandMark href="/" />
         <Link href={`/doc/${id}`} className="btn">
           ← Back to the document
         </Link>

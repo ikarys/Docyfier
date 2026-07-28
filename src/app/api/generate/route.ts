@@ -1,4 +1,4 @@
-import { streamText, APICallError, type TextStreamPart, type ToolSet } from "ai";
+import { streamText, type TextStreamPart, type ToolSet } from "ai";
 import {
   callOptions,
   isTimeout,
@@ -12,6 +12,7 @@ import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
 import { planDocument } from "@/lib/ai/service";
 import { validateDocJson } from "@/infrastructure/editor/schema";
 import { BlockScanner } from "@/lib/ai/stream-blocks";
+import { line, providerMessage as message } from "@/lib/ai/ndjson";
 import { beautify } from "@/domain/authoring/beautify";
 import { getAiSettings, getStyleParameters } from "@/lib/settings";
 import type { StyleParameters } from "@/domain/authoring/style-parameters";
@@ -26,19 +27,6 @@ import { isAuthorized } from "@/lib/auth";
  * Once the stream is open, problems are reported inside it — whatever already
  * reached the editor stays.
  */
-
-const line = (value: unknown) => `${JSON.stringify(value)}\n`;
-
-function message(err: unknown): string {
-  // A provider error arrives as an APICallError whose own message is generic;
-  // the body is where the reason actually is (rate limit, bad model id…).
-  if (APICallError.isInstance(err)) {
-    console.error("[ai] APICallError from", err.url, "status", err.statusCode);
-    const body = err.responseBody?.slice(0, 400);
-    return body ? `${err.message} — ${body}` : err.message;
-  }
-  return err instanceof Error ? err.message : "AI request failed";
-}
 
 /**
  * One block through the same pipeline as the non-streaming path: schema

@@ -41,7 +41,7 @@ export function AiPanel({
   onClose: () => void;
 }) {
   const [input, setInput] = useState("");
-  const { messages, busy, ask, thread } = useDocumentAssistant(editor, onApply);
+  const { messages, busy, edits, ask, thread } = useDocumentAssistant(editor, onApply);
   const restyle = useRestyle(editor, onChangeTheme);
 
   const submit = () => {
@@ -95,7 +95,8 @@ export function AiPanel({
         ))}
         {busy && (
           <div className="ai-msg ai-msg-ai ai-msg-busy">
-            <span className="spinner" aria-hidden /> Working…
+            <span className="spinner" aria-hidden />{" "}
+            {edits ? `Working… ${edits} edit${edits > 1 ? "s" : ""}` : "Working…"}
           </div>
         )}
       </div>

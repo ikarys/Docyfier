@@ -43,8 +43,13 @@ function looksLikeOps(json: unknown[]): boolean {
   return json.every((item) => typeof item === "object" && item !== null && "op" in item);
 }
 
-/** Validate — and deterministically polish — the blocks each op carries. */
-function readOps(deps: AuthoringDeps, json: unknown, blockCount: number): DocOp[] {
+/**
+ * Validate — and deterministically polish — the blocks each op carries.
+ *
+ * Exported because the streaming transform reads one op at a time and must hold
+ * it to exactly the same standard as the blocking one.
+ */
+export function readOps(deps: AuthoringDeps, json: unknown, blockCount: number): DocOp[] {
   return parseOps(json, blockCount).map((op) => {
     if (op.op === "delete") return op;
     const body = bodyFromJson(deps, { type: "doc", content: op.blocks });

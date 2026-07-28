@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/auth";
 import { getDocument } from "@/lib/store";
 import { availableExportTarget, renderExport } from "@/lib/export/service";
 import { exportFilename } from "@/domain/publishing/export-filename";
+import { BrandMark } from "@/components/BrandMark";
 import { CopyBox } from "@/components/CopyBox";
 
 export const dynamic = "force-dynamic";
@@ -31,9 +32,7 @@ export default async function ExportTargetPage({
   return (
     <>
       <header className="app-header">
-        <Link href="/" className="brand">
-          Docy<span>fier</span>
-        </Link>
+        <BrandMark href="/" />
         <div className="toolbar">
           <Link href={`/doc/${id}/export`} className="btn">
             ← Targets

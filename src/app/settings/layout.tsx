@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 import { SettingsTabs } from "@/components/settings/SettingsTabs";
 
 /** Chrome shared by every settings scope: the app header, the title and the
@@ -8,9 +9,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <header className="app-header">
-        <Link href="/" className="brand">
-          Docy<span>fier</span>
-        </Link>
+        <BrandMark href="/" />
         <Link href="/" className="btn">
           ← Documents
         </Link>

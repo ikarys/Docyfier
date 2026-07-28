@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
-import { listAiProviders } from "@/lib/settings";
 import { availableComposer } from "@/lib/compose/service";
+import { BrandMark } from "@/components/BrandMark";
 import { ComposerForm } from "@/components/compose/ComposerForm";
-import { ModelSwitcher } from "@/components/ModelSwitcher";
 
 export const dynamic = "force-dynamic";
 
@@ -19,16 +18,12 @@ export default async function ComposerPage({
   const { composer: composerId } = await params;
   const composer = availableComposer(composerId);
   if (!composer) notFound();
-  const ai = await listAiProviders();
 
   return (
     <>
       <header className="app-header">
-        <Link href="/" className="brand">
-          Docy<span>fier</span>
-        </Link>
+        <BrandMark href="/" />
         <div className="toolbar">
-          <ModelSwitcher providers={ai.providers} activeId={ai.activeId} />
           <Link href="/compose" className="btn">
             ← Compose
           </Link>

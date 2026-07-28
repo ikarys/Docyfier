@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { THEMES, type DocumentTheme, type Theme } from "@/lib/themes";
 import {
   HeadingGroup,
   InsertGroup,
@@ -10,37 +9,31 @@ import {
   MarkGroup,
   TableGroup,
 } from "./FormatGroups";
+import { SaveStatus } from "./SaveStatus";
 import { ShortcutHelp } from "./ShortcutHelp";
 import type { SaveState } from "./save-state";
 
-/** What the toolbar shows of an autosave in flight. */
-const SAVE_LABEL: Record<SaveState, string> = {
-  idle: "",
-  saving: "Saving…",
-  saved: "Saved",
-  error: "Save failed",
-};
-
 export type PanelName = "ai" | "design";
 
-/** The document toolbar: formatting on the left, the panels and save on the right. */
+/**
+ * The document toolbar. The left side edits the content, the right side is
+ * everything that is not content: what autosave is doing, the two panels — one
+ * open at a time, hence a segmented pair — and the shortcut list.
+ *
+ * The theme lives in the Design panel alone: one home per decision, and the
+ * panel already holds the preset grid the toolbar's picker duplicated.
+ */
 export function MenuBar({
   editor,
   saveState,
   panel,
   onTogglePanel,
-  theme,
-  presets,
-  onChangeTheme,
   onSaveNow,
 }: {
   editor: Editor;
   saveState: SaveState;
   panel: PanelName | null;
   onTogglePanel: (which: PanelName) => void;
-  theme: DocumentTheme;
-  presets: Theme[];
-  onChangeTheme: (theme: DocumentTheme) => void;
   onSaveNow: () => void;
 }) {
   const [helpOpen, setHelpOpen] = useState(false);
@@ -53,52 +46,35 @@ export function MenuBar({
       {editor.isActive("table") && <TableGroup editor={editor} />}
       <InsertGroup editor={editor} />
 
-      <div className="tb-group tb-theme">
-        <label className="tb-theme-label" htmlFor="theme-select">
-          Theme
-        </label>
-        <select
-          id="theme-select"
-          className="tb-select"
-          value={theme.preset}
-          onChange={(e) => onChangeTheme({ ...theme, preset: e.target.value })}
-          title="Document theme"
+      <div className="tb-right">
+        <SaveStatus state={saveState} onRetry={onSaveNow} />
+        <div className="tb-panels" role="group" aria-label="Panels">
+          <button
+            className={panel === "design" ? "tb-btn is-active" : "tb-btn"}
+            onClick={() => onTogglePanel("design")}
+            aria-pressed={panel === "design"}
+            title="Design panel — theme, accent, fonts, density"
+          >
+            ◐ Design
+          </button>
+          <button
+            className={panel === "ai" ? "tb-btn is-active" : "tb-btn"}
+            onClick={() => onTogglePanel("ai")}
+            aria-pressed={panel === "ai"}
+            title="AI assistant panel"
+          >
+            ✦ Assistant
+          </button>
+        </div>
+        <button
+          className="tb-btn"
+          onClick={() => setHelpOpen(true)}
+          title="Keyboard shortcuts"
         >
-          {[...THEMES, ...presets].map((t) => (
-            <option key={t.id} value={t.id} title={t.hint}>
-              {t.label}
-            </option>
-          ))}
-        </select>
+          ?
+        </button>
       </div>
 
-      <button
-        className="tb-btn"
-        onClick={() => setHelpOpen(true)}
-        title="Keyboard shortcuts"
-      >
-        ?
-      </button>
-      <button
-        className={panel === "design" ? "tb-btn tb-ai is-active" : "tb-btn tb-ai"}
-        onClick={() => onTogglePanel("design")}
-        title="Design panel — accent, fonts, density"
-      >
-        ◐ Design
-      </button>
-      <button
-        className={panel === "ai" ? "tb-btn is-active" : "tb-btn"}
-        onClick={() => onTogglePanel("ai")}
-        title="AI assistant panel"
-      >
-        ✦ Assistant
-      </button>
-      <button className="tb-btn" onClick={onSaveNow} title="Save now">
-        Save
-      </button>
-      <span className="save-status" data-state={saveState}>
-        {SAVE_LABEL[saveState]}
-      </span>
       {helpOpen && <ShortcutHelp onClose={() => setHelpOpen(false)} />}
     </div>
   );

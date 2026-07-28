@@ -38,7 +38,12 @@ import { validateDocJson } from "@/infrastructure/editor/schema";
 
 export type { TransformOutcome };
 
-async function deps(): Promise<AuthoringDeps> {
+/**
+ * What every AI surface is built from. Exported for the streaming routes, which
+ * drive the model themselves and still owe their answers the same validation
+ * and the same formatting pass as the blocking calls below.
+ */
+export async function authoringDeps(): Promise<AuthoringDeps> {
   const style = await getStyleParameters();
   return {
     generator: createOpenAiCompatibleGenerator(activeEndpoint),
@@ -54,7 +59,7 @@ async function deps(): Promise<AuthoringDeps> {
  * before it opens the writing stream.
  */
 export async function planDocument(prompt: string): Promise<DocumentBrief> {
-  return planBrief(await deps(), prompt, artVocabulary());
+  return planBrief(await authoringDeps(), prompt, artVocabulary());
 }
 
 /** A written document and the dress its plan chose for it. */
@@ -66,7 +71,7 @@ export interface WrittenDocument {
 
 /** Surface 1 — prompt-to-document, planned then written. */
 export async function generateDocument(prompt: string): Promise<WrittenDocument> {
-  const authoring = await deps();
+  const authoring = await authoringDeps();
   const brief = await planBrief(authoring, prompt, artVocabulary());
   return {
     content: await writeDocument(authoring, prompt, brief),
@@ -79,7 +84,7 @@ export async function transformDocument(
   doc: JSONContent,
   instruction: string,
 ): Promise<TransformOutcome> {
-  return editDocument(await deps(), doc, instruction);
+  return editDocument(await authoringDeps(), doc, instruction);
 }
 
 /**
@@ -88,7 +93,7 @@ export async function transformDocument(
  * content is read, never written.
  */
 export async function restyleDocument(doc: JSONContent): Promise<DocumentTheme | null> {
-  return themeFromArt(await chooseDress(await deps(), doc, artVocabulary()));
+  return themeFromArt(await chooseDress(await authoringDeps(), doc, artVocabulary()));
 }
 
 /** Surface 3a — multi-block selection rewrite; returns replacement blocks. */
@@ -96,7 +101,7 @@ export async function rewriteSelectionBlocks(
   blocks: JSONContent[],
   instruction: string,
 ): Promise<DocumentNode[]> {
-  return rewriteBlocks(await deps(), blocks, instruction);
+  return rewriteBlocks(await authoringDeps(), blocks, instruction);
 }
 
 /** Surface 3b — inline selection rewrite; plain text in, plain text out. */
@@ -104,7 +109,7 @@ export async function rewriteSelectionText(
   text: string,
   instruction: string,
 ): Promise<string> {
-  return rewriteText(await deps(), text, instruction);
+  return rewriteText(await authoringDeps(), text, instruction);
 }
 
 /** Surface 4 — the composers (PLAN.md STEP 8): plain text in, plain text out. */
@@ -113,5 +118,5 @@ export async function completePlainText(
   prompt: string,
   temperature: number,
 ): Promise<string> {
-  return completeText(await deps(), system, prompt, temperature);
+  return completeText(await authoringDeps(), system, prompt, temperature);
 }
