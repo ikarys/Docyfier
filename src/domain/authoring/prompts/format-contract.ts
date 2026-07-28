@@ -23,8 +23,11 @@ Block nodes:
 - {"type":"bulletList","content":[{"type":"listItem","content":[blocks]}]}
 - {"type":"orderedList","content":[{"type":"listItem","content":[blocks]}]}
 - {"type":"blockquote","content":[blocks]}
+- {"type":"taskList","content":[{"type":"taskItem","attrs":{"checked":true|false},"content":[blocks]}]} — actions, acceptance criteria, checklists. Use it whenever the items are things to DO, not things to read; a plain bulletList otherwise.
+- {"type":"details","content":[{"type":"detailsSummary","content":[inline]},{"type":"detailsContent","content":[blocks]}]} — a section the reader opens: long appendices, raw logs, an aside that would break the flow. Never hide the point of the document inside one.
 - {"type":"codeBlock","attrs":{"language":"<lang>"},"content":[{"type":"text","text":"..."}]} — plain text only, no marks
 - {"type":"horizontalRule"}
+- {"type":"blockMath","attrs":{"latex":"..."}} — has NO "content"; a display formula in LaTeX. Inline, inside a paragraph: {"type":"inlineMath","attrs":{"latex":"..."}}. Only for real mathematics or units — never to typeset ordinary prose.
 - {"type":"callout","attrs":{"variant":"note"|"tip"|"warn"|"danger"},"content":[blocks]} — colored highlight box for key information
 - {"type":"table","content":[{"type":"tableRow","content":[cells]}]} — cell = {"type":"tableHeader"|"tableCell","content":[{"type":"paragraph","content":[inline]}]}; first row uses tableHeader; every row has the same number of cells.
 - {"type":"cardGrid","attrs":{"cols":2|3|4},"content":[2-4 cards]} — card = {"type":"card","attrs":{"accent":"none"|"blue"|"green"|"yellow"|"red"|"purple"},"content":[blocks]}; start each card with a level-3 heading as its title. "cols" matches the number of cards.
@@ -40,7 +43,7 @@ Inline nodes (only inside heading/paragraph and table-cell paragraphs):
 - {"type":"hardBreak"}
 
 Marks:
-- {"type":"bold"} | {"type":"italic"} | {"type":"strike"} | {"type":"code"}
+- {"type":"bold"} | {"type":"italic"} | {"type":"strike"} | {"type":"code"} | {"type":"subscript"} | {"type":"superscript"} — sub/superscript for formulas, units and footnote markers only, never for emphasis
 - {"type":"textStyle","attrs":{"color":"#RRGGBB"}} — text color
 - {"type":"highlight","attrs":{"color":"#RRGGBB"}} — background highlight
 - {"type":"badge","attrs":{"variant":"gray"|"blue"|"green"|"yellow"|"red"|"purple"}} — small colored pill/tag for statuses, priorities, labels ("Done", "P1", "Beta")

@@ -9,8 +9,10 @@ import {
   VIEWED_NODES,
 } from "@/infrastructure/editor/document-extensions";
 import { ChartNode } from "../chart/ChartView";
+import { CodeBlockNode } from "./CodeBlockView";
 import { ImageNode } from "../ImageView";
 import { TocNode } from "../TocView";
+import { EmojiCommand } from "./emoji-command";
 import { Shortcuts } from "./shortcuts";
 import { SlashCommand } from "./slash-command";
 
@@ -29,15 +31,18 @@ const VIEWS: Record<string, AnyExtension> = {
   [ChartNode.name]: ChartNode,
   [ImageNode.name]: ImageNode,
   [TocNode.name]: TocNode,
+  [CodeBlockNode.name]: CodeBlockNode,
 };
 
 /** What the instance's writing style decides about typing itself. */
 export interface TypingPreferences {
   /** Quotes, dashes and ellipses take their typographic form as they are typed. */
   readonly smartTypography: boolean;
+  /** Emoji are welcome, so `:` offers them. */
+  readonly emoji: boolean;
 }
 
-export function editorExtensions({ smartTypography }: TypingPreferences) {
+export function editorExtensions({ smartTypography, emoji }: TypingPreferences) {
   return [
     ...DOCUMENT_EXTENSIONS,
     ...VIEWED_NODES.map((node) => VIEWS[node.name] ?? node),
@@ -47,6 +52,9 @@ export function editorExtensions({ smartTypography }: TypingPreferences) {
     Search,
     CharacterCount,
     ...(smartTypography ? [Typography] : []),
+    // Emoji off is a rule about this instance's writing, not only about what
+    // the model sends: the picker does not exist either.
+    ...(emoji ? [EmojiCommand] : []),
     Placeholder.configure({
       placeholder: "Write your document, or press the toolbar to add structure…",
     }),

@@ -2,22 +2,27 @@
 
 import { useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { HeadingGroup, InsertGroup, ListGroup, MarkGroup } from "./FormatGroups";
-import { TableGroup } from "./TableGroup";
-import { WordCount } from "./WordCount";
 import { SaveStatus } from "./SaveStatus";
 import { ShortcutHelp } from "./ShortcutHelp";
+import { TableGroup } from "./TableGroup";
+import { AlignMenu } from "./toolbar/AlignMenu";
+import { BlockTypeMenu } from "./toolbar/BlockTypeMenu";
+import { HighlightMenu, TextColorMenu } from "./toolbar/ColorMenu";
+import { InsertMenu } from "./toolbar/InsertMenu";
+import { MarkButtons } from "./toolbar/MarkButtons";
+import { WordCount } from "./WordCount";
 import type { SaveState } from "./save-state";
 
 export type PanelName = "ai" | "design";
 
 /**
- * The document toolbar. The left side edits the content, the right side is
- * everything that is not content: what autosave is doing, the two panels — one
- * open at a time, hence a segmented pair — and the shortcut list.
+ * The document toolbar (PLAN.md STEP U9). The left side edits the content —
+ * what the caret is in, the marks, colour, alignment, and everything
+ * insertable; the right side is what is not content: the length of the
+ * document, what autosave is doing, the two panels and the shortcut list.
  *
- * The theme lives in the Design panel alone: one home per decision, and the
- * panel already holds the preset grid the toolbar's picker duplicated.
+ * The theme lives in the Design panel alone, and the block list belongs to
+ * `slash-items.ts`: the Insert menu reads it rather than repeating it.
  */
 export function MenuBar({
   editor,
@@ -36,11 +41,35 @@ export function MenuBar({
 
   return (
     <div className="toolbar-bar no-print">
-      <HeadingGroup editor={editor} />
-      <MarkGroup editor={editor} />
-      <ListGroup editor={editor} />
+      <BlockTypeMenu editor={editor} />
+      <MarkButtons editor={editor} />
+      <div className="tb-group">
+        <TextColorMenu editor={editor} />
+        <HighlightMenu editor={editor} />
+        <AlignMenu editor={editor} />
+      </div>
+      <div className="tb-group">
+        <InsertMenu editor={editor} />
+      </div>
       {editor.isActive("table") && <TableGroup editor={editor} />}
-      <InsertGroup editor={editor} />
+      <div className="tb-group">
+        <button
+          className="tb-btn"
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+          title="Undo"
+        >
+          ↶
+        </button>
+        <button
+          className="tb-btn"
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+          title="Redo"
+        >
+          ↷
+        </button>
+      </div>
 
       <div className="tb-right">
         <WordCount editor={editor} />

@@ -31,11 +31,47 @@ describe("docToMarkdown", () => {
     expect(md({ type: "heading", content: [text("T")] })).toBe("# T");
   });
 
+  it("writes a task list the way markdown writes one", () => {
+    const task = (value: string, checked: boolean) => ({
+      type: "taskItem",
+      attrs: { checked },
+      content: [p(text(value))],
+    });
+
+    expect(md({ type: "taskList", content: [task("done", true), task("todo", false)] })).toBe(
+      "- [x] done\n- [ ] todo",
+    );
+  });
+
+  it("opens a collapsible section: an export hides nothing", () => {
+    const details = {
+      type: "details",
+      content: [
+        { type: "detailsSummary", content: [text("Details")] },
+        { type: "detailsContent", content: [p(text("body"))] },
+      ],
+    };
+
+    expect(md(details)).toBe("**Details**\n\nbody");
+  });
+
+  it("writes maths as the dollars every markdown reader knows", () => {
+    expect(md({ type: "blockMath", attrs: { latex: "e = mc^2" } })).toBe("$$\ne = mc^2\n$$");
+    expect(
+      md(p(text("mass "), { type: "inlineMath", attrs: { latex: "m_0" } })),
+    ).toBe("mass $m_0$");
+  });
+
   it("renders the marks markdown has", () => {
     expect(md(p(text("gras", [{ type: "bold" }])))).toBe("**gras**");
     expect(md(p(text("ital", [{ type: "italic" }])))).toBe("*ital*");
     expect(md(p(text("barré", [{ type: "strike" }])))).toBe("~~barré~~");
     expect(md(p(text("x = 1", [{ type: "code" }])))).toBe("`x = 1`");
+  });
+
+  it("falls back to the tags markdown passes through for sub- and superscript", () => {
+    expect(md(p(text("2", [{ type: "subscript" }])))).toBe("<sub>2</sub>");
+    expect(md(p(text("2", [{ type: "superscript" }])))).toBe("<sup>2</sup>");
   });
 
   it("renders a badge as bold, the only emphasis markdown offers it", () => {

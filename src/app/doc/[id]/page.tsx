@@ -68,6 +68,7 @@ export default async function DocumentPage({
         initialUpdatedAt={doc.updatedAt}
         presets={presets}
         smartTypography={style.smartTypography}
+        emoji={style.emoji}
       />
     </>
   );

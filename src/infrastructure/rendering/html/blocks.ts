@@ -83,6 +83,19 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
     return inner ? `<p>${inner}</p>` : "";
   },
   bulletList: (node, ctx) => `<ul>\n${listItems(node, ctx)}\n</ul>`,
+  // A checkbox input would be stripped on the way back in — and by most
+  // receiving tools. The box as a character survives every one of them.
+  taskList: (node, ctx) =>
+    `<ul>\n${(node.content ?? [])
+      .map((item) => `<li>${item.attrs?.checked ? "\u2611" : "\u2610"} ${ctx.blocks(item.content).replace(/<\/?p>/g, "")}</li>`)
+      .join("\n")}\n</ul>`,
+  details: (node, ctx) => {
+    const summary = (node.content ?? []).find((child) => child.type === "detailsSummary");
+    const body = (node.content ?? []).filter((child) => child.type !== "detailsSummary");
+    // Open: an export is read, not clicked.
+    return `<details open><summary>${ctx.inline(summary?.content)}</summary>${ctx.blocks(body)}</details>`;
+  },
+  detailsContent: childrenOnly,
   orderedList: (node, ctx) => `<ol>\n${listItems(node, ctx)}\n</ol>`,
   blockquote: (node, ctx) => `<blockquote>${ctx.blocks(node.content)}</blockquote>`,
   codeBlock: (node) => {
@@ -91,6 +104,9 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
     return `<pre><code${cls}>${escapeHtml(rawText(node))}</code></pre>`;
   },
   horizontalRule: () => "<hr />",
+  // No HTML for maths that survives a paste: the LaTeX source does, and every
+  // receiving tool renders or shows it rather than losing it.
+  blockMath: (node) => `<p><code>$$${escapeHtml(String(node.attrs?.latex ?? ""))}$$</code></p>`,
   table: tableToHtml,
   image: (node, ctx) => `<p>${imageTag(node, ctx.url)}</p>`,
   callout: (node, ctx) => {

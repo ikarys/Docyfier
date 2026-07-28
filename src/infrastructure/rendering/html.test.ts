@@ -32,6 +32,48 @@ describe("docToHtml", () => {
     expect(html(p(text("a")))).toBe("<p>a</p>");
   });
 
+  it("writes a task list as a list whose state is readable anywhere", () => {
+    const task = (value: string, checked: boolean) => ({
+      type: "taskItem",
+      attrs: { checked },
+      content: [p(text(value))],
+    });
+
+    expect(html({ type: "taskList", content: [task("done", true), task("todo", false)] })).toBe(
+      "<ul>\n<li>\u2611 done</li>\n<li>\u2610 todo</li>\n</ul>",
+    );
+  });
+
+  it("exports a collapsible section already open", () => {
+    const details = {
+      type: "details",
+      content: [
+        { type: "detailsSummary", content: [text("More")] },
+        { type: "detailsContent", content: [p(text("body"))] },
+      ],
+    };
+
+    expect(html(details)).toBe("<details open><summary>More</summary><p>body</p></details>");
+  });
+
+  it("writes sub- and superscript with the tags HTML has for them", () => {
+    expect(html(p(text("H"), text("2", [{ type: "subscript" }]), text("O")))).toBe(
+      "<p>H<sub>2</sub>O</p>",
+    );
+    expect(html(p(text("m"), text("2", [{ type: "superscript" }])))).toBe(
+      "<p>m<sup>2</sup></p>",
+    );
+  });
+
+  it("writes maths as its source, which every tool can still read", () => {
+    expect(html({ type: "blockMath", attrs: { latex: "e = mc^2" } })).toBe(
+      "<p><code>$$e = mc^2$$</code></p>",
+    );
+    expect(html(p(text("mass "), { type: "inlineMath", attrs: { latex: "m_0" } }))).toBe(
+      "<p>mass <code>$m_0$</code></p>",
+    );
+  });
+
   it("maps heading levels, falling back to h1 for a level HTML has no tag for", () => {
     expect(html({ type: "heading", attrs: { level: 2 }, content: [text("T")] })).toBe(
       "<h2>T</h2>",

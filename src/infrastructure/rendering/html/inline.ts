@@ -40,6 +40,9 @@ export function renderInline(
 function renderNode(node: DocumentNode, ctx: HtmlContext): string {
   if (node.type === "hardBreak") return "<br />";
   if (node.type === "image") return imageTag(node, ctx.url);
+  if (node.type === "inlineMath") {
+    return `<code>$${escapeHtml(String(node.attrs?.latex ?? ""))}$</code>`;
+  }
   if (node.type !== "text") return ctx.inline(node.content);
 
   const marks = node.marks ?? [];
@@ -56,6 +59,8 @@ function renderNode(node: DocumentNode, ctx: HtmlContext): string {
   }
   if (marks.some((m) => m.type === "italic")) out = `<em>${out}</em>`;
   if (marks.some((m) => m.type === "strike")) out = `<s>${out}</s>`;
+  if (marks.some((m) => m.type === "subscript")) out = `<sub>${out}</sub>`;
+  if (marks.some((m) => m.type === "superscript")) out = `<sup>${out}</sup>`;
   const link = marks.find((m) => m.type === "link");
   if (link?.attrs?.href) {
     out = `<a href="${escapeHtml(String(link.attrs.href))}">${out}</a>`;

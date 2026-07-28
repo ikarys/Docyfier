@@ -72,6 +72,8 @@ export function runBuilder(d: DocxModule, baseUrl: string): RunBuilder {
         bold: marks.some((m) => m.type === "bold" || m.type === "badge"),
         italics: marks.some((m) => m.type === "italic"),
         strike: marks.some((m) => m.type === "strike"),
+        subScript: marks.some((m) => m.type === "subscript"),
+        superScript: marks.some((m) => m.type === "superscript"),
         ...(code ? { font: MONO, shading: { fill: CODE_FILL } } : {}),
       });
 

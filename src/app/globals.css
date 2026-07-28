@@ -660,14 +660,15 @@ body {
   line-height: 1;
 }
 
-/* ---- Toolbar overflow menu ----------------------------------------------- */
+/* ---- Popover menus (toolbar dropdowns, document overflow) ---------------- */
 
-.overflow-menu {
+.popover {
   position: relative;
 }
-.overflow-panel {
+.popover-panel {
   position: absolute;
-  right: 0;
+  /* Anchored left under its trigger; the document overflow flips it right. */
+  left: 0;
   top: calc(100% + 0.4rem);
   z-index: 30;
   display: flex;
@@ -679,6 +680,15 @@ body {
   border: 1px solid var(--rule);
   border-radius: 10px;
   box-shadow: 0 10px 30px -10px rgba(20, 22, 30, 0.3);
+}
+/* The header overflow hangs from the right edge, where its trigger sits. */
+.btn-icon + .popover-panel,
+.popover-panel:has(.menu-row-danger) {
+  left: auto;
+  right: 0;
+}
+.tb-popover-wide .popover-panel {
+  min-width: 26rem;
 }
 /* Rows, not buttons: a link, a form submit and an anchor must look alike. */
 .menu-row {
@@ -696,9 +706,60 @@ body {
   text-decoration: none;
   cursor: pointer;
 }
-.menu-row:hover {
+.menu-row:hover,
+.menu-row.is-active {
   background: var(--accent-soft);
   color: var(--accent);
+}
+/* What the row means, when the label alone is not enough. */
+.menu-row-hint {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--ink-faint);
+}
+.menu-row:hover .menu-row-hint {
+  color: inherit;
+  opacity: 0.75;
+}
+
+/* A grid of everything insertable, wide enough to scan in two passes. */
+.insert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.1rem;
+}
+.insert-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.insert-icon {
+  flex: none;
+  width: 1.6rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--ink-faint);
+}
+.menu-row:hover .insert-icon {
+  color: inherit;
+}
+
+/* Swatches inside a colour menu. */
+.swatch-row {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.25rem 0.35rem 0.4rem;
+}
+.swatch {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: 1px solid var(--rule-strong);
+  cursor: pointer;
+}
+.swatch.is-active {
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--accent);
 }
 .menu-row-danger {
   color: var(--danger);
@@ -719,6 +780,157 @@ body {
   border-radius: 10px;
   color: var(--ink-faint);
   background: var(--paper);
+}
+
+/* ---- Code blocks and maths (STEP U9) ------------------------------------- */
+
+.doc .code-block {
+  position: relative;
+}
+/* The picker sits over the block and steps back until the block is hovered. */
+.doc .code-language {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  font: inherit;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 5px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--ink-faint);
+  opacity: 0;
+  transition: opacity 0.12s;
+  cursor: pointer;
+}
+.doc .code-block:hover .code-language,
+.doc .code-language:focus {
+  opacity: 1;
+}
+
+/* Syntax colours, from the theme tokens rather than a highlight.js theme:
+   a document keeps one palette, code included. */
+.doc pre code .hljs-comment,
+.doc pre code .hljs-quote {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+.doc pre code .hljs-keyword,
+.doc pre code .hljs-selector-tag,
+.doc pre code .hljs-literal,
+.doc pre code .hljs-type {
+  color: var(--accent);
+  font-weight: 600;
+}
+.doc pre code .hljs-string,
+.doc pre code .hljs-attr,
+.doc pre code .hljs-regexp {
+  color: #1f9d6b;
+}
+.doc pre code .hljs-number,
+.doc pre code .hljs-built_in,
+.doc pre code .hljs-symbol {
+  color: #b4690e;
+}
+.doc pre code .hljs-title,
+.doc pre code .hljs-name,
+.doc pre code .hljs-section {
+  color: #7048e8;
+}
+.doc pre code .hljs-deletion {
+  color: var(--danger);
+}
+.doc pre code .hljs-addition {
+  color: #1f9d6b;
+}
+
+.doc .tiptap-mathematics-render {
+  display: inline-block;
+}
+.doc [data-type="block-math"],
+.doc .block-math {
+  display: block;
+  margin: 1.25rem 0;
+  text-align: center;
+}
+/* A formula that failed to parse must say so rather than vanish. */
+.doc .tiptap-mathematics-render--editable:hover {
+  outline: 1px dashed var(--rule-strong);
+  outline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---- Checklists and collapsible sections (STEP U9) ----------------------- */
+
+.doc ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2rem;
+}
+.doc li[data-type="taskItem"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+.doc li[data-type="taskItem"] > label {
+  flex: none;
+  /* Line the box up with the first line of text, not with its middle. */
+  margin-top: 0.28em;
+}
+.doc li[data-type="taskItem"] input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.doc li[data-type="taskItem"] > div {
+  flex: 1;
+  min-width: 0;
+}
+/* A done item steps back without becoming unreadable. */
+.doc li[data-type="taskItem"][data-checked="true"] > div {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+}
+
+.doc [data-type="details"] {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-shell);
+}
+.doc [data-type="details"] > button {
+  flex: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.doc [data-type="details"] > button::before {
+  content: "▸";
+}
+.doc [data-type="details"].is-open > button::before {
+  content: "▾";
+}
+.doc [data-type="detailsSummary"] {
+  font-weight: 600;
+}
+.doc [data-type="detailsContent"] > *:last-child {
+  margin-bottom: 0;
+}
+/* Printing never folds: a reader on paper cannot open anything. */
+@media print {
+  .doc [data-type="detailsContent"] {
+    display: block !important;
+  }
+  .doc [data-type="details"] > button {
+    display: none;
+  }
 }
 
 /* ---- Callout blocks (Tiptap node <div class="callout">) ------------------ */
@@ -1605,6 +1817,18 @@ body {
   opacity: 0.35;
   cursor: not-allowed;
 }
+/* A control that opens a menu: its label, then the caret that says so. */
+.tb-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-color: var(--rule);
+}
+.tb-trigger-wide {
+  min-width: 8.5rem;
+  justify-content: space-between;
+  font-weight: 600;
+}
 /* Everything that is not the content, pushed away from what edits it. */
 .tb-right {
   display: flex;
@@ -2484,6 +2708,30 @@ body {
   cursor: grabbing;
 }
 
+/* ---- Emoji picker (":") --------------------------------------------------- */
+
+.emoji-menu {
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.3rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px -10px rgba(20, 22, 30, 0.3);
+}
+.emoji-item {
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.3rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+.emoji-item.is-selected {
+  background: var(--accent-soft);
+}
+
 /* ---- Slash command menu --------------------------------------------------- */
 
 .slash-menu {
@@ -2755,7 +3003,10 @@ body {
   .doc .pyramid,
   .doc .doc-cover,
   .doc .doc-toc,
-  .doc .doc-image {
+  .doc .doc-image,
+  .doc .details,
+  .doc .code-block,
+  .doc .task-item {
     break-inside: avoid;
   }
   /* Editing affordances that live inside the document, not in `.no-print`. */

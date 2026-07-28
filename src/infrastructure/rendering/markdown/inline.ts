@@ -18,6 +18,8 @@ export function inlineToMarkdown(nodes: DocumentNode[] | undefined): string {
 function nodeToMarkdown(node: DocumentNode): string {
   if (node.type === "hardBreak") return "  \n";
   if (node.type === "image") return imageToMarkdown(node);
+  // Maths keeps its source: dollars are what a markdown reader expects.
+  if (node.type === "inlineMath") return `$${String(node.attrs?.latex ?? "")}$`;
   if (node.type !== "text") return inlineToMarkdown(node.content);
 
   const marks = node.marks ?? [];
@@ -30,6 +32,9 @@ function nodeToMarkdown(node: DocumentNode): string {
   if (marks.some((m) => m.type === "bold" || m.type === "badge")) out = `**${out}**`;
   if (marks.some((m) => m.type === "italic")) out = `*${out}*`;
   if (marks.some((m) => m.type === "strike")) out = `~~${out}~~`;
+  // Markdown has no sub/superscript: the HTML tags it passes through do.
+  if (marks.some((m) => m.type === "subscript")) out = `<sub>${out}</sub>`;
+  if (marks.some((m) => m.type === "superscript")) out = `<sup>${out}</sup>`;
   const link = marks.find((m) => m.type === "link");
   if (link?.attrs?.href) out = `[${out}](${link.attrs.href})`;
   return out;
