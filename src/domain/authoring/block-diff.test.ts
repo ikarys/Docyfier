@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { changedBlocks } from "./diff";
+import { changedBlocks } from "./block-diff";
 
 const p = (text: string) => ({
   type: "paragraph",

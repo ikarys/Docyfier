@@ -1,4 +1,4 @@
-import type { JSONContent } from "@tiptap/core";
+import type { DocumentBody, DocumentNode } from "@/domain/documents/body";
 
 /**
  * Deterministic formatter (hybrid "make it pretty", PLAN.md STEP 2b groundwork).
@@ -29,7 +29,7 @@ function isFigure(text: string): boolean {
 }
 
 /** Flatten a node's text content (ignores marks/structure). */
-function nodeText(node: JSONContent): string {
+function nodeText(node: DocumentNode): string {
   if (node.type === "text") return node.text ?? "";
   if (Array.isArray(node.content)) return node.content.map(nodeText).join("");
   return "";
@@ -37,7 +37,7 @@ function nodeText(node: JSONContent): string {
 
 /** Inline content of a cell's first paragraph (preserves marks), or a plain
  * text node built from the whole cell, or [] when empty. */
-function cellInline(cell: JSONContent): JSONContent[] {
+function cellInline(cell: DocumentNode): DocumentNode[] {
   const para = (cell.content ?? []).find((b) => b.type === "paragraph");
   if (para?.content?.length) return para.content;
   const text = nodeText(cell).trim();
@@ -45,26 +45,26 @@ function cellInline(cell: JSONContent): JSONContent[] {
 }
 
 /** Block content of a cell (its paragraphs), guaranteed non-empty. */
-function cellBlocks(cell: JSONContent): JSONContent[] {
+function cellBlocks(cell: DocumentNode): DocumentNode[] {
   const blocks = (cell.content ?? []).filter((b) => b.type === "paragraph");
   return blocks.length ? blocks : [{ type: "paragraph" }];
 }
 
-function heading3(inline: JSONContent[]): JSONContent {
-  const node: JSONContent = { type: "heading", attrs: { level: 3 } };
+function heading3(inline: DocumentNode[]): DocumentNode {
+  const node: DocumentNode = { type: "heading", attrs: { level: 3 } };
   if (inline.length) node.content = inline;
   return node;
 }
 
 /** Rows of a table split into an optional header row + body rows. */
-function tableRows(table: JSONContent): {
+function tableRows(table: DocumentNode): {
   hasHeader: boolean;
-  header: JSONContent[] | null;
-  body: JSONContent[][];
+  header: DocumentNode[] | null;
+  body: DocumentNode[][];
 } {
   const rows = (table.content ?? []).filter((r) => r.type === "tableRow");
-  const cellsOf = (row: JSONContent) => (row.content ?? []);
-  const isHeaderRow = (row: JSONContent) =>
+  const cellsOf = (row: DocumentNode) => (row.content ?? []);
+  const isHeaderRow = (row: DocumentNode) =>
     cellsOf(row).length > 0 &&
     cellsOf(row).every((c) => c.type === "tableHeader");
   const hasHeader = rows.length > 0 && isHeaderRow(rows[0]);
@@ -80,7 +80,7 @@ function tableRows(table: JSONContent): {
  * cardGrid (values are prose). Returns null when the table doesn't fit the
  * pattern (wrong column count, too few/many rows) so the caller keeps it as-is.
  */
-function twoColumnTableToLayout(table: JSONContent): JSONContent | null {
+function twoColumnTableToLayout(table: DocumentNode): DocumentNode | null {
   const { body } = tableRows(table);
   if (body.length < 2 || body.length > 4) return null;
   if (!body.every((cells) => cells.length === 2)) return null;
@@ -114,19 +114,19 @@ function twoColumnTableToLayout(table: JSONContent): JSONContent | null {
 }
 
 /** Drop textStyle/highlight (hardcoded hex) marks off an inline node. */
-function stripInlineColor(inline: JSONContent): JSONContent {
+function stripInlineColor(inline: DocumentNode): DocumentNode {
   if (!Array.isArray(inline.marks)) return inline;
   const marks = inline.marks.filter(
     (m) => m.type !== "textStyle" && m.type !== "highlight",
   );
-  const next: JSONContent = { ...inline };
+  const next: DocumentNode = { ...inline };
   if (marks.length) next.marks = marks;
   else delete next.marks;
   return next;
 }
 
 /** Recursively strip invented color off every heading (theme owns it). */
-function stripHeadingColors(node: JSONContent): JSONContent {
+function stripHeadingColors(node: DocumentNode): DocumentNode {
   let next = node;
   if (Array.isArray(node.content)) {
     next = { ...node, content: node.content.map(stripHeadingColors) };
@@ -138,7 +138,7 @@ function stripHeadingColors(node: JSONContent): JSONContent {
 }
 
 /** Apply every deterministic upgrade to a whole document. */
-export function beautify(doc: JSONContent): JSONContent {
+export function beautify(doc: DocumentBody): DocumentBody {
   if (doc?.type !== "doc" || !Array.isArray(doc.content)) return doc;
   const content = doc.content.map((block) => {
     const upgraded =

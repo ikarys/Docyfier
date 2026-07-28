@@ -8,7 +8,7 @@ import {
 import { GENERATE_SYSTEM } from "@/domain/authoring/prompts";
 import { validateDocJson } from "@/lib/ai/doc-schema";
 import { BlockScanner } from "@/lib/ai/stream-blocks";
-import { beautify } from "@/lib/doc/beautify";
+import { beautify } from "@/domain/authoring/beautify";
 import { getAiSettings } from "@/lib/settings";
 import { isAuthorized } from "@/lib/auth";
 

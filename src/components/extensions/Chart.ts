@@ -1,5 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
-import { sampleChart, type ChartAttrs, type ChartKind } from "@/lib/doc/chart";
+import { sampleChart, type ChartAttrs, type ChartKind } from "@/domain/documents/chart";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -27,7 +27,7 @@ function parseJsonAttr<T>(el: HTMLElement, name: string, fallback: T): T {
  * content to keep in sync with the drawing. Rendering is inline SVG in a React
  * node view — no chart library, and printable by construction.
  *
- * Shape and bounds of the data are defined once in `src/lib/doc/chart.ts` and
+ * Shape and bounds of the data are defined once in `src/domain/documents/chart.ts` and
  * enforced server-side by `src/lib/ai/doc-schema.ts`.
  *
  * Schema only — no node view here, so the server-only validation schema can

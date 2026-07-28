@@ -2,7 +2,7 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import type { BlockMark } from "@/lib/doc/diff";
+import type { BlockMark } from "@/domain/authoring/block-diff";
 
 /**
  * Highlights the top-level blocks an AI edit just touched (PLAN.md STEP U4).

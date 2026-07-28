@@ -3,7 +3,7 @@
 import { useActionState, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { importDocumentAction } from "@/app/actions";
-import { IMPORT_EXTENSIONS } from "@/lib/doc/import-types";
+import { IMPORT_EXTENSIONS } from "@/domain/documents/import-file";
 
 /**
  * Import card in the template gallery (PLAN.md STEP 5): pick a file, it is

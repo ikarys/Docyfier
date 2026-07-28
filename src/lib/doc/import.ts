@@ -7,7 +7,7 @@ import {
   MAX_IMPORT_BYTES,
   importExtensionOf,
   titleFromFilename,
-} from "./import-types";
+} from "@/domain/documents/import-file";
 
 /**
  * Document import (PLAN.md STEP 5): bring an existing file in so it can be

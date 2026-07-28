@@ -17,7 +17,7 @@ import {
   type ChartAttrs,
   type ChartKind,
   type ChartSeries,
-} from "@/lib/doc/chart";
+} from "@/domain/documents/chart";
 
 /** SVG user-space geometry. The viewBox scales; these are not screen pixels. */
 const W = 720;

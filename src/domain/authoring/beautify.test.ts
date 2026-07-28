@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { JSONContent } from "@tiptap/core";
+import type { DocumentNode } from "@/domain/documents/body";
 import { beautify } from "./beautify";
 
-const text = (value: string, marks?: JSONContent["marks"]) => ({
+const text = (value: string, marks?: DocumentNode["marks"]) => ({
   type: "text",
   text: value,
   ...(marks ? { marks } : {}),
@@ -10,8 +10,8 @@ const text = (value: string, marks?: JSONContent["marks"]) => ({
 const p = (value: string) => ({ type: "paragraph", content: [text(value)] });
 const cell = (value: string) => ({ type: "tableCell", content: [p(value)] });
 const row = (...values: string[]) => ({ type: "tableRow", content: values.map(cell) });
-const table = (...rows: JSONContent[]) => ({ type: "table", content: rows });
-const doc = (...content: JSONContent[]) => ({ type: "doc", content });
+const table = (...rows: DocumentNode[]) => ({ type: "table", content: rows });
+const doc = (...content: DocumentNode[]) => ({ type: "doc", content });
 
 /**
  * The deterministic pass after the model. Its job is the upgrades the LLM
@@ -21,7 +21,7 @@ const doc = (...content: JSONContent[]) => ({ type: "doc", content });
 describe("beautify", () => {
   it("turns a two-column table of figures into a stat row", () => {
     const out = beautify(doc(table(row("Documents", "42"), row("Exports", "18"))));
-    const statRow = out.content?.[0] as JSONContent;
+    const statRow = out.content?.[0] as DocumentNode;
 
     expect(statRow.type).toBe("statRow");
     expect(statRow.content).toHaveLength(2);
@@ -44,7 +44,7 @@ describe("beautify", () => {
         ),
       ),
     );
-    const grid = out.content?.[0] as JSONContent;
+    const grid = out.content?.[0] as DocumentNode;
 
     expect(grid.type).toBe("cardGrid");
     expect(grid.attrs).toMatchObject({ cols: 2 });
@@ -57,7 +57,7 @@ describe("beautify", () => {
 
   it("gives each stat and card its own accent, cycling through the palette", () => {
     const rows = [row("a", "1"), row("b", "2"), row("c", "3"), row("d", "4")];
-    const statRow = beautify(doc(table(...rows))).content?.[0] as JSONContent;
+    const statRow = beautify(doc(table(...rows))).content?.[0] as DocumentNode;
     const accents = statRow.content?.map((stat) => stat.attrs?.accent);
 
     expect(new Set(accents).size).toBe(4);
@@ -82,7 +82,7 @@ describe("beautify", () => {
 
   it("does not read a long value as a figure", () => {
     const prose = table(row("a", "42 documents traités"), row("b", "18 exports"));
-    expect((beautify(doc(prose)).content?.[0] as JSONContent).type).toBe("cardGrid");
+    expect((beautify(doc(prose)).content?.[0] as DocumentNode).type).toBe("cardGrid");
   });
 
   it("strips the colours a model invented on a heading — the theme owns them", () => {
@@ -96,7 +96,7 @@ describe("beautify", () => {
         ]),
       ],
     };
-    const out = beautify(doc(heading)).content?.[0] as JSONContent;
+    const out = beautify(doc(heading)).content?.[0] as DocumentNode;
 
     expect(out.content?.[0].marks).toEqual([{ type: "bold" }]);
   });
@@ -106,7 +106,7 @@ describe("beautify", () => {
       type: "heading",
       content: [text("Titre", [{ type: "highlight", attrs: { color: "#ff0" } }])],
     };
-    const out = beautify(doc(heading)).content?.[0] as JSONContent;
+    const out = beautify(doc(heading)).content?.[0] as DocumentNode;
 
     expect(out.content?.[0]).not.toHaveProperty("marks");
   });
@@ -129,7 +129,7 @@ describe("beautify", () => {
         },
       ],
     };
-    const out = beautify(doc(nested)).content?.[0] as JSONContent;
+    const out = beautify(doc(nested)).content?.[0] as DocumentNode;
 
     expect(out.content?.[0].content?.[0]).not.toHaveProperty("marks");
   });

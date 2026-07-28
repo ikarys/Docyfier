@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { validateDocJson } from "./doc-schema";
 import { TEMPLATES } from "@/lib/templates";
-import { sampleChart } from "@/lib/doc/chart";
+import { sampleChart } from "@/domain/documents/chart";
 
 const text = (value: string) => ({ type: "text", text: value });
 const doc = (...content: object[]) => ({ type: "doc", content });

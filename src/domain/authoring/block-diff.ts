@@ -1,4 +1,4 @@
-import type { JSONContent } from "@tiptap/core";
+import type { DocumentNode } from "@/domain/documents/body";
 
 /**
  * Which top-level blocks an AI edit touched (PLAN.md STEP U4).
@@ -10,7 +10,7 @@ import type { JSONContent } from "@tiptap/core";
 
 export type BlockMark = "same" | "changed" | "inserted";
 
-const key = (block: JSONContent): string => JSON.stringify(block);
+const key = (block: DocumentNode): string => JSON.stringify(block);
 
 /**
  * Longest common subsequence of two block-key lists, as [beforeIndex,
@@ -53,8 +53,8 @@ function commonPairs(a: string[], b: string[]): [number, number][] {
  * `before` block stood, and "inserted" when it is extra.
  */
 export function changedBlocks(
-  before: JSONContent,
-  after: JSONContent,
+  before: DocumentNode,
+  after: DocumentNode,
 ): BlockMark[] {
   const a = (before.content ?? []).map(key);
   const b = (after.content ?? []).map(key);

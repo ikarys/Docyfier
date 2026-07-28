@@ -22,7 +22,7 @@ import { TableOfContents } from "@/components/extensions/Toc";
 import { PageBreak } from "@/components/extensions/PageBreak";
 import { DocImage } from "@/components/extensions/DocImage";
 import { TextAlign } from "@tiptap/extension-text-align";
-import { chartError } from "@/lib/doc/chart";
+import { chartError } from "@/domain/documents/chart";
 
 /**
  * Headless ProseMirror schema mirroring the editor's extensions

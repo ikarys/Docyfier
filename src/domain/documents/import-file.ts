@@ -1,7 +1,7 @@
 /**
- * What the import accepts (PLAN.md STEP 5). Client-safe: the picker in
- * `ImportCard.tsx` and the server-side conversion in `./import.ts` must agree
- * on the same list, so it lives outside the server-only module.
+ * What the import accepts (PLAN.md STEP 5). The rule lives here because the
+ * picker in `ImportCard.tsx` and the conversion adapter must agree on the same
+ * list, and neither is allowed to own it.
  */
 
 export const MAX_IMPORT_BYTES = 5 * 1024 * 1024;

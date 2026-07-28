@@ -4,7 +4,7 @@ import {
   MAX_IMPORT_BYTES,
   importExtensionOf,
   titleFromFilename,
-} from "./import-types";
+} from "./import-file";
 
 describe("importExtensionOf", () => {
   it("recognizes every extension the picker offers", () => {
