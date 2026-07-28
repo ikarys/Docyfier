@@ -8,6 +8,7 @@ import { createDocument, updateDocument } from "@/lib/store";
 import type { DocumentTheme } from "@/lib/themes";
 import {
   generateDocument,
+  restyleDocument,
   transformDocument,
   rewriteSelectionBlocks,
   rewriteSelectionText,
@@ -22,6 +23,10 @@ export type GenerateResult =
 
 export type TransformResult =
   | { ok: true; outcome: TransformOutcome }
+  | { ok: false; error: string };
+
+export type RestyleResult =
+  | { ok: true; theme: DocumentTheme }
   | { ok: false; error: string };
 
 export type SelectionInput =
@@ -82,6 +87,25 @@ export async function transformDocumentAction(
   if (!trimmed) return { ok: false, error: "Empty instruction" };
   try {
     return { ok: true, outcome: await transformDocument(content, trimmed) };
+  } catch (err) {
+    return { ok: false, error: message(err) };
+  }
+}
+
+/**
+ * "Style for me" — the model reads the document and answers the theme it should
+ * wear. The document itself is never written: the editor applies the theme
+ * through the same path the Design panel uses.
+ */
+export async function restyleDocumentAction(
+  content: JSONContent,
+): Promise<RestyleResult> {
+  await requireAuth();
+  try {
+    const theme = await restyleDocument(content);
+    return theme
+      ? { ok: true, theme }
+      : { ok: false, error: "The AI had no styling to suggest for this document." };
   } catch (err) {
     return { ok: false, error: message(err) };
   }

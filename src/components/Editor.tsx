@@ -110,11 +110,13 @@ export function DocumentEditor({
           <AiPanel
             editor={editor}
             onApply={applyDocument}
+            onChangeTheme={changeTheme}
             onClose={() => setPanel(null)}
           />
         )}
         {panel === "design" && (
           <DesignPanel
+            editor={editor}
             theme={theme}
             onChange={changeTheme}
             onClose={() => setPanel(null)}

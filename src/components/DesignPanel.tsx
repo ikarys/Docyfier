@@ -1,46 +1,44 @@
 "use client";
 
+import type { Editor } from "@tiptap/react";
+import {
+  ChipChoice,
+  DENSITY_CHOICES,
+  RADIUS_CHOICES,
+} from "@/components/design/ChipChoice";
+import { PresetGrid } from "@/components/design/PresetGrid";
+import { RestyleButton } from "@/components/design/RestyleButton";
+import { useRestyle } from "@/components/editor/useRestyle";
 import {
   ACCENT_SWATCHES,
   FONT_PAIRS,
-  THEMES,
-  findPreset,
   resolveTokens,
   type DocumentTheme,
-  type ThemeDensity,
-  type ThemeRadius,
   type ThemeTokens,
 } from "@/lib/themes";
-
-const DENSITIES: { id: ThemeDensity; label: string }[] = [
-  { id: "compact", label: "Compact" },
-  { id: "normal", label: "Normal" },
-  { id: "airy", label: "Airy" },
-];
-
-const RADII: { id: ThemeRadius; label: string }[] = [
-  { id: "sharp", label: "Sharp" },
-  { id: "soft", label: "Soft" },
-  { id: "round", label: "Round" },
-];
 
 /**
  * Surface for STEP U3: the design side panel. It edits **tokens only** — the
  * document JSON is never touched, so switching a font or an accent can never
  * lose content. A change that equals the preset's own value is stored as an
  * override anyway; "Reset to preset" is the way back.
+ *
+ * The art direction the model proposes (STEP U7) arrives through the same
+ * `onChange`: a suggestion, overridable by every control above it.
  */
 export function DesignPanel({
+  editor,
   theme,
   onChange,
   onClose,
 }: {
+  editor: Editor;
   theme: DocumentTheme;
   onChange: (theme: DocumentTheme) => void;
   onClose: () => void;
 }) {
   const tokens = resolveTokens(theme);
-  const hasOverrides = Boolean(theme.overrides && Object.keys(theme.overrides).length);
+  const restyle = useRestyle(editor, onChange);
 
   const set = <K extends keyof ThemeTokens>(key: K, value: ThemeTokens[K]) =>
     onChange({ ...theme, overrides: { ...theme.overrides, [key]: value } });
@@ -55,38 +53,7 @@ export function DesignPanel({
       </div>
 
       <div className="design-body">
-        <section className="design-section">
-          <h3 className="design-label">Preset</h3>
-          <div className="preset-grid">
-            {THEMES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={
-                  t.id === theme.preset ? "preset-card is-active" : "preset-card"
-                }
-                title={t.hint}
-                onClick={() => onChange({ ...theme, preset: t.id })}
-              >
-                <span
-                  className="preset-swatch"
-                  style={{ background: t.tokens.accent }}
-                  aria-hidden
-                />
-                <span className="preset-name">{t.label}</span>
-              </button>
-            ))}
-          </div>
-          {hasOverrides && (
-            <button
-              type="button"
-              className="chip design-reset"
-              onClick={() => onChange({ preset: theme.preset })}
-            >
-              Reset to {findPreset(theme.preset).label}
-            </button>
-          )}
-        </section>
+        <PresetGrid theme={theme} onChange={onChange} />
 
         <section className="design-section">
           <h3 className="design-label">Accent</h3>
@@ -130,37 +97,21 @@ export function DesignPanel({
           </select>
         </section>
 
-        <section className="design-section">
-          <h3 className="design-label">Density</h3>
-          <div className="design-radio-row">
-            {DENSITIES.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                className={d.id === tokens.density ? "chip is-active" : "chip"}
-                onClick={() => set("density", d.id)}
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
-        </section>
+        <ChipChoice
+          label="Density"
+          choices={DENSITY_CHOICES}
+          value={tokens.density}
+          onChange={(density) => set("density", density)}
+        />
 
-        <section className="design-section">
-          <h3 className="design-label">Corners</h3>
-          <div className="design-radio-row">
-            {RADII.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                className={r.id === tokens.radius ? "chip is-active" : "chip"}
-                onClick={() => set("radius", r.id)}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-        </section>
+        <ChipChoice
+          label="Corners"
+          choices={RADIUS_CHOICES}
+          value={tokens.radius}
+          onChange={(radius) => set("radius", radius)}
+        />
+
+        <RestyleButton restyle={restyle} />
 
         <p className="design-hint">
           Design is presentation only — none of these controls change the

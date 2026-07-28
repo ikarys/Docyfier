@@ -6,7 +6,10 @@ import {
   rewriteSelectionBlocks as rewriteBlocks,
   rewriteSelectionText as rewriteText,
 } from "@/application/authoring/rewrite-selection";
-import { planDocument as planBrief } from "@/application/authoring/plan-document";
+import {
+  planDocument as planBrief,
+  restyleDocument as chooseDress,
+} from "@/application/authoring/plan-document";
 import {
   generateDocument as writeDocument,
   transformDocument as editDocument,
@@ -74,6 +77,15 @@ export function transformDocument(
   instruction: string,
 ): Promise<TransformOutcome> {
   return editDocument(deps(), doc, instruction);
+}
+
+/**
+ * Surface 1, on a document that already exists — "style for me". Answers the
+ * theme it should wear, or null when the model proposed nothing usable. The
+ * content is read, never written.
+ */
+export async function restyleDocument(doc: JSONContent): Promise<DocumentTheme | null> {
+  return themeFromArt(await chooseDress(deps(), doc, artVocabulary()));
 }
 
 /** Surface 3a — multi-block selection rewrite; returns replacement blocks. */

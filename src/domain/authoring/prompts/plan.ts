@@ -48,3 +48,9 @@ ${choices(vocabulary.fontPairs)}
 export function planPrompt(request: string): string {
   return `Request:\n"""\n${request}\n"""\n\nPlan the document.`;
 }
+
+/** The same plan, asked of a document that already exists: only "art" is read
+ * out of the answer, but the kind is what makes the dress fit. */
+export function restylePrompt(digest: string): string {
+  return `This document already exists — its headings, the opening of its paragraphs, and the blocks it is made of:\n"""\n${digest}\n"""\n\nPlan how it should look. Do not plan sections: the document has its own.`;
+}
