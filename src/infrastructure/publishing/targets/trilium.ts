@@ -1,5 +1,5 @@
-import { docToHtml, escapeHtml } from "@/lib/doc/html";
-import { optionValue, type ExportTarget } from "../types";
+import { docToHtml, escapeHtml } from "@/infrastructure/rendering/html";
+import { optionValue, type ExportTarget } from "@/domain/publishing/export-target";
 
 /**
  * Trilium Notes export.

@@ -1,4 +1,4 @@
-import type { JSONContent } from "@tiptap/core";
+import type { DocumentNode } from "@/domain/documents/body";
 
 /**
  * A document as plain text, for destinations that render no markup at all —
@@ -13,7 +13,7 @@ import type { JSONContent } from "@tiptap/core";
  */
 
 /** Inline content with every mark dropped. */
-function inlineToText(nodes: JSONContent[] | undefined): string {
+function inlineToText(nodes: DocumentNode[] | undefined): string {
   if (!nodes) return "";
   return nodes
     .map((node) => {
@@ -29,7 +29,7 @@ function inlineToText(nodes: JSONContent[] | undefined): string {
     .join("");
 }
 
-function rawText(node: JSONContent): string {
+function rawText(node: DocumentNode): string {
   if (node.type === "text") return node.text ?? "";
   return (node.content ?? []).map(rawText).join("");
 }
@@ -41,7 +41,7 @@ function indent(block: string, first: string, rest: string): string {
     .join("\n");
 }
 
-function listToText(node: JSONContent, ordered: boolean): string {
+function listToText(node: DocumentNode, ordered: boolean): string {
   return (node.content ?? [])
     .map((item, index) => {
       const marker = ordered ? `${index + 1}. ` : "- ";
@@ -50,7 +50,7 @@ function listToText(node: JSONContent, ordered: boolean): string {
     .join("\n");
 }
 
-function tableToText(node: JSONContent): string {
+function tableToText(node: DocumentNode): string {
   return (node.content ?? [])
     .map((row) =>
       (row.content ?? [])
@@ -65,7 +65,7 @@ function tableToText(node: JSONContent): string {
     .join("\n");
 }
 
-function blockToText(node: JSONContent): string {
+function blockToText(node: DocumentNode): string {
   switch (node.type) {
     // A label, the way a form field with no markup gets a section.
     case "heading": {
@@ -95,7 +95,7 @@ function blockToText(node: JSONContent): string {
   }
 }
 
-function blocksToText(blocks: JSONContent[]): string {
+function blocksToText(blocks: DocumentNode[]): string {
   return blocks
     .map(blockToText)
     .filter((block) => block.trim().length > 0)
@@ -103,6 +103,6 @@ function blocksToText(blocks: JSONContent[]): string {
 }
 
 /** The document as plain text. */
-export function docToText(doc: JSONContent): string {
+export function docToText(doc: DocumentNode): string {
   return blocksToText(doc.content ?? []);
 }

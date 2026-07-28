@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { saveExportSettingsAction } from "@/app/settings/exports/actions";
-import type { ExportTargetInfo } from "@/lib/export/types";
+import type { ExportTargetInfo } from "@/domain/publishing/export-target";
 import type { ExportSettingsSummary } from "@/lib/settings-types";
 
 /** A credential option: write-only, like every other secret in Settings. The

@@ -8,8 +8,8 @@ import {
   exportSettings,
   exportSummary,
   saveExportSettings,
-  type ExportDeps,
 } from "./manage-exports";
+import type { ExportConfigurationDeps } from "./deps";
 
 const secretIds: SecretOptionIds = { confluence: ["token"] };
 
@@ -37,7 +37,7 @@ class InMemoryConfiguration implements ExportConfigurationRepository {
   }
 }
 
-let deps: ExportDeps & { configuration: InMemoryConfiguration };
+let deps: ExportConfigurationDeps & { configuration: InMemoryConfiguration };
 beforeEach(() => {
   deps = { configuration: new InMemoryConfiguration() };
 });

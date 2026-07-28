@@ -1,4 +1,4 @@
-import type { JSONContent } from "@tiptap/core";
+import type { DocumentNode } from "@/domain/documents/body";
 
 /**
  * Markdown export (PLAN.md STEP 3).
@@ -28,7 +28,7 @@ function escapeInline(text: string): string {
 }
 
 /** Inline content (text + marks) as markdown. */
-function inlineToMarkdown(nodes: JSONContent[] | undefined): string {
+function inlineToMarkdown(nodes: DocumentNode[] | undefined): string {
   if (!nodes) return "";
   return nodes
     .map((node) => {
@@ -57,7 +57,7 @@ function inlineToMarkdown(nodes: JSONContent[] | undefined): string {
 }
 
 /** Plain text of a node, marks and structure flattened. */
-function plainText(node: JSONContent): string {
+function plainText(node: DocumentNode): string {
   if (node.type === "text") return node.text ?? "";
   return (node.content ?? []).map(plainText).join(" ").replace(/\s+/g, " ").trim();
 }
@@ -69,7 +69,7 @@ function prefixLines(block: string, first: string, rest: string): string {
     .join("\n");
 }
 
-function listToMarkdown(node: JSONContent, ordered: boolean): string {
+function listToMarkdown(node: DocumentNode, ordered: boolean): string {
   return (node.content ?? [])
     .map((item, index) => {
       const marker = ordered ? `${index + 1}. ` : "- ";
@@ -79,7 +79,7 @@ function listToMarkdown(node: JSONContent, ordered: boolean): string {
     .join("\n");
 }
 
-function tableToMarkdown(node: JSONContent): string {
+function tableToMarkdown(node: DocumentNode): string {
   const rows = (node.content ?? []).map((row) =>
     (row.content ?? []).map((cell) => {
       // A cell can hold several blocks; markdown gives it one line.
@@ -104,7 +104,7 @@ function tableToMarkdown(node: JSONContent): string {
 }
 
 /** A chart carries its data in attrs; the table is that data, losing nothing. */
-function chartToMarkdown(node: JSONContent): string {
+function chartToMarkdown(node: DocumentNode): string {
   const { title, caption, categories, series } = (node.attrs ?? {}) as {
     title?: string | null;
     caption?: string | null;
@@ -131,13 +131,13 @@ function chartToMarkdown(node: JSONContent): string {
 }
 
 /** value / label / optional delta, as one list line. */
-function statToMarkdown(node: JSONContent): string {
+function statToMarkdown(node: DocumentNode): string {
   const [value, label, delta] = (node.content ?? []).map(plainText);
   const tail = [label, delta].filter(Boolean).join(" — ");
   return `- **${value ?? ""}**${tail ? ` — ${tail}` : ""}`;
 }
 
-function blockToMarkdown(node: JSONContent): string {
+function blockToMarkdown(node: DocumentNode): string {
   switch (node.type) {
     case "heading": {
       const level = Math.min(6, Math.max(1, Number(node.attrs?.level ?? 1)));
@@ -224,12 +224,12 @@ function blockToMarkdown(node: JSONContent): string {
 }
 
 /** Code block text, unescaped — a fence takes its content verbatim. */
-function plainTextRaw(node: JSONContent): string {
+function plainTextRaw(node: DocumentNode): string {
   if (node.type === "text") return node.text ?? "";
   return (node.content ?? []).map(plainTextRaw).join("");
 }
 
-function blocksToMarkdown(blocks: JSONContent[]): string {
+function blocksToMarkdown(blocks: DocumentNode[]): string {
   return blocks
     .map(blockToMarkdown)
     .filter((block) => block.trim().length > 0)
@@ -237,7 +237,7 @@ function blocksToMarkdown(blocks: JSONContent[]): string {
 }
 
 /** The document as markdown, ending with a single newline. */
-export function docToMarkdown(doc: JSONContent): string {
+export function docToMarkdown(doc: DocumentNode): string {
   return `${blocksToMarkdown(doc.content ?? [])}\n`;
 }
 

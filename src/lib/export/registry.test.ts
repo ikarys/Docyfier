@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { JSONContent } from "@tiptap/core";
-import { EXPORT_TARGETS, exportTargetInfos, findExportTarget } from "./registry";
-import { exportFilename, optionValue, type ExportDocument } from "./types";
+import { exportFilename } from "@/domain/publishing/export-filename";
+import { optionValue, type ExportDocument } from "@/domain/publishing/export-target";
+import { EXPORT_TARGETS, exportTargetInfos, findExportTarget, secretOptionIds } from "./registry";
 
 const doc: ExportDocument = {
   title: "Rapport annuel",
@@ -11,7 +11,7 @@ const doc: ExportDocument = {
       { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Titre" }] },
       { type: "paragraph", content: [{ type: "text", text: "Un paragraphe." }] },
     ],
-  } as JSONContent,
+  },
 };
 
 /** Every target rendered with the options it declares as defaults. */
@@ -93,5 +93,39 @@ describe("exportTargetInfos", () => {
     const infos = exportTargetInfos();
     expect(infos).toHaveLength(EXPORT_TARGETS.length);
     for (const info of infos) expect(info).not.toHaveProperty("render");
+  });
+});
+
+/**
+ * What decides that a stored value is encrypted at rest and never sent back to
+ * the browser. A target that declares a credential and is missing here would
+ * have it written to disk in the clear.
+ */
+describe("secretOptionIds", () => {
+  const ids = secretOptionIds();
+
+  it("names every credential option each target declares", () => {
+    for (const target of EXPORT_TARGETS) {
+      const declared = (target.options ?? [])
+        .filter((option) => option.type === "secret")
+        .map((option) => option.id);
+      if (declared.length) expect(ids[target.id]).toEqual(declared);
+    }
+  });
+
+  it("leaves out the targets that ask for no credential", () => {
+    for (const target of EXPORT_TARGETS) {
+      const asks = (target.options ?? []).some((option) => option.type === "secret");
+      if (!asks) expect(ids).not.toHaveProperty(target.id);
+    }
+  });
+
+  it("never names an option that is not a credential", () => {
+    for (const [targetId, secrets] of Object.entries(ids)) {
+      const target = findExportTarget(targetId);
+      for (const id of secrets) {
+        expect(target?.options?.find((option) => option.id === id)?.type).toBe("secret");
+      }
+    }
   });
 });

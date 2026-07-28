@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  exportFilename,
   optionValue,
+  secretOptionsOf,
   toTargetInfo,
   type ExportTarget,
-} from "./types";
+} from "./export-target";
 
 const target: ExportTarget = {
   id: "demo",
@@ -19,32 +19,6 @@ const target: ExportTarget = {
   ],
   render: () => "payload",
 };
-
-describe("exportFilename", () => {
-  it("joins a slugged title to the target's extension", () => {
-    expect(exportFilename("Rapport trimestriel", "md")).toBe(
-      "Rapport-trimestriel.md",
-    );
-  });
-
-  it("drops what a filesystem would choke on", () => {
-    expect(exportFilename("Q3 / Q4: bilan", "txt")).toBe("Q3-Q4-bilan.txt");
-  });
-
-  it("strips accents rather than emitting a decomposed filename", () => {
-    expect(exportFilename("Réunion", "txt")).toBe("Reunion.txt");
-  });
-
-  it("falls back to a name when the title leaves nothing usable", () => {
-    expect(exportFilename("///", "docx")).toBe("document.docx");
-    expect(exportFilename("", "docx")).toBe("document.docx");
-  });
-
-  it("caps the length, so no target hits a filesystem limit", () => {
-    const name = exportFilename("a".repeat(200), "md");
-    expect(name).toBe(`${"a".repeat(80)}.md`);
-  });
-});
 
 describe("optionValue", () => {
   it("prefers what the user saved", () => {
@@ -85,5 +59,24 @@ describe("toTargetInfo", () => {
     const bare = toTargetInfo({ ...target, options: undefined, binary: undefined });
     expect(bare.options).toEqual([]);
     expect(bare.binary).toBe(false);
+  });
+});
+
+describe("secretOptionsOf", () => {
+  it("names the options that hold a credential", () => {
+    const withToken: ExportTarget = {
+      ...target,
+      options: [
+        ...(target.options ?? []),
+        { id: "token", label: "API token", type: "secret", default: "" },
+      ],
+    };
+
+    expect(secretOptionsOf(withToken)).toEqual(["token"]);
+  });
+
+  it("names none for a target that asks for no credential", () => {
+    expect(secretOptionsOf(target)).toEqual([]);
+    expect(secretOptionsOf({ ...target, options: undefined })).toEqual([]);
   });
 });

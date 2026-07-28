@@ -1,5 +1,5 @@
-import { docToMarkdown } from "@/lib/doc/markdown";
-import { optionValue, type ExportTarget } from "../types";
+import { docToMarkdown } from "@/infrastructure/rendering/markdown";
+import { optionValue, type ExportTarget } from "@/domain/publishing/export-target";
 
 /**
  * Notion export.

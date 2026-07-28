@@ -14,7 +14,7 @@ import {
   type ComposerField,
   type ComposerInfo,
 } from "@/lib/compose/types";
-import { docToMarkdown } from "@/lib/doc/markdown";
+import { docToMarkdown } from "@/infrastructure/rendering/markdown";
 
 /** A field whose value the form drives, rather than the DOM. */
 interface Bound {

@@ -1,6 +1,6 @@
-import type { JSONContent } from "@tiptap/core";
-import { docToHtml, escapeHtml, rawText, type HtmlDialect } from "@/lib/doc/html";
-import { optionValue, type ExportTarget } from "../types";
+import type { DocumentNode } from "@/domain/documents/body";
+import { docToHtml, escapeHtml, rawText, type HtmlDialect } from "@/infrastructure/rendering/html";
+import { optionValue, type ExportTarget } from "@/domain/publishing/export-target";
 
 /**
  * Confluence export.
@@ -37,7 +37,7 @@ function macro(name: string, body: string, params: Record<string, string> = {}):
 
 /** Storage format only differs on the blocks Confluence models as macros. */
 const storageDialect: HtmlDialect = {
-  block(node: JSONContent, ctx): string | null {
+  block(node: DocumentNode, ctx): string | null {
     switch (node.type) {
       case "callout": {
         const panel = PANEL_BY_VARIANT[String(node.attrs?.variant ?? "note")] ?? "info";

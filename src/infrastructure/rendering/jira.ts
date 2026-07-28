@@ -1,4 +1,4 @@
-import type { JSONContent } from "@tiptap/core";
+import type { DocumentNode } from "@/domain/documents/body";
 
 /**
  * Jira classic wiki markup — what Jira's description field understands.
@@ -20,7 +20,7 @@ function escapeInline(text: string): string {
   return text.replace(/([[\]{}])/g, "\\$1");
 }
 
-function inlineToJira(nodes: JSONContent[] | undefined): string {
+function inlineToJira(nodes: DocumentNode[] | undefined): string {
   if (!nodes) return "";
   return nodes
     .map((node) => {
@@ -48,13 +48,13 @@ function inlineToJira(nodes: JSONContent[] | undefined): string {
 }
 
 /** Text of a node, marks and structure flattened. */
-function plainText(node: JSONContent): string {
+function plainText(node: DocumentNode): string {
   if (node.type === "text") return node.text ?? "";
   return (node.content ?? []).map(plainText).join(" ").replace(/\s+/g, " ").trim();
 }
 
 /** Code block text, unescaped — a {code} block takes its content verbatim. */
-function rawText(node: JSONContent): string {
+function rawText(node: DocumentNode): string {
   if (node.type === "text") return node.text ?? "";
   return (node.content ?? []).map(rawText).join("");
 }
@@ -63,7 +63,7 @@ function rawText(node: JSONContent): string {
  * Jira nests a list by repeating its marker rather than by indenting, so a
  * nested list needs the markers of every level above it.
  */
-function listToJira(node: JSONContent, marker: string, prefix: string): string {
+function listToJira(node: DocumentNode, marker: string, prefix: string): string {
   const level = prefix + marker;
   return (node.content ?? [])
     .map((item) => {
@@ -75,7 +75,7 @@ function listToJira(node: JSONContent, marker: string, prefix: string): string {
     .join("\n");
 }
 
-function tableToJira(node: JSONContent): string {
+function tableToJira(node: DocumentNode): string {
   return (node.content ?? [])
     .map((row) => {
       const cells = (row.content ?? []).map((cell) =>
@@ -96,7 +96,7 @@ function tableToJira(node: JSONContent): string {
 }
 
 /** `prefix` carries the list markers a nested block sits under, empty at top level. */
-function blockToJira(node: JSONContent, prefix = ""): string {
+function blockToJira(node: DocumentNode, prefix = ""): string {
   switch (node.type) {
     case "heading": {
       const level = Math.min(6, Math.max(1, Number(node.attrs?.level ?? 1)));
@@ -131,7 +131,7 @@ function blockToJira(node: JSONContent, prefix = ""): string {
   }
 }
 
-function blocksToJira(blocks: JSONContent[], prefix = ""): string {
+function blocksToJira(blocks: DocumentNode[], prefix = ""): string {
   return blocks
     .map((block) => blockToJira(block, prefix))
     .filter((block) => block.trim().length > 0)
@@ -139,6 +139,6 @@ function blocksToJira(blocks: JSONContent[], prefix = ""): string {
 }
 
 /** The document as Jira wiki markup. */
-export function docToJira(doc: JSONContent): string {
+export function docToJira(doc: DocumentNode): string {
   return blocksToJira(doc.content ?? []);
 }

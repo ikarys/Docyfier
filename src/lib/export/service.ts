@@ -1,64 +1,47 @@
 import "server-only";
-import { getExportSettings } from "@/lib/settings";
-import type { DocumentRecord } from "@/domain/documents/document";
-import { EXPORT_TARGETS, findExportTarget } from "./registry";
+import type { ExportTargetDeps } from "@/application/publishing/deps";
 import {
-  exportFilename,
-  toTargetInfo,
-  type ExportPayload,
-  type ExportTargetInfo,
-} from "./types";
+  availableTarget,
+  enabledTargets,
+  renderExport as render,
+  type RenderedExport,
+} from "@/application/publishing/render-export";
+import type { DocumentRecord } from "@/domain/documents/document";
+import type { ExportTargetInfo } from "@/domain/publishing/export-target";
+import { aesGcmCipher } from "@/infrastructure/configuration/aes-gcm-cipher";
+import { FileExportRepository } from "@/infrastructure/configuration/file-export-repository";
+import { EXPORT_TARGETS } from "./registry";
 
 /**
- * The one place that joins the target registry with what the user enabled.
- * Pages and the download route ask here instead of reading settings and the
- * registry side by side and disagreeing about which targets are live.
+ * Composition root for exporting a document: the registry on one side, the
+ * stored configuration on the other. A document becomes the pair a target
+ * renders from here, so no target ever meets a stored document.
  */
 
-export interface RenderedExport {
-  target: ExportTargetInfo;
-  filename: string;
-  mime: string;
-  payload: ExportPayload;
+export type { RenderedExport };
+
+function deps(): ExportTargetDeps {
+  return {
+    configuration: new FileExportRepository(aesGcmCipher),
+    targets: EXPORT_TARGETS,
+  };
 }
 
 /** Targets the user turned on, in registry order. */
-export async function enabledExportTargets(): Promise<ExportTargetInfo[]> {
-  const settings = await getExportSettings();
-  return EXPORT_TARGETS.filter((target) => settings.targets[target.id]?.enabled).map(
-    toTargetInfo,
-  );
+export function enabledExportTargets(): Promise<ExportTargetInfo[]> {
+  return enabledTargets(deps());
 }
 
-/** One target, if it exists and the user enabled it. Lets a caller show the
- * target without paying for a render it would throw away. */
-export async function availableExportTarget(
-  targetId: string,
-): Promise<ExportTargetInfo | null> {
-  const target = findExportTarget(targetId);
-  if (!target) return null;
-  const settings = await getExportSettings();
-  return settings.targets[target.id]?.enabled ? toTargetInfo(target) : null;
+/** One target, if it exists and the user enabled it. */
+export function availableExportTarget(targetId: string): Promise<ExportTargetInfo | null> {
+  return availableTarget(deps(), targetId);
 }
 
 /** Render a document for one target, or `null` when the target is unknown or
  * disabled — a disabled target must not stay reachable by URL. */
-export async function renderExport(
+export function renderExport(
   doc: DocumentRecord,
   targetId: string,
 ): Promise<RenderedExport | null> {
-  const target = findExportTarget(targetId);
-  if (!target) return null;
-
-  const settings = await getExportSettings();
-  const state = settings.targets[target.id];
-  if (!state?.enabled) return null;
-
-  const values = { ...state.options, baseUrl: settings.publicBaseUrl };
-  return {
-    target: toTargetInfo(target),
-    filename: exportFilename(doc.title, target.extension),
-    mime: target.mime,
-    payload: await target.render({ title: doc.title, content: doc.content }, values),
-  };
+  return render(deps(), { title: doc.title, content: doc.content }, targetId);
 }

@@ -1,11 +1,12 @@
-import type { JSONContent } from "@tiptap/core";
+import type { DocumentBody } from "@/domain/documents/body";
 
 /**
- * Export targets — the plugin contract (PLAN.md STEP 5).
+ * Export targets — the port a destination implements (PLAN.md STEP 5).
  *
  * A target turns a document into the payload one external tool understands:
- * Confluence, Notion, Trilium. Adding one means adding a file under `targets/`
- * and listing it in the registry; nothing else in the app changes.
+ * Word, Confluence, Notion, Trilium. Adding one means adding an adapter under
+ * `infrastructure/publishing/targets/` and listing it in the registry; nothing
+ * else in the app changes.
  *
  * Targets are pure functions of the document plus their own options: no fetch,
  * no filesystem, no credentials. Delivery is out of scope on purpose — the user
@@ -15,7 +16,7 @@ import type { JSONContent } from "@tiptap/core";
 
 export interface ExportDocument {
   title: string;
-  content: JSONContent;
+  content: DocumentBody;
 }
 
 /** A per-target setting, rendered as a field on the Exports settings page. */
@@ -94,14 +95,10 @@ export function optionValue(
   return values[id] ?? declared?.default ?? "";
 }
 
-/** A safe filename for a document title and a target extension. */
-export function exportFilename(title: string, extension: string): string {
-  const base =
-    title
-      .normalize("NFKD")
-      .replace(/[^\w\s-]/g, "")
-      .trim()
-      .replace(/\s+/g, "-")
-      .slice(0, 80) || "document";
-  return `${base}.${extension}`;
+/** Which options of a target hold a credential — what decides that a value is
+ * encrypted at rest and never sent back to the browser. */
+export function secretOptionsOf(target: ExportTarget): string[] {
+  return (target.options ?? [])
+    .filter((option) => option.type === "secret")
+    .map((option) => option.id);
 }

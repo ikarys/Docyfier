@@ -3,8 +3,8 @@ import {
   exportSettings,
   exportSummary,
   saveExportSettings as persistExportSettings,
-  type ExportDeps,
 } from "@/application/publishing/manage-exports";
+import type { ExportConfigurationDeps } from "@/application/publishing/deps";
 import type {
   ExportSettings,
   ExportSettingsSummary,
@@ -21,7 +21,7 @@ import { FileExportRepository } from "@/infrastructure/configuration/file-export
 
 export type { ExportSettings, ExportSettingsSummary };
 
-function deps(): ExportDeps {
+function deps(): ExportConfigurationDeps {
   return { configuration: new FileExportRepository(aesGcmCipher) };
 }
 

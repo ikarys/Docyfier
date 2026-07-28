@@ -3,7 +3,7 @@ import type {
   ExportSettingsSummary,
   SecretOptionIds,
 } from "@/domain/publishing/export-configuration";
-import type { ExportConfigurationRepository } from "@/domain/publishing/export-repository";
+import type { ExportConfigurationDeps } from "./deps";
 
 /**
  * Configuring the export targets. Thin on purpose: what a target declares is
@@ -11,25 +11,23 @@ import type { ExportConfigurationRepository } from "@/domain/publishing/export-r
  * configuration's — this only sequences load → decide → save.
  */
 
-export interface ExportDeps {
-  configuration: ExportConfigurationRepository;
-}
-
 /** Everything an export needs, credentials included. Server-side only. */
-export async function exportSettings(deps: ExportDeps): Promise<ExportSettings> {
+export async function exportSettings(
+  deps: ExportConfigurationDeps,
+): Promise<ExportSettings> {
   return (await deps.configuration.load()).toSettings();
 }
 
 /** The same settings for the settings page: no credential crosses over. */
 export async function exportSummary(
-  deps: ExportDeps,
+  deps: ExportConfigurationDeps,
   secretIds: SecretOptionIds,
 ): Promise<ExportSettingsSummary> {
   return (await deps.configuration.load()).toSummary(secretIds);
 }
 
 export async function saveExportSettings(
-  deps: ExportDeps,
+  deps: ExportConfigurationDeps,
   settings: ExportSettings,
   secretIds: SecretOptionIds,
 ): Promise<void> {

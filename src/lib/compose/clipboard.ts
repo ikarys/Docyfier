@@ -1,8 +1,8 @@
 import type { JSONContent } from "@tiptap/core";
-import { docToHtml } from "@/lib/doc/html";
-import { docToJira } from "@/lib/doc/jira";
-import { docToMarkdown } from "@/lib/doc/markdown";
-import { docToText } from "@/lib/doc/text";
+import { docToHtml } from "@/infrastructure/rendering/html";
+import { docToJira } from "@/infrastructure/rendering/jira";
+import { docToMarkdown } from "@/infrastructure/rendering/markdown";
+import { docToText } from "@/infrastructure/rendering/text";
 import type { ComposeFormat } from "./types";
 
 /**

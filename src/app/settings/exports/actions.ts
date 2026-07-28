@@ -8,8 +8,7 @@ import type {
   ExportSettings,
   ExportTargetSettings,
 } from "@/domain/publishing/export-configuration";
-import { EXPORT_TARGETS } from "@/lib/export/registry";
-import { secretOptionIds } from "@/lib/export/secret-options";
+import { EXPORT_TARGETS, secretOptionIds } from "@/lib/export/registry";
 
 export type SaveExportsState = { saved: boolean; error?: string } | null;
 

@@ -1,4 +1,4 @@
-import type { JSONContent } from "@tiptap/core";
+import type { DocumentNode } from "@/domain/documents/body";
 
 /**
  * Semantic HTML rendering of a document.
@@ -19,18 +19,18 @@ import type { JSONContent } from "@tiptap/core";
 
 export interface HtmlContext {
   /** Render a list of block nodes. */
-  blocks(nodes: JSONContent[] | undefined): string;
+  blocks(nodes: DocumentNode[] | undefined): string;
   /** Render inline content (text + marks). */
-  inline(nodes: JSONContent[] | undefined): string;
+  inline(nodes: DocumentNode[] | undefined): string;
   /** Flatten a node to text, marks and structure dropped. */
-  text(node: JSONContent): string;
+  text(node: DocumentNode): string;
   /** Rewrite a document-relative URL for a reader outside this instance. */
   url(src: string): string;
 }
 
 export interface HtmlDialect {
   /** Markup for a node, or `null` to take the default rendering. */
-  block?(node: JSONContent, ctx: HtmlContext): string | null;
+  block?(node: DocumentNode, ctx: HtmlContext): string | null;
 }
 
 export interface HtmlOptions {
@@ -63,12 +63,12 @@ function makeContext(dialect: HtmlDialect, options: HtmlOptions): HtmlContext {
     return base && src.startsWith("/") ? `${base}${src}` : src;
   };
 
-  const text = (node: JSONContent): string => {
+  const text = (node: DocumentNode): string => {
     if (node.type === "text") return node.text ?? "";
     return (node.content ?? []).map(text).join(" ").replace(/\s+/g, " ").trim();
   };
 
-  const inline = (nodes: JSONContent[] | undefined): string => {
+  const inline = (nodes: DocumentNode[] | undefined): string => {
     if (!nodes) return "";
     return nodes
       .map((node) => {
@@ -99,7 +99,7 @@ function makeContext(dialect: HtmlDialect, options: HtmlOptions): HtmlContext {
       .join("");
   };
 
-  const blocks = (nodes: JSONContent[] | undefined): string =>
+  const blocks = (nodes: DocumentNode[] | undefined): string =>
     (nodes ?? [])
       .map((node) => renderBlock(node, ctx, dialect))
       .filter((html) => html.trim().length > 0)
@@ -109,25 +109,25 @@ function makeContext(dialect: HtmlDialect, options: HtmlOptions): HtmlContext {
   return ctx;
 }
 
-function imageTag(node: JSONContent, url: (src: string) => string): string {
+function imageTag(node: DocumentNode, url: (src: string) => string): string {
   const { src, alt } = (node.attrs ?? {}) as { src?: string; alt?: string };
   if (!src) return "";
   return `<img src="${escapeHtml(url(src))}" alt="${escapeHtml(alt ?? "")}" />`;
 }
 
 /** Code block text, unescaped by the walk — the caller escapes or wraps it. */
-export function rawText(node: JSONContent): string {
+export function rawText(node: DocumentNode): string {
   if (node.type === "text") return node.text ?? "";
   return (node.content ?? []).map(rawText).join("");
 }
 
-function listItems(node: JSONContent, ctx: HtmlContext): string {
+function listItems(node: DocumentNode, ctx: HtmlContext): string {
   return (node.content ?? [])
     .map((item) => `<li>${ctx.blocks(item.content)}</li>`)
     .join("\n");
 }
 
-function tableToHtml(node: JSONContent, ctx: HtmlContext): string {
+function tableToHtml(node: DocumentNode, ctx: HtmlContext): string {
   const rows = (node.content ?? []).map((row) => {
     const cells = (row.content ?? []).map((cell) => {
       const tag = cell.type === "tableHeader" ? "th" : "td";
@@ -144,7 +144,7 @@ function tableToHtml(node: JSONContent, ctx: HtmlContext): string {
 }
 
 /** A chart carries its data in attrs; the table is that data, losing nothing. */
-function chartToHtml(node: JSONContent): string {
+function chartToHtml(node: DocumentNode): string {
   const { title, caption, categories, series } = (node.attrs ?? {}) as {
     title?: string | null;
     caption?: string | null;
@@ -171,7 +171,7 @@ function chartToHtml(node: JSONContent): string {
 }
 
 /** value / label / optional delta, as one list line. */
-function statToHtml(node: JSONContent, ctx: HtmlContext): string {
+function statToHtml(node: DocumentNode, ctx: HtmlContext): string {
   const [value, label, delta] = (node.content ?? []).map(ctx.text);
   const tail = [label, delta].filter(Boolean).join(" — ");
   return `<li><strong>${escapeHtml(value ?? "")}</strong>${
@@ -179,7 +179,7 @@ function statToHtml(node: JSONContent, ctx: HtmlContext): string {
   }</li>`;
 }
 
-function defaultBlock(node: JSONContent, ctx: HtmlContext): string {
+function defaultBlock(node: DocumentNode, ctx: HtmlContext): string {
   switch (node.type) {
     case "heading": {
       const level = HEADING_LEVELS.includes(Number(node.attrs?.level))
@@ -271,7 +271,7 @@ function defaultBlock(node: JSONContent, ctx: HtmlContext): string {
 }
 
 function renderBlock(
-  node: JSONContent,
+  node: DocumentNode,
   ctx: HtmlContext,
   dialect: HtmlDialect,
 ): string {
@@ -281,7 +281,7 @@ function renderBlock(
 
 /** The document as an HTML fragment — no `<html>`, no wrapper element. */
 export function docToHtml(
-  doc: JSONContent,
+  doc: DocumentNode,
   dialect: HtmlDialect = {},
   options: HtmlOptions = {},
 ): string {

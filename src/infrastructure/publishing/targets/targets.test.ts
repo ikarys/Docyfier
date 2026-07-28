@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { JSONContent } from "@tiptap/core";
+import type { DocumentNode } from "@/domain/documents/body";
 import { confluenceTarget } from "./confluence";
 import { notionTarget } from "./notion";
 import { triliumTarget } from "./trilium";
-import type { ExportDocument } from "../types";
+import type { ExportDocument } from "@/domain/publishing/export-target";
 
-const doc = (...content: JSONContent[]): ExportDocument => ({
+const doc = (...content: DocumentNode[]): ExportDocument => ({
   title: "Rapport & bilan",
   content: { type: "doc", content },
 });
