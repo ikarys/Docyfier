@@ -1,4 +1,3 @@
-import "server-only";
 import { APICallError, generateObject, generateText, jsonSchema } from "ai";
 import type {
   GeneratedText,
@@ -6,22 +5,16 @@ import type {
   TextGenerator,
 } from "@/domain/authoring/text-generator";
 import { ModelUnavailable } from "@/domain/authoring/text-generator";
-import {
-  callOptions,
-  callTimeoutMs,
-  isTimeout,
-  languageModel,
-  llmBaseUrl,
-  timeoutMessage,
-} from "@/lib/ai/provider";
-import { getAiSettings } from "@/lib/settings/ai";
+import { callOptions, callTimeoutMs, isTimeout, timeoutMessage } from "./deadline";
+import { languageModel, type LoadEndpoint, type ProviderEndpoint } from "./endpoint";
 
 /**
  * The `TextGenerator` adapter over any OpenAI-compatible endpoint.
  *
  * Everything the use cases must not know sits here: the SDK, the deadline, the
  * retry budget, and the wording a user reads when an endpoint is unreachable —
- * only this layer knows which endpoint that was.
+ * only this layer knows which endpoint that was. Which endpoint is in force is
+ * handed in by the composition root, never read from settings here.
  */
 
 /**
@@ -39,9 +32,9 @@ const DOC_ENVELOPE = jsonSchema<{ type: string; content: unknown[] }>({
   required: ["type", "content"],
 });
 
-async function unreachable(err: unknown): Promise<never> {
+function unreachable(baseUrl: string, err: unknown): never {
   throw new ModelUnavailable(
-    `Cannot reach the AI server at ${await llmBaseUrl()}. Check Settings and make sure the server is running with a model loaded. (${String(err)})`,
+    `Cannot reach the AI server at ${baseUrl}. Check Settings and make sure the server is running with a model loaded. (${String(err)})`,
   );
 }
 
@@ -70,52 +63,57 @@ function logFailure(err: unknown): void {
   console.error("[ai] generateText failed:", err);
 }
 
-export const openAiCompatibleGenerator: TextGenerator = {
-  async generate(request: GenerationRequest): Promise<GeneratedText> {
-    try {
-      const model = await languageModel();
-      const { maxOutputTokens } = await getAiSettings();
-      const { text, finishReason } = await generateText({
-        model,
-        system: request.system,
-        prompt: request.prompt,
-        temperature: request.temperature,
-        maxOutputTokens,
-        ...callOptions(),
-      });
-      return { text, truncated: finishReason === "length" };
-    } catch (err) {
-      if (isTimeout(err)) {
-        console.error("[ai] generateText timed out after", callTimeoutMs(), "ms");
-        throw new ModelUnavailable(timeoutMessage());
+export function createOpenAiCompatibleGenerator(
+  loadEndpoint: LoadEndpoint,
+): TextGenerator {
+  return {
+    async generate(request: GenerationRequest): Promise<GeneratedText> {
+      const endpoint = await loadEndpoint();
+      try {
+        const { text, finishReason } = await generateText({
+          model: await languageModel(endpoint),
+          system: request.system,
+          prompt: request.prompt,
+          temperature: request.temperature,
+          maxOutputTokens: endpoint.maxOutputTokens,
+          ...callOptions(),
+        });
+        return { text, truncated: finishReason === "length" };
+      } catch (err) {
+        if (isTimeout(err)) {
+          console.error("[ai] generateText timed out after", callTimeoutMs(), "ms");
+          throw new ModelUnavailable(timeoutMessage());
+        }
+        logFailure(err);
+        if (looksUnreachable(err)) unreachable(endpoint.baseUrl, err);
+        throw err;
       }
-      logFailure(err);
-      if (looksUnreachable(err)) return unreachable(err);
-      throw err;
-    }
-  },
+    },
 
-  /**
-   * The provider's JSON mode, when the setting is on. Any failure there answers
-   * `null` so the caller falls back to reading JSON out of text: turning the
-   * option on can never make a working provider stop working.
-   */
-  generateJson(request: GenerationRequest): Promise<unknown | null> {
-    return structuredAnswer(request);
-  },
-};
+    /**
+     * The provider's JSON mode, when the setting is on. Any failure there answers
+     * `null` so the caller falls back to reading JSON out of text: turning the
+     * option on can never make a working provider stop working.
+     */
+    async generateJson(request: GenerationRequest): Promise<unknown | null> {
+      return structuredAnswer(await loadEndpoint(), request);
+    },
+  };
+}
 
-async function structuredAnswer(request: GenerationRequest): Promise<unknown | null> {
-  const { maxOutputTokens, structuredOutput } = await getAiSettings();
-  if (!structuredOutput || request.shape !== "document") return null;
+async function structuredAnswer(
+  endpoint: ProviderEndpoint,
+  request: GenerationRequest,
+): Promise<unknown | null> {
+  if (!endpoint.structuredOutput || request.shape !== "document") return null;
   try {
     const { object } = await generateObject({
-      model: await languageModel(),
+      model: await languageModel(endpoint),
       schema: DOC_ENVELOPE,
       system: request.system,
       prompt: request.prompt,
       temperature: request.temperature,
-      maxOutputTokens,
+      maxOutputTokens: endpoint.maxOutputTokens,
       ...callOptions(),
     });
     return object;

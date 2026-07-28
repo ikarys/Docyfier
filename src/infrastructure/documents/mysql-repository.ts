@@ -1,5 +1,5 @@
 import "server-only";
-import type { StorageSettings } from "@/lib/settings-types";
+import type { StorageConnectionRecord } from "@/domain/configuration/storage-connection";
 import { connectSqlRepository, type SqlClient, type SqlStatements } from "./sql-repository";
 import type { DocumentRepository } from "@/domain/documents/repository";
 
@@ -39,7 +39,7 @@ const STATEMENTS: SqlStatements = {
 };
 
 export async function createMysqlRepository(
-  settings: StorageSettings,
+  settings: StorageConnectionRecord,
 ): Promise<DocumentRepository> {
   const mysql = await import("mysql2/promise");
   const pool = mysql.createPool({

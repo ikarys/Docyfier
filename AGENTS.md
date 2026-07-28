@@ -95,10 +95,12 @@ renderers — HTML, Markdown, Jira, plain text — are adapters too and live in
 `settings/{ai,storage,exports}`, `ai/service.ts`, `export/`, `compose/`,
 `auth.ts`.
 
-The editor components and the rest of `src/lib/doc/` (import, beautify, chart,
-diff, upload) have not moved yet. Four infrastructure adapters still import
-upward from `src/lib/` — the SQL repositories and the OpenAI-compatible
-generator — and that is the next inversion to break.
+No infrastructure adapter imports upward any more: the SQL repositories take the
+`StorageConnectionRecord` the domain declares, and the OpenAI-compatible adapters
+(`src/infrastructure/authoring/openai-compatible/`) receive the provider to talk
+to as an argument — `src/lib/ai/provider.ts` is the only module that resolves it
+from Settings. The editor components and the rest of `src/lib/doc/` (import,
+beautify, chart, diff, upload) have not moved yet, and that is the next step.
 
 - **The domain imports nothing.** No `next/*`, no `@tiptap/*`, no `react`, no
   `pg`/`mysql2`, no `ai`, no `node:fs`. If a domain file needs an import from

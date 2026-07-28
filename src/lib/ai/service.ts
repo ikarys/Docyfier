@@ -12,7 +12,8 @@ import {
   type TransformOutcome,
 } from "@/application/authoring/write-documents";
 import type { DocumentNode } from "@/domain/documents/body";
-import { openAiCompatibleGenerator } from "@/infrastructure/authoring/openai-compatible-generator";
+import { createOpenAiCompatibleGenerator } from "@/infrastructure/authoring/openai-compatible/generator";
+import { activeEndpoint } from "@/lib/ai/provider";
 import { beautify } from "@/lib/doc/beautify";
 import { validateDocJson } from "./doc-schema";
 
@@ -30,7 +31,7 @@ export type { TransformOutcome };
 
 function deps(): AuthoringDeps {
   return {
-    generator: openAiCompatibleGenerator,
+    generator: createOpenAiCompatibleGenerator(activeEndpoint),
     validator: { validate: validateDocJson },
     polisher: { polish: beautify },
   };
