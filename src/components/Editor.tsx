@@ -99,9 +99,6 @@ export function DocumentEditor({
         saveState={autosave.saveState}
         panel={panel}
         onTogglePanel={(which) => setPanel((p) => (p === which ? null : which))}
-        theme={theme}
-        presets={presets}
-        onChangeTheme={changeTheme}
         onSaveNow={autosave.saveNow}
       />
       <div className="editor-body" data-panel={panel !== null}>
