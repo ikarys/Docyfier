@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/react";
 import { findMatches } from "@/domain/documents/text-matches";
 import { replaceMatches, searchableBlocks } from "@/infrastructure/editor/search";
 import { EMPTY_SEARCH, searchReducer, type SearchAction, type SearchSession } from "./search-session";
+import { useWindowShortcut } from "./useWindowShortcut";
 
 export interface DocumentSearch {
   readonly open: boolean;
@@ -29,15 +30,7 @@ export function useDocumentSearch(editor: Editor | null): DocumentSearch {
   /** Bumped on every edit, so the matches are those of the current document. */
   const [edits, setEdits] = useState(0);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key !== "f") return;
-      event.preventDefault();
-      setOpen(true);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  useWindowShortcut("f", useCallback(() => setOpen(true), []));
 
   useEffect(() => {
     if (!editor) return;

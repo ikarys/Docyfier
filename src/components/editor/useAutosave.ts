@@ -5,6 +5,7 @@ import type { Editor, JSONContent } from "@tiptap/react";
 import { saveDocumentAction } from "@/app/actions";
 import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 import { clearDraft, readDraft, usableDraft, writeDraft } from "@/lib/editor/draft";
+import { useWindowShortcut } from "./useWindowShortcut";
 import type { SaveState } from "./save-state";
 
 /**
@@ -129,18 +130,9 @@ export function useAutosave(
     flushSave();
   }, [editor, id, flushSave]);
 
-  // `Mod-S` is what a writer presses when they want to be sure. Saving is
-  // already automatic, so this only skips the pause — and it answers wherever
-  // the caret is, which a keymap inside the editor could not.
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key !== "s") return;
-      event.preventDefault();
-      saveNow();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [saveNow]);
+  // `Mod-S` is what a writer presses when they want to be sure; saving is
+  // already automatic, so it only skips the pause.
+  useWindowShortcut("s", saveNow);
 
   const setStreaming = useCallback((value: boolean) => {
     streaming.current = value;

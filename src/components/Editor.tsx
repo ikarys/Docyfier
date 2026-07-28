@@ -3,8 +3,6 @@
 import { useRef, useState } from "react";
 import { useEditor, type JSONContent } from "@tiptap/react";
 import type { JSONContent as DocJSON } from "@tiptap/core";
-import { imageFilesOf, insertUploadedImages } from "@/components/editor/image-upload";
-import { insertPastedText } from "@/components/editor/paste-insert";
 import {
   presetSkin,
   resolveTokens,
@@ -15,6 +13,7 @@ import {
 import { AiPanel } from "./AiPanel";
 import { AiDiffBar } from "./AiDiffBar";
 import { DesignPanel } from "./DesignPanel";
+import { documentEditorProps } from "./editor/editor-props";
 import { EditorSurface } from "./editor/EditorSurface";
 import { editorExtensions } from "./editor/extensions";
 import { MenuBar, type PanelName } from "./editor/MenuBar";
@@ -64,32 +63,7 @@ export function DocumentEditor({
     immediatelyRender: false,
     extensions,
     content: initialContent,
-    editorProps: {
-      attributes: { class: "doc doc-editor" },
-      // Images arrive by paste or drop, are uploaded, then inserted by URL.
-      // Returning true swallows the event so ProseMirror does not also insert
-      // the browser's own (base64 or file://) representation.
-      handlePaste: (view, event) => {
-        const files = imageFilesOf(event.clipboardData?.files ?? null);
-        if (files.length > 0) {
-          void insertUploadedImages(view, files, view.state.selection.from);
-          return true;
-        }
-        // Then text that deserves better than a wall of characters: a
-        // spreadsheet range, a markdown snippet.
-        return event.clipboardData
-          ? insertPastedText(view, event.clipboardData)
-          : false;
-      },
-      handleDrop: (view, event, _slice, moved) => {
-        if (moved) return false;
-        const files = imageFilesOf(event.dataTransfer?.files ?? null);
-        if (files.length === 0) return false;
-        const at = view.posAtCoords({ left: event.clientX, top: event.clientY });
-        void insertUploadedImages(view, files, at?.pos ?? view.state.selection.from);
-        return true;
-      },
-    },
+    editorProps: documentEditorProps(),
     onUpdate: ({ editor }) => autosaveRef.current?.scheduleSave(editor),
   });
 
