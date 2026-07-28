@@ -7,12 +7,8 @@ import Suggestion, {
 } from "@tiptap/suggestion";
 import { createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import {
-  SlashMenuList,
-  filterSlashItems,
-  type SlashItem,
-  type SlashMenuHandle,
-} from "../SlashMenu";
+import { SlashMenuList, type SlashMenuHandle } from "../SlashMenu";
+import { filterSlashItems, type SlashItem } from "./slash-items";
 
 /**
  * Slash menu (PLAN.md STEP U1): type "/" to insert any block without the
