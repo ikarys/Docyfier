@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { testDeps, type TestDeps } from "@test/fakes/document-deps";
+import { Brand } from "@/domain/documents/brand";
 import { getDocument } from "./read-documents";
 import {
   createDocument,
@@ -32,6 +33,22 @@ beforeEach(() => {
  * says so instead of failing.
  */
 describe("createDocument", () => {
+  it("dresses a document with no theme of its own in the instance's", async () => {
+    await deps.brand.save(Brand.empty().withDefaultTheme({ preset: "vivid" }));
+
+    const document = await createDocument(deps);
+
+    expect(document.theme).toEqual({ preset: "vivid" });
+  });
+
+  it("keeps the theme the caller named — a template's, or the one a model chose", async () => {
+    await deps.brand.save(Brand.empty().withDefaultTheme({ preset: "vivid" }));
+
+    const document = await createDocument(deps, { theme: { preset: "minimal" } });
+
+    expect(document.theme).toEqual({ preset: "minimal" });
+  });
+
   it("persists the new document under a generated id", async () => {
     const document = await createDocument(deps);
 

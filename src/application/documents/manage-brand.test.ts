@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Brand, InvalidBrandPreset } from "@/domain/documents/brand";
-import type { BrandRepository } from "@/domain/documents/brand-repository";
+import { InvalidBrandPreset } from "@/domain/documents/brand";
 import { DEFAULT_PRESET } from "@/domain/documents/theme";
+import { InMemoryBrandRepository } from "@/infrastructure/configuration/in-memory-brand-repository";
 import type { BrandDeps } from "./deps";
 import {
   brandRecord,
@@ -11,20 +11,6 @@ import {
   setBrandTheme,
   themeForNewDocument,
 } from "./manage-brand";
-
-/** An in-memory brand repository: the port proved by the simplest thing that
- * can implement it, so these tests never touch a file. */
-class InMemoryBrandRepository implements BrandRepository {
-  constructor(private brand = Brand.empty()) {}
-
-  async load(): Promise<Brand> {
-    return this.brand;
-  }
-
-  async save(brand: Brand): Promise<void> {
-    this.brand = brand;
-  }
-}
 
 const TOKENS = {
   accent: "#008060",

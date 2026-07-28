@@ -1,5 +1,5 @@
 import { Document } from "@/domain/documents/document";
-import type { DocumentDeps } from "./deps";
+import type { BrandDeps, DocumentDeps } from "./deps";
 import { getDocument } from "./read-documents";
 
 /**
@@ -25,15 +25,20 @@ async function update(
   return updated;
 }
 
+/**
+ * A document with no theme of its own wears the instance's (PLAN.md STEP 9).
+ * A caller that names one — a template, an art direction — keeps it: the brand
+ * is the default, not an override.
+ */
 export async function createDocument(
-  deps: DocumentDeps,
+  deps: DocumentDeps & BrandDeps,
   input: { body?: unknown; theme?: unknown } = {},
 ): Promise<Document> {
   const document = Document.create({
     id: deps.ids.next(),
     now: deps.clock.now(),
     body: input.body,
-    theme: input.theme,
+    theme: input.theme ?? (await deps.brand.load()).themeForNewDocument(),
   });
   await deps.repository.put(document.toRecord());
   return document;
