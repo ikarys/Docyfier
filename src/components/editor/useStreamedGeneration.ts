@@ -5,6 +5,7 @@ import type { Editor, JSONContent } from "@tiptap/react";
 import { deleteDocumentAction } from "@/app/actions";
 import { fillDocumentAction } from "@/app/ai-actions";
 import { ndjsonLines, stashGenerateError, takePrompt } from "@/components/editor/generation-handover";
+import type { DocumentTheme } from "@/lib/themes";
 import type { Autosave } from "./useAutosave";
 
 /**
@@ -28,6 +29,7 @@ export function useStreamedGeneration(
   id: string,
   editor: Editor | null,
   autosave: Autosave,
+  dress: (theme: DocumentTheme) => void,
 ): Generation {
   const [streamed, setStreamed] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +64,7 @@ export function useStreamedGeneration(
       for await (const entry of ndjsonLines(body)) {
         if (cancelled) return null;
         if (entry.block) append(entry.block as JSONContent);
+        else if (entry.theme) dress(entry.theme as DocumentTheme);
         else if (typeof entry.error === "string") failure = entry.error;
       }
       return failure;
@@ -71,6 +74,7 @@ export function useStreamedGeneration(
     const generateAtOnce = async (): Promise<string | null> => {
       const fallback = await fillDocumentAction(id, prompt);
       if (!fallback.ok) return fallback.error;
+      if (fallback.theme) dress(fallback.theme);
       editor.commands.setContent(fallback.content, { emitUpdate: false });
       count = fallback.content.content?.length ?? 1;
       setStreamed(count);
@@ -112,7 +116,7 @@ export function useStreamedGeneration(
       cancelled = true;
       setStreaming(false);
     };
-  }, [editor, id, saveNow, setStreaming]);
+  }, [dress, editor, id, saveNow, setStreaming]);
 
   return { streamed, error, dismissError: () => setError(null) };
 }

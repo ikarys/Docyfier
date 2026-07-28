@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import type { JSONContent } from "@tiptap/core";
 import { createDocument, updateDocument } from "@/lib/store";
+import type { DocumentTheme } from "@/lib/themes";
 import {
   generateDocument,
   transformDocument,
@@ -16,7 +17,7 @@ import {
 /** Server actions for the three AI surfaces (PLAN.md STEP 2). */
 
 export type GenerateResult =
-  | { ok: true; content: JSONContent }
+  | { ok: true; content: JSONContent; theme: DocumentTheme | null }
   | { ok: false; error: string };
 
 export type TransformResult =
@@ -61,9 +62,11 @@ export async function fillDocumentAction(
   const trimmed = prompt.trim();
   if (!trimmed) return { ok: false, error: "Describe the document you want first." };
   try {
-    const content = await generateDocument(trimmed);
+    const { content, theme } = await generateDocument(trimmed);
     await updateDocument(id, content);
-    return { ok: true, content };
+    // The theme travels back rather than being written here: the editor applies
+    // and persists it through the same path the streamed one takes.
+    return { ok: true, content, theme };
   } catch (err) {
     return { ok: false, error: message(err) };
   }

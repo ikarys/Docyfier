@@ -12,8 +12,10 @@ import {
   transformDocument as editDocument,
   type TransformOutcome,
 } from "@/application/authoring/write-documents";
+import { themeFromArt } from "@/application/documents/theme-from-art";
 import type { DocumentBrief } from "@/domain/authoring/brief";
 import type { DocumentNode } from "@/domain/documents/body";
+import type { DocumentTheme } from "@/domain/documents/theme";
 import { artVocabulary } from "@/lib/ai/art-vocabulary";
 import { createOpenAiCompatibleGenerator } from "@/infrastructure/authoring/openai-compatible/generator";
 import { activeEndpoint } from "@/lib/ai/provider";
@@ -49,11 +51,21 @@ export function planDocument(prompt: string): Promise<DocumentBrief> {
   return planBrief(deps(), prompt, artVocabulary());
 }
 
+/** A written document and the dress its plan chose for it. */
+export interface WrittenDocument {
+  content: JSONContent;
+  /** Null when the plan proposed nothing usable: the document keeps its own. */
+  theme: DocumentTheme | null;
+}
+
 /** Surface 1 — prompt-to-document, planned then written. */
-export async function generateDocument(prompt: string): Promise<JSONContent> {
+export async function generateDocument(prompt: string): Promise<WrittenDocument> {
   const authoring = deps();
   const brief = await planBrief(authoring, prompt, artVocabulary());
-  return writeDocument(authoring, prompt, brief);
+  return {
+    content: await writeDocument(authoring, prompt, brief),
+    theme: themeFromArt(brief.art),
+  };
 }
 
 /** Surface 2 — whole-document transform (side panel, "make it pretty"). */

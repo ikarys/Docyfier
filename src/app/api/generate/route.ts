@@ -5,6 +5,7 @@ import {
   languageModel,
   timeoutMessage,
 } from "@/lib/ai/provider";
+import { themeFromArt } from "@/application/documents/theme-from-art";
 import { writerSystem } from "@/domain/authoring/prompts";
 import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
 import { planDocument } from "@/lib/ai/service";
@@ -138,6 +139,10 @@ export async function POST(req: Request): Promise<Response> {
 
       try {
         let failure: string | null = null;
+        // The dress before the first block: the document is styled while it is
+        // still being written, rather than changing look once it is done.
+        const theme = themeFromArt(brief.art);
+        if (theme) controller.enqueue(encoder.encode(line({ theme })));
         for (const raw of scanner.push(firstText)) emit(raw);
 
         while (!scanner.finished) {

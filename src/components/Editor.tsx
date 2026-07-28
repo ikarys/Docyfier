@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useEditor, type JSONContent } from "@tiptap/react";
 import type { JSONContent as DocJSON } from "@tiptap/core";
-import { setDocumentThemeAction } from "@/app/actions";
 import { imageFilesOf, insertUploadedImages } from "@/components/editor/image-upload";
 import { resolveTokens, tokenStyle, type DocumentTheme } from "@/lib/themes";
 import { AiPanel } from "./AiPanel";
@@ -14,6 +13,7 @@ import { EDITOR_EXTENSIONS } from "./editor/extensions";
 import { MenuBar, type PanelName } from "./editor/MenuBar";
 import { useAiReview } from "./editor/useAiReview";
 import { useAutosave, type Autosave } from "./editor/useAutosave";
+import { useDocumentTheme } from "./editor/useDocumentTheme";
 import { useStreamedGeneration } from "./editor/useStreamedGeneration";
 
 /**
@@ -21,9 +21,6 @@ import { useStreamedGeneration } from "./editor/useStreamedGeneration";
  * around it. Saving, streaming generation and AI review each live in their own
  * hook — this component wires them together and renders.
  */
-
-/** Theme writes are debounced: the accent color input fires per pixel. */
-const THEME_DEBOUNCE_MS = 400;
 
 export function DocumentEditor({
   id,
@@ -38,8 +35,7 @@ export function DocumentEditor({
 }) {
   /** Only one side panel at a time — they share the same slot. */
   const [panel, setPanel] = useState<PanelName | null>("ai");
-  const [theme, setTheme] = useState(initialTheme);
-  const themeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { theme, changeTheme } = useDocumentTheme(id, initialTheme);
   /** The editor is created before the hook that saves it, and its `onUpdate`
    * only fires once both exist — hence the indirection rather than an order. */
   const autosaveRef = useRef<Autosave | null>(null);
@@ -78,19 +74,8 @@ export function DocumentEditor({
 
   const autosave = useAutosave(id, editor, initialUpdatedAt);
   autosaveRef.current = autosave;
-  const generation = useStreamedGeneration(id, editor, autosave);
+  const generation = useStreamedGeneration(id, editor, autosave, changeTheme);
   const review = useAiReview(editor, autosave);
-
-  const changeTheme = useCallback(
-    (next: DocumentTheme) => {
-      setTheme(next);
-      if (themeTimer.current) clearTimeout(themeTimer.current);
-      themeTimer.current = setTimeout(() => {
-        void setDocumentThemeAction(id, next);
-      }, THEME_DEBOUNCE_MS);
-    },
-    [id],
-  );
 
   if (!editor) return null;
 
