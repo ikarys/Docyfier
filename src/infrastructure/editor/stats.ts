@@ -1,7 +1,7 @@
 import { Node, mergeAttributes } from "@tiptap/core";
-import type { CardAccent } from "./Cards";
+import type { CardAccent } from "./cards";
 import { iconAttribute, renderWithBody } from "./icon";
-import { deleteLayoutBlockOnBackspace } from "./layoutDelete";
+import { deleteLayoutBlockOnBackspace } from "./layout-delete";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {

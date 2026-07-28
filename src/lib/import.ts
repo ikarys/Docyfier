@@ -8,7 +8,7 @@ import {
 } from "@/domain/documents/import-file";
 import { parseHtmlBody } from "@/infrastructure/documents/html-body-parser";
 import { htmlFromFile, markdownToHtml } from "@/infrastructure/documents/source-html";
-import { editorSchema, validateDocJson } from "@/lib/ai/doc-schema";
+import { editorSchema, validateDocJson } from "@/infrastructure/editor/schema";
 
 /**
  * Composition root for document import (PLAN.md STEP 5): bring an existing file

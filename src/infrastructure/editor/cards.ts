@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { iconAttribute, renderWithIcon } from "./icon";
-import { deleteLayoutBlockOnBackspace } from "./layoutDelete";
+import { deleteLayoutBlockOnBackspace } from "./layout-delete";
 
 export type CardAccent =
   | "none"

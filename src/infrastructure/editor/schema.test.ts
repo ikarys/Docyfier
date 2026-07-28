@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateDocJson } from "./doc-schema";
+import { validateDocJson } from "./schema";
 import { TEMPLATES } from "@/lib/templates";
 import { sampleChart } from "@/domain/documents/chart";
 

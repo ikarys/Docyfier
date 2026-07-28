@@ -1,5 +1,5 @@
 import "server-only";
-import { validateDocJson } from "@/lib/ai/doc-schema";
+import { validateDocJson } from "@/infrastructure/editor/schema";
 import { TEMPLATES } from "@/lib/templates";
 
 /**

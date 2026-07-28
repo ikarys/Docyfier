@@ -1052,7 +1052,7 @@ body {
 
 /* ---- Block icons (STEP U6) ------------------------------------------------
    One stroked glyph inheriting the block's accent. The `*-body` wrappers only
-   exist when a block carries an icon (see extensions/icon.ts), so every rule
+   exist when a block carries an icon (see src/infrastructure/editor/icon.ts), so every rule
    here is additive: an icon-less block keeps its pre-U6 layout untouched.
    ========================================================================= */
 

@@ -246,7 +246,8 @@ Ports are overridable: `just dev 4000`. Each recipe maps to an npm script, so
 ### Project layout
 
 - `src/components/Editor.tsx` — Tiptap editor, toolbar, autosave.
-- `src/components/extensions/` — custom nodes (callouts, charts, cards…).
+- `src/infrastructure/editor/` — the Tiptap adapter: custom nodes (callouts,
+  charts, cards…) and the schema AI output is validated against.
 - `src/components/AiPanel.tsx` / `SelectionAiMenu.tsx` / `GenerateHero.tsx` —
   the three AI surfaces.
 - `src/lib/ai/` — provider, prompts, schema validation, services.

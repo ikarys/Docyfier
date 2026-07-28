@@ -13,7 +13,7 @@ declare module "@tiptap/core" {
  * entries are *derived* from the document's headings by the node view, so they
  * can never drift out of sync with the headings the way a copied list would.
  *
- * Schema-only, no React import: `src/lib/ai/doc-schema.ts` is server-only and
+ * Schema-only, no React import: `src/infrastructure/editor/schema.ts` is server-only and
  * imports this file. The node view lives in `src/components/TocView.tsx`.
  */
 export const TableOfContents = Node.create({

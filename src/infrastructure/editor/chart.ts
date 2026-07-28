@@ -28,7 +28,7 @@ function parseJsonAttr<T>(el: HTMLElement, name: string, fallback: T): T {
  * node view — no chart library, and printable by construction.
  *
  * Shape and bounds of the data are defined once in `src/domain/documents/chart.ts` and
- * enforced server-side by `src/lib/ai/doc-schema.ts`.
+ * enforced server-side by `src/infrastructure/editor/schema.ts`.
  *
  * Schema only — no node view here, so the server-only validation schema can
  * import it without pulling React in. The editor uses `ChartNode` from

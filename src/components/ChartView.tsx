@@ -5,7 +5,7 @@ import {
   ReactNodeViewRenderer,
   type NodeViewProps,
 } from "@tiptap/react";
-import { Chart } from "./extensions/Chart";
+import { Chart } from "@/infrastructure/editor/chart";
 import {
   CHART_KINDS,
   MAX_CATEGORIES,

@@ -1,5 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
-import { deleteLayoutBlockOnBackspace } from "./layoutDelete";
+import { deleteLayoutBlockOnBackspace } from "./layout-delete";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {

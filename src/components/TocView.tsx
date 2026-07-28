@@ -6,7 +6,7 @@ import {
   ReactNodeViewRenderer,
   type NodeViewProps,
 } from "@tiptap/react";
-import { TableOfContents } from "./extensions/Toc";
+import { TableOfContents } from "@/infrastructure/editor/toc";
 
 /** The TOC node wired to its React rendering — this is what the editor loads. */
 export const TocNode = TableOfContents.extend({

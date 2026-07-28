@@ -2,9 +2,9 @@
  * Chart data model, validation and axis geometry (PLAN.md STEP U6).
  *
  * Isomorphic on purpose: the editor node view uses it to render, and
- * `src/lib/ai/doc-schema.ts` uses it to reject malformed AI output before it
- * ever reaches the document — so it stays free of React and of `server-only`,
- * like everything else in this layer.
+ * `src/infrastructure/editor/schema.ts` uses it to reject malformed AI output
+ * before it ever reaches the document — so it stays free of React and of
+ * `server-only`, like everything else in this layer.
  */
 
 export const CHART_KINDS = ["bar", "line"] as const;

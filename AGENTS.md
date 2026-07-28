@@ -102,10 +102,11 @@ to as an argument — `src/lib/ai/provider.ts` is the only module that resolves 
 from Settings. `src/lib/doc/` is gone: its rules went to the domain (`beautify`,
 `block-diff`, `chart`, `import-file`), its conversions to
 `infrastructure/documents/` (`source-html`, `html-body-parser`, `editor-body`),
-and its browser halves next to the editor components. What has not moved is the
-editor itself — the Tiptap extensions under `src/components/extensions/` are
-adapters living in the framework layer, which is why `src/lib/ai/doc-schema.ts`
-still composes the schema from there. That is the next step.
+and its browser halves next to the editor components. The Tiptap node
+definitions and the schema AI output is validated against are adapters too, and
+live in `infrastructure/editor/`; what stays in `app/` is what renders — the
+React node views and the slash menu. Editor state still lives in components,
+and pulling those state machines into testable modules is the next step.
 
 - **The domain imports nothing.** No `next/*`, no `@tiptap/*`, no `react`, no
   `pg`/`mysql2`, no `ai`, no `node:fs`. If a domain file needs an import from

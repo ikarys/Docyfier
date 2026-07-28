@@ -271,16 +271,16 @@ Recommended order: **U1 → U4 → U3 → U2 → U5 → U6**.
 ### Ground rules for implementers (read before any U-STEP)
 
 - Read [AGENTS.md](AGENTS.md), then these files before writing code:
-  `src/components/Editor.tsx`, `src/components/extensions/Cards.ts` (the
+  `src/components/Editor.tsx`, `src/infrastructure/editor/cards.ts` (the
   canonical custom-node pattern — copy its structure for any new node),
-  `src/lib/ai/prompts.ts`, `src/lib/ai/doc-schema.ts`, `src/lib/ai/service.ts`,
+  `src/domain/authoring/prompts.ts`, `src/infrastructure/editor/schema.ts`, `src/lib/ai/service.ts`,
   `src/lib/store.ts`, `src/lib/themes.ts`, `src/app/globals.css`.
 - Stack: Next.js 15 (App Router + server actions), Tiptap v3, Vercel AI SDK v7,
   Tailwind v4. Documents are ProseMirror JSON on disk via `src/lib/store.ts`.
 - **Every new node type must be registered in three places** or AI output will
   fail validation: the editor extensions (`Editor.tsx`), the server validation
-  schema (`src/lib/ai/doc-schema.ts`), and the AI format contract
-  (`src/lib/ai/prompts.ts`).
+  schema (`src/infrastructure/editor/schema.ts`), and the AI format contract
+  (`src/domain/authoring/prompts.ts`).
 - No new UI libraries without maintainer approval — plain React + CSS in
   `globals.css`, matching the existing code. Tiptap official extensions are fine.
 - Small diffs, Conventional Commits, one concern per commit. Verify each
@@ -349,7 +349,7 @@ Instructions:
    provider rejects streaming.
 2. **Targeted whole-document transforms.** Replace the "resend the full doc,
    get the full doc back" contract of surface 2. New prompt in
-   `src/lib/ai/prompts.ts`: input = the document as a numbered list of
+   `src/domain/authoring/prompts.ts`: input = the document as a numbered list of
    top-level blocks (`index` + JSON); output = a JSON **array of ops**:
    `{"op":"replace","index":n,"blocks":[...]}`,
    `{"op":"insert_after","index":n,"blocks":[...]}`,

@@ -15,7 +15,7 @@ import type { DocumentNode } from "@/domain/documents/body";
 import { createOpenAiCompatibleGenerator } from "@/infrastructure/authoring/openai-compatible/generator";
 import { activeEndpoint } from "@/lib/ai/provider";
 import { beautify } from "@/domain/authoring/beautify";
-import { validateDocJson } from "./doc-schema";
+import { validateDocJson } from "@/infrastructure/editor/schema";
 
 /**
  * Composition root for the AI surfaces.

@@ -5,7 +5,7 @@ import {
   ReactNodeViewRenderer,
   type NodeViewProps,
 } from "@tiptap/react";
-import { DocImage, IMAGE_WIDTHS } from "./extensions/DocImage";
+import { DocImage, IMAGE_WIDTHS } from "@/infrastructure/editor/doc-image";
 
 /** The image node wired to its React rendering — this is what the editor loads. */
 export const ImageNode = DocImage.extend({

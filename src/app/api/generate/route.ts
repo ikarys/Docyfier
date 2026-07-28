@@ -6,7 +6,7 @@ import {
   timeoutMessage,
 } from "@/lib/ai/provider";
 import { GENERATE_SYSTEM } from "@/domain/authoring/prompts";
-import { validateDocJson } from "@/lib/ai/doc-schema";
+import { validateDocJson } from "@/infrastructure/editor/schema";
 import { BlockScanner } from "@/lib/ai/stream-blocks";
 import { beautify } from "@/domain/authoring/beautify";
 import { getAiSettings } from "@/lib/settings";

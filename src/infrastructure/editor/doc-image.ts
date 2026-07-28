@@ -8,7 +8,7 @@ export type ImageWidth = (typeof IMAGE_WIDTHS)[number];
  * percentage of the text column — a percentage rather than pixels so the same
  * document lays out identically on screen and on an A4 page.
  *
- * Schema-only, no React import: `src/lib/ai/doc-schema.ts` is server-only and
+ * Schema-only, no React import: `src/infrastructure/editor/schema.ts` is server-only and
  * imports this file to validate AI output. The node view lives in
  * `src/components/ImageView.tsx`.
  */
