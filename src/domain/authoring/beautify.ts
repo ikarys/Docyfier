@@ -1,5 +1,7 @@
 import type { DocumentBody, DocumentNode } from "@/domain/documents/body";
 import { ACCENT_CYCLE, paintAccents } from "./accents";
+import { stripEmoji } from "./emoji";
+import { StyleParameters } from "./style-parameters";
 
 /**
  * Deterministic formatter (hybrid "make it pretty", PLAN.md STEP 2b groundwork).
@@ -13,7 +15,8 @@ import { ACCENT_CYCLE, paintAccents } from "./accents";
  *   to the document THEME, never to inline hex the model invented;
  * - turn a two-column "label / value" table into a statRow (numeric values) or
  *   a cardGrid (prose values), every time, so the same input always upgrades;
- * - paint the accents of a layout block the model left grey.
+ * - paint the accents of a layout block the model left grey;
+ * - remove the emoji an instance that turned them off keeps being sent anyway.
  *
  * Pure and side-effect free: same input → same output. Output is re-validated
  * against the editor schema by the caller; anything it can't safely upgrade it
@@ -137,13 +140,19 @@ function stripHeadingColors(node: DocumentNode): DocumentNode {
   return next;
 }
 
-/** Apply every deterministic upgrade to a whole document. */
-export function beautify(doc: DocumentBody): DocumentBody {
+/** Apply every deterministic upgrade to a whole document. The style parameters
+ * decide the rules the model was only *asked* to follow — an instance with
+ * emoji off gets them removed, not merely discouraged. */
+export function beautify(
+  doc: DocumentBody,
+  style: StyleParameters = StyleParameters.defaults(),
+): DocumentBody {
   if (doc?.type !== "doc" || !Array.isArray(doc.content)) return doc;
   const content = doc.content.map((block) => {
     const upgraded =
       block.type === "table" ? twoColumnTableToLayout(block) : null;
     return paintAccents(stripHeadingColors(upgraded ?? block));
   });
-  return { ...doc, content };
+  const polished = { ...doc, content };
+  return style.emoji ? polished : stripEmoji(polished);
 }

@@ -22,6 +22,7 @@ import type { DocumentTheme } from "@/domain/documents/theme";
 import { artVocabulary } from "@/lib/ai/art-vocabulary";
 import { createOpenAiCompatibleGenerator } from "@/infrastructure/authoring/openai-compatible/generator";
 import { activeEndpoint } from "@/lib/ai/provider";
+import { getStyleParameters } from "@/lib/settings/style";
 import { beautify } from "@/domain/authoring/beautify";
 import { validateDocJson } from "@/infrastructure/editor/schema";
 
@@ -37,11 +38,13 @@ import { validateDocJson } from "@/infrastructure/editor/schema";
 
 export type { TransformOutcome };
 
-function deps(): AuthoringDeps {
+async function deps(): Promise<AuthoringDeps> {
+  const style = await getStyleParameters();
   return {
     generator: createOpenAiCompatibleGenerator(activeEndpoint),
     validator: { validate: validateDocJson },
-    polisher: { polish: beautify },
+    polisher: { polish: (body) => beautify(body, style) },
+    style,
   };
 }
 
@@ -50,8 +53,8 @@ function deps(): AuthoringDeps {
  * dressed. Exposed on its own because the streaming route needs the brief
  * before it opens the writing stream.
  */
-export function planDocument(prompt: string): Promise<DocumentBrief> {
-  return planBrief(deps(), prompt, artVocabulary());
+export async function planDocument(prompt: string): Promise<DocumentBrief> {
+  return planBrief(await deps(), prompt, artVocabulary());
 }
 
 /** A written document and the dress its plan chose for it. */
@@ -63,7 +66,7 @@ export interface WrittenDocument {
 
 /** Surface 1 — prompt-to-document, planned then written. */
 export async function generateDocument(prompt: string): Promise<WrittenDocument> {
-  const authoring = deps();
+  const authoring = await deps();
   const brief = await planBrief(authoring, prompt, artVocabulary());
   return {
     content: await writeDocument(authoring, prompt, brief),
@@ -72,11 +75,11 @@ export async function generateDocument(prompt: string): Promise<WrittenDocument>
 }
 
 /** Surface 2 — whole-document transform (side panel, "make it pretty"). */
-export function transformDocument(
+export async function transformDocument(
   doc: JSONContent,
   instruction: string,
 ): Promise<TransformOutcome> {
-  return editDocument(deps(), doc, instruction);
+  return editDocument(await deps(), doc, instruction);
 }
 
 /**
@@ -85,30 +88,30 @@ export function transformDocument(
  * content is read, never written.
  */
 export async function restyleDocument(doc: JSONContent): Promise<DocumentTheme | null> {
-  return themeFromArt(await chooseDress(deps(), doc, artVocabulary()));
+  return themeFromArt(await chooseDress(await deps(), doc, artVocabulary()));
 }
 
 /** Surface 3a — multi-block selection rewrite; returns replacement blocks. */
-export function rewriteSelectionBlocks(
+export async function rewriteSelectionBlocks(
   blocks: JSONContent[],
   instruction: string,
 ): Promise<DocumentNode[]> {
-  return rewriteBlocks(deps(), blocks, instruction);
+  return rewriteBlocks(await deps(), blocks, instruction);
 }
 
 /** Surface 3b — inline selection rewrite; plain text in, plain text out. */
-export function rewriteSelectionText(
+export async function rewriteSelectionText(
   text: string,
   instruction: string,
 ): Promise<string> {
-  return rewriteText(deps(), text, instruction);
+  return rewriteText(await deps(), text, instruction);
 }
 
 /** Surface 4 — the composers (PLAN.md STEP 8): plain text in, plain text out. */
-export function completePlainText(
+export async function completePlainText(
   system: string,
   prompt: string,
   temperature: number,
 ): Promise<string> {
-  return completeText(deps(), system, prompt, temperature);
+  return completeText(await deps(), system, prompt, temperature);
 }

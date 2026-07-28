@@ -1,8 +1,8 @@
 import type { DocumentBrief } from "@/domain/authoring/brief";
 import { parseOps, type DocOp } from "@/domain/authoring/ops";
 import {
-  TRANSFORM_OPS_SYSTEM,
   transformOpsPrompt,
+  transformOpsSystem,
   writerSystem,
 } from "@/domain/authoring/prompts";
 import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
@@ -24,7 +24,7 @@ export function generateDocument(
 ): Promise<DocumentBody> {
   const recipe = findRecipe(brief.kind) ?? DEFAULT_RECIPE;
   return askDocument(deps, {
-    system: writerSystem(recipe, brief),
+    system: writerSystem(recipe, brief, deps.style),
     prompt,
     temperature: 0.7,
   });
@@ -67,7 +67,7 @@ export function transformDocument(
   return askJson(
     deps,
     {
-      system: TRANSFORM_OPS_SYSTEM,
+      system: transformOpsSystem(deps.style),
       prompt: transformOpsPrompt(blocks, instruction),
       temperature: 0.3,
       // An op list is an array: no provider JSON mode describes it.

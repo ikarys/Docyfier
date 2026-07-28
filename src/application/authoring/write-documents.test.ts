@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ScriptedGenerator, authoringDeps } from "@test/fakes/authoring-deps";
 import { defaultBrief } from "@/domain/authoring/brief";
+import { StyleParameters } from "@/domain/authoring/style-parameters";
 import { generateDocument, transformDocument } from "./write-documents";
 
 const paragraph = (text: string) => ({
@@ -34,6 +35,35 @@ describe("generateDocument", () => {
     expect(system).toContain("Root cause");
     expect(system).toContain("the on-call team");
     expect(system).toContain("1. Impact — as a callout");
+  });
+
+  it("carries the instance's style parameters into the prompt", async () => {
+    const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
+    const style = StyleParameters.restore({ emoji: true, autoBold: true });
+
+    await generateDocument(
+      authoringDeps(generator, { style }),
+      "Write a note",
+      defaultBrief(),
+    );
+
+    const { system } = generator.requests[0];
+    expect(system).toContain("Emoji are welcome");
+    expect(system).toContain("Bold the two or three");
+  });
+
+  it("lets an imposed language win over the one the plan picked", async () => {
+    const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
+    const style = StyleParameters.restore({ language: "French" });
+
+    await generateDocument(authoringDeps(generator, { style }), "Write a note", {
+      ...defaultBrief(),
+      language: "English",
+    });
+
+    const { system } = generator.requests[0];
+    expect(system).toContain("Write the document in French");
+    expect(system).not.toContain("Language: English");
   });
 
   it("writes against the default shape when the plan named no kind it knows", async () => {

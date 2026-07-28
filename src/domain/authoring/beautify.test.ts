@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DocumentNode } from "@/domain/documents/body";
 import { beautify } from "./beautify";
+import { StyleParameters } from "./style-parameters";
 
 const text = (value: string, marks?: DocumentNode["marks"]) => ({
   type: "text",
@@ -148,6 +149,21 @@ describe("beautify", () => {
       "green",
       "purple",
     ]);
+  });
+
+  it("removes the emoji the model sent anyway when the instance forbids them", () => {
+    const out = beautify(
+      doc({ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "\u{1F389} Results" }] }),
+    );
+    expect(out.content?.[0].content?.[0].text).toBe("Results");
+  });
+
+  it("leaves emoji alone when the instance allows them", () => {
+    const out = beautify(
+      doc({ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "\u{1F389} Results" }] }),
+      StyleParameters.restore({ emoji: true }),
+    );
+    expect(out.content?.[0].content?.[0].text).toBe("\u{1F389} Results");
   });
 
   it("returns anything that is not a document unchanged", () => {

@@ -9,3 +9,4 @@ export * from "./ai";
 export * from "./brand";
 export * from "./exports";
 export * from "./storage";
+export * from "./style";

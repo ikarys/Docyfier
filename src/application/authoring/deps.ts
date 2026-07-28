@@ -1,3 +1,5 @@
+import type { StyleParameters } from "@/domain/authoring/style-parameters";
+import type { StyleParametersRepository } from "@/domain/authoring/style-repository";
 import type {
   BodyPolisher,
   BodyValidator,
@@ -14,4 +16,11 @@ export interface AuthoringDeps {
   generator: TextGenerator;
   validator: BodyValidator;
   polisher: BodyPolisher;
+  /** How this instance writes: emoji, bolding, badges, language. */
+  style: StyleParameters;
+}
+
+/** What configuring the writing style needs: where it is kept, nothing else. */
+export interface StyleDeps {
+  style: StyleParametersRepository;
 }

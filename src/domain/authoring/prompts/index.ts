@@ -9,14 +9,14 @@
  */
 
 export { FORMAT_CONTRACT } from "./format-contract";
-export { STYLE_GUIDE } from "./style-guide";
+export { styleGuide } from "./style-guide";
 export { planPrompt, planSystem, restylePrompt } from "./plan";
 export { writerSystem } from "./write";
-export { TRANSFORM_OPS_SYSTEM, transformOpsPrompt } from "./transform";
+export { transformOpsSystem, transformOpsPrompt } from "./transform";
 export {
-  SELECTION_BLOCKS_SYSTEM,
   SELECTION_TEXT_SYSTEM,
   selectionBlocksPrompt,
+  selectionBlocksSystem,
   selectionTextPrompt,
 } from "./selection";
 export { retryPrompt } from "./retry";

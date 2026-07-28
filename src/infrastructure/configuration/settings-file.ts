@@ -16,6 +16,8 @@ export interface SettingsSections {
   exports?: Record<string, unknown>;
   /** The instance's visual identity; its shape is the domain's to describe. */
   brand?: unknown;
+  /** The instance's writing style: emoji, bolding, badges, language. */
+  writing?: unknown;
   /** The pre-multi-provider layout: one endpoint, flat at the root. Still read
    * so a file written before that STEP keeps loading. */
   baseUrl?: unknown;

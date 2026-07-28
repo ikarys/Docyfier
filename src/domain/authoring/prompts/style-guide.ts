@@ -1,10 +1,14 @@
+import type { StyleParameters } from "../style-parameters";
+
 /**
  * What a good document looks like, whatever its kind.
  *
  * The rules that hold for a postmortem as much as for a roadmap live here; the
- * ones that only hold for one kind belong to that kind's recipe.
+ * ones that only hold for one kind belong to that kind's recipe, and the ones
+ * the instance decides once — emoji, bolding, badges, language — come in as
+ * style parameters rather than being frozen in this text.
  */
-export const STYLE_GUIDE = `Professional document style — modern, visual, striking:
+const SHARED = `Professional document style — modern, visual, striking:
 - Exactly one level-1 heading as the document title — inside a docCover when
   the document is a report, a one-pager or anything with a named audience;
   a bare level-1 heading otherwise. Structure with level 2/3 headings.
@@ -19,9 +23,6 @@ export const STYLE_GUIDE = `Professional document style — modern, visual, stri
   change as the delta paragraph with trend "good"/"bad". A plain table of
   numbers is the last resort — reach for it only for dense, many-row/column
   data that genuinely needs a grid.
-- Statuses, priorities and tags ALWAYS render as badge marks, wherever they
-  appear (table cells, lists, paragraphs): e.g. "On track" green badge,
-  "At risk" yellow badge, "Blocked" red badge, "P1" red badge, "Beta" purple.
 - Use columnList for two QUALITATIVE things side by side (pros/cons, two
   approaches). For numeric before/after, prefer a statRow of deltas.
 - A series of numbers ACROSS categories or over time (monthly revenue, adoption
@@ -39,3 +40,8 @@ export const STYLE_GUIDE = `Professional document style — modern, visual, stri
   the theme paint them. Do NOT set textStyle/highlight hex colors on your own:
   reserve those only for an explicit user color request. Body text stays default.
 - Modern, polished, professional tone. No filler.`;
+
+/** The style guide as this instance has it configured. */
+export function styleGuide(style: StyleParameters): string {
+  return `${SHARED}\n${style.directives()}`;
+}

@@ -54,7 +54,6 @@ Constraints:
   any "src" you write would point at a file that does not exist.
 - "text" values are PLAIN TEXT: never markdown syntax (**bold**, *italic*,
   \`code\`, # headings) inside them — express styling with marks only.
-- Emoji: only when the user explicitly asks for emoji.
 - When the user asks for color, apply textStyle color marks (and/or a
   highlight) to the relevant words — do not just add symbols.
 - Never nest block nodes inside heading or paragraph.
@@ -63,7 +62,6 @@ Constraints:
   callout, list item, table cell or each other — layout blocks live at the top
   level only.
 - Never emit "content": [] — omit the key instead.
-- Write the document in the same language as the user's request or content.
 - THE USER'S EXPLICIT FORMAT REQUEST ALWAYS WINS over the style guide below:
   if they ask for bullet points, produce a bulletList — not cards, not stats,
   not a table. Only choose fancy blocks when the user has not specified a

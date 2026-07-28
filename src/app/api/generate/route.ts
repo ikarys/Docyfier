@@ -13,7 +13,8 @@ import { planDocument } from "@/lib/ai/service";
 import { validateDocJson } from "@/infrastructure/editor/schema";
 import { BlockScanner } from "@/lib/ai/stream-blocks";
 import { beautify } from "@/domain/authoring/beautify";
-import { getAiSettings } from "@/lib/settings";
+import { getAiSettings, getStyleParameters } from "@/lib/settings";
+import type { StyleParameters } from "@/domain/authoring/style-parameters";
 import { isAuthorized } from "@/lib/auth";
 
 /**
@@ -44,9 +45,9 @@ function message(err: unknown): string {
  * validation, then the deterministic formatter. Both rules `beautify` applies
  * are block-local, so a single-block document is a faithful wrapper.
  */
-function prepare(raw: string): unknown {
+function prepare(raw: string, style: StyleParameters): unknown {
   const doc = validateDocJson({ type: "doc", content: [parseModelJson(raw)] });
-  const polished = beautify(doc);
+  const polished = beautify(doc, style);
   return (validateDocJson(polished).content ?? [])[0];
 }
 
@@ -69,6 +70,7 @@ export async function POST(req: Request): Promise<Response> {
   // cannot produce it hands back the default brief rather than failing.
   const brief = await planDocument(prompt);
   const recipe = findRecipe(brief.kind) ?? DEFAULT_RECIPE;
+  const style = await getStyleParameters();
 
   try {
     const model = await languageModel();
@@ -78,7 +80,7 @@ export async function POST(req: Request): Promise<Response> {
     // server would otherwise look like a perfectly successful empty document.
     parts = streamText({
       model,
-      system: writerSystem(recipe, brief),
+      system: writerSystem(recipe, brief, style),
       prompt,
       temperature: 0.7,
       maxOutputTokens,
@@ -128,7 +130,7 @@ export async function POST(req: Request): Promise<Response> {
 
       const emit = (raw: string) => {
         try {
-          controller.enqueue(encoder.encode(line({ block: prepare(raw) })));
+          controller.enqueue(encoder.encode(line({ block: prepare(raw, style) })));
           blocks++;
         } catch (err) {
           // A block the schema rejects is dropped rather than aborting the
