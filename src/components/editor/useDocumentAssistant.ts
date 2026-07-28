@@ -3,9 +3,9 @@
 import { useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
-import { transformDocumentAction } from "@/app/ai-actions";
 import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 import { applyTransform } from "./applied-transform";
+import { requestTransform } from "./streamed-transform";
 
 /** One line of the panel's thread. */
 export interface AssistantMessage {
@@ -24,6 +24,8 @@ export function useDocumentAssistant(
 ) {
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [busy, setBusy] = useState(false);
+  /** Edits received so far while one is running — what "Working…" counts. */
+  const [edits, setEdits] = useState(0);
   const thread = useRef<HTMLDivElement | null>(null);
 
   const say = (message: AssistantMessage) => {
@@ -36,6 +38,7 @@ export function useDocumentAssistant(
   const ask = async (instruction: string, label?: string) => {
     if (busy) return;
     setBusy(true);
+    setEdits(0);
     say({ role: "user", text: label ?? instruction });
     const before = toPlainJSON(editor.getJSON());
 
@@ -43,13 +46,19 @@ export function useDocumentAssistant(
     // request that never returns would otherwise leave the panel spinning with
     // no message and no way to retry short of reloading the page.
     try {
-      const res = await transformDocumentAction(before, instruction);
-      if (!res.ok) {
-        say({ role: "ai", text: res.error, error: true });
+      const res = await requestTransform(before, instruction, setEdits);
+      if (!res.outcome) {
+        say({ role: "ai", text: res.error ?? "The AI request failed.", error: true });
         return;
       }
 
       const { next, changed, blocksEdited } = applyTransform(before, res.outcome);
+      // A stream that failed halfway still carries the edits that made it: they
+      // are applied, and the reason the rest is missing is said out loud.
+      if (res.error && !changed) {
+        say({ role: "ai", text: res.error, error: true });
+        return;
+      }
       if (!changed) {
         say({
           role: "ai",
@@ -60,12 +69,14 @@ export function useDocumentAssistant(
       }
 
       apply(next);
-      say({
-        role: "ai",
-        text: blocksEdited
-          ? `Done — ${blocksEdited} block${blocksEdited > 1 ? "s" : ""} edited.`
-          : "Done — applied to the document.",
-      });
+      const done = blocksEdited
+        ? `${blocksEdited} block${blocksEdited > 1 ? "s" : ""} edited`
+        : "applied to the document";
+      say(
+        res.error
+          ? { role: "ai", text: `${done}, then it stopped — ${res.error}`, error: true }
+          : { role: "ai", text: `Done — ${done}.` },
+      );
     } catch (err) {
       say({
         role: "ai",
@@ -77,5 +88,5 @@ export function useDocumentAssistant(
     }
   };
 
-  return { messages, busy, ask, thread };
+  return { messages, busy, edits, ask, thread };
 }
