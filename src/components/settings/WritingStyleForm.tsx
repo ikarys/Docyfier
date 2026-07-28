@@ -55,6 +55,13 @@ export function WritingStyleForm({ initial }: { initial: StyleParametersRecord }
         checked={initial.statusBadges}
       />
 
+      <Toggle
+        name="smartTypography"
+        label="Smart typography"
+        help="While typing, turn straight quotes into curly ones, -- into an em dash and ... into an ellipsis. Off stores exactly the characters typed."
+        checked={initial.smartTypography}
+      />
+
       <label className="field">
         <span className="field-label">Writing language</span>
         <input

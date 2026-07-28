@@ -18,6 +18,10 @@ export interface StyleParametersRecord {
   autoBold: boolean;
   /** Statuses, priorities and tags always render as badge marks. */
   statusBadges: boolean;
+  /** Typing turns quotes, dashes and ellipses into their typographic form.
+   * This one steers the editor rather than the model: it is about what a
+   * keystroke produces, not about what is asked for. */
+  smartTypography: boolean;
   /** Language every document is written in; empty follows the request. */
   language: string;
 }
@@ -33,6 +37,7 @@ const DEFAULTS: StyleParametersRecord = {
   emoji: false,
   autoBold: false,
   statusBadges: true,
+  smartTypography: true,
   language: "",
 };
 
@@ -53,6 +58,7 @@ export class StyleParameters {
       emoji: readBoolean(record.emoji, DEFAULTS.emoji),
       autoBold: readBoolean(record.autoBold, DEFAULTS.autoBold),
       statusBadges: readBoolean(record.statusBadges, DEFAULTS.statusBadges),
+      smartTypography: readBoolean(record.smartTypography, DEFAULTS.smartTypography),
       language:
         typeof record.language === "string"
           ? record.language.trim().slice(0, MAX_LANGUAGE)
@@ -62,6 +68,10 @@ export class StyleParameters {
 
   get emoji(): boolean {
     return this.values.emoji;
+  }
+
+  get smartTypography(): boolean {
+    return this.values.smartTypography;
   }
 
   /** Whether the writing language is imposed rather than followed. */

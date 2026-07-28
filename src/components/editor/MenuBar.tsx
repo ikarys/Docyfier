@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { HeadingGroup, InsertGroup, ListGroup, MarkGroup } from "./FormatGroups";
 import { TableGroup } from "./TableGroup";
+import { WordCount } from "./WordCount";
 import { SaveStatus } from "./SaveStatus";
 import { ShortcutHelp } from "./ShortcutHelp";
 import type { SaveState } from "./save-state";
@@ -42,6 +43,7 @@ export function MenuBar({
       <InsertGroup editor={editor} />
 
       <div className="tb-right">
+        <WordCount editor={editor} />
         <SaveStatus state={saveState} onRetry={onSaveNow} />
         <div className="tb-panels" role="group" aria-label="Panels">
           <button

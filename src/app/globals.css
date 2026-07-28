@@ -1639,6 +1639,12 @@ body {
   border-color: var(--accent);
   color: var(--accent);
 }
+.word-count {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .save-status {
   font-size: 0.78rem;
   color: var(--ink-faint);

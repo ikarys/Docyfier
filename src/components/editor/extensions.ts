@@ -1,5 +1,7 @@
 import type { AnyExtension } from "@tiptap/core";
 import { Placeholder } from "@tiptap/extension-placeholder";
+import { Typography } from "@tiptap/extension-typography";
+import { CharacterCount } from "@tiptap/extensions";
 import { AiDiff } from "@/infrastructure/editor/ai-diff";
 import { Search } from "@/infrastructure/editor/search";
 import {
@@ -14,7 +16,7 @@ import { SlashCommand } from "./slash-command";
 /**
  * Everything the editor loads: the document's own nodes and marks, and the
  * extensions that only exist while someone is typing — the slash menu, the AI
- * review markers, the placeholder.
+ * review markers, the search highlights, the placeholder.
  *
  * What a document is made of is declared once, in
  * `src/infrastructure/editor/document-extensions.ts`, and shared with the
@@ -28,13 +30,23 @@ const VIEWS: Record<string, AnyExtension> = {
   [TocNode.name]: TocNode,
 };
 
-export const EDITOR_EXTENSIONS = [
-  ...DOCUMENT_EXTENSIONS,
-  ...VIEWED_NODES.map((node) => VIEWS[node.name] ?? node),
-  SlashCommand,
-  AiDiff,
-  Search,
-  Placeholder.configure({
-    placeholder: "Write your document, or press the toolbar to add structure…",
-  }),
-];
+/** What the instance's writing style decides about typing itself. */
+export interface TypingPreferences {
+  /** Quotes, dashes and ellipses take their typographic form as they are typed. */
+  readonly smartTypography: boolean;
+}
+
+export function editorExtensions({ smartTypography }: TypingPreferences) {
+  return [
+    ...DOCUMENT_EXTENSIONS,
+    ...VIEWED_NODES.map((node) => VIEWS[node.name] ?? node),
+    SlashCommand,
+    AiDiff,
+    Search,
+    CharacterCount,
+    ...(smartTypography ? [Typography] : []),
+    Placeholder.configure({
+      placeholder: "Write your document, or press the toolbar to add structure…",
+    }),
+  ];
+}

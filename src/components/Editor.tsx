@@ -16,7 +16,7 @@ import { AiPanel } from "./AiPanel";
 import { AiDiffBar } from "./AiDiffBar";
 import { DesignPanel } from "./DesignPanel";
 import { EditorSurface } from "./editor/EditorSurface";
-import { EDITOR_EXTENSIONS } from "./editor/extensions";
+import { editorExtensions } from "./editor/extensions";
 import { MenuBar, type PanelName } from "./editor/MenuBar";
 import { SearchBar } from "./editor/SearchBar";
 import { useAiReview } from "./editor/useAiReview";
@@ -37,6 +37,7 @@ export function DocumentEditor({
   initialTheme,
   initialUpdatedAt,
   presets,
+  smartTypography,
 }: {
   id: string;
   initialContent: JSONContent;
@@ -44,6 +45,8 @@ export function DocumentEditor({
   initialUpdatedAt: string;
   /** The presets this instance saved, so a document wearing one resolves it. */
   presets: Theme[];
+  /** From the instance's writing style: what a keystroke produces. */
+  smartTypography: boolean;
 }) {
   /** Only one side panel at a time — they share the same slot. */
   const [panel, setPanel] = useState<PanelName | null>("ai");
@@ -55,7 +58,7 @@ export function DocumentEditor({
   // Stable identity: inline `.configure(...)` calls would otherwise return a new
   // extension instance every render, which made useEditor think the config
   // changed and re-apply editor options on every save-state re-render.
-  const extensions = useRef(EDITOR_EXTENSIONS).current;
+  const extensions = useRef(editorExtensions({ smartTypography })).current;
 
   const editor = useEditor({
     immediatelyRender: false,

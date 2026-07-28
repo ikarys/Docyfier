@@ -7,6 +7,7 @@ describe("style parameters", () => {
       emoji: false,
       autoBold: false,
       statusBadges: true,
+      smartTypography: true,
       language: "",
     });
   });
@@ -21,6 +22,7 @@ describe("style parameters", () => {
       emoji: true,
       autoBold: false,
       statusBadges: true,
+      smartTypography: true,
       language: "French",
     });
   });
@@ -59,6 +61,13 @@ describe("the directives they add to the style guide", () => {
     expect(StyleParameters.restore({ statusBadges: false }).directives()).not.toContain(
       "badge marks",
     );
+  });
+
+  it("say nothing about typing: smart typography steers the editor, not the model", () => {
+    const off = StyleParameters.restore({ smartTypography: false });
+
+    expect(off.smartTypography).toBe(false);
+    expect(off.directives()).toBe(StyleParameters.defaults().directives());
   });
 
   it("impose a language, or follow the request", () => {

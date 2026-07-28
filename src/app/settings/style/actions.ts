@@ -62,6 +62,7 @@ export async function saveWritingStyleAction(
     emoji: formData.get("emoji") === "on",
     autoBold: formData.get("autoBold") === "on",
     statusBadges: formData.get("statusBadges") === "on",
+    smartTypography: formData.get("smartTypography") === "on",
     language: String(formData.get("language") ?? ""),
   };
   await saveStyleParameters(input);
