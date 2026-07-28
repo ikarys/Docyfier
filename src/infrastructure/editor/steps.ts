@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { ACCENT_CYCLE } from "@/domain/authoring/accents";
 import { iconAttribute, renderWithIcon } from "./icon";
 import type { CardAccent } from "./cards";
 import { deleteLayoutBlockOnBackspace } from "./layout-delete";
@@ -47,7 +48,7 @@ export const StepList = Node.create({
             type: this.name,
             content: Array.from({ length: count }, (_, i) => ({
               type: "step",
-              attrs: { accent: (["blue", "green", "purple", "yellow"] as const)[i % 4] },
+              attrs: { accent: ACCENT_CYCLE[i % ACCENT_CYCLE.length] },
               content: [
                 {
                   type: "heading",

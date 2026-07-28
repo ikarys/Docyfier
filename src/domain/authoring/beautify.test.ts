@@ -134,6 +134,22 @@ describe("beautify", () => {
     expect(out.content?.[0].content?.[0]).not.toHaveProperty("marks");
   });
 
+  it("colors the cards of a grid the model handed over grey", () => {
+    const out = beautify(
+      doc({
+        type: "cardGrid",
+        attrs: { cols: 3 },
+        content: [{ type: "card" }, { type: "card" }, { type: "card" }],
+      }),
+    );
+
+    expect(out.content?.[0].content?.map((c) => c.attrs?.accent)).toEqual([
+      "blue",
+      "green",
+      "purple",
+    ]);
+  });
+
   it("returns anything that is not a document unchanged", () => {
     expect(beautify({ type: "paragraph" })).toEqual({ type: "paragraph" });
     expect(beautify({ type: "doc" })).toEqual({ type: "doc" });
