@@ -241,12 +241,38 @@ Acceptance:
 
 ### STEP 9 — Templates, themes, style settings
 
-- Document templates per type (#16).
+- Document templates per type (#16) — shipped in [STEP U5](#step-u5--templates--home-polish).
 - Corporate themes/styles (#17) — building on the STEP 2b content/theme
   separation and built-in presets.
 - Style parameters: emoji, auto-bold keywords, colors (#15).
 
-**Exit criteria:** a new document from a template inherits the org theme and style settings.
+**The instance is the tenant.** Orgs are STEP 6; until then "the org theme" is
+the instance's, held in one `Brand` beside the other settings scopes: the dress
+new documents start in, plus the presets this instance saved for itself. Colors
+are not a style parameter — they are the theme, which is what #15 meant by them.
+
+**Saved presets are referenced, not copied.** A document stores the preset id;
+editing the house accent repaints every document wearing it, which is the point
+of a corporate identity. The cost is a preset that can outlive its documents, so
+resolution falls back to the default rather than failing.
+
+**The brand is a default, not an override.** A template keeps the preset it
+suggests and a generated document keeps the art direction its plan chose
+(STEP U7); the brand dresses everything nobody else dressed.
+
+**Out of scope:** per-org scoping of any of it (STEP 6), and a preset the model
+may pick from — the art vocabulary stays the four built-ins.
+
+**Exit criteria:** a new document inherits the instance theme and style settings.
+
+Acceptance:
+
+- [ ] A blank or imported document opens in the theme set in Settings → Style; a document from a template still opens in the template's preset
+- [ ] Tokens saved as a named preset appear beside the four built-ins in the Design panel and in the toolbar picker
+- [ ] Editing a saved preset restyles the documents wearing it, with zero content change; removing it leaves them rendering on the default
+- [ ] Emoji off removes emoji from generated documents even when the model sends them anyway; emoji on lets them through
+- [ ] A named writing language wins over the language the planning pass chose
+- [ ] A settings file edited by hand into nonsense still opens the Style page, with every field fallen back
 
 ### STEP 10 — Integrations & maturity
 
