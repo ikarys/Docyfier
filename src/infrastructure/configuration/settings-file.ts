@@ -14,6 +14,8 @@ export interface SettingsSections {
   ai?: { providers?: unknown; activeId?: unknown };
   storage?: Record<string, unknown>;
   exports?: Record<string, unknown>;
+  /** The instance's visual identity; its shape is the domain's to describe. */
+  brand?: unknown;
   /** The pre-multi-provider layout: one endpoint, flat at the root. Still read
    * so a file written before that STEP keeps loading. */
   baseUrl?: unknown;
