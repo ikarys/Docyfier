@@ -2,15 +2,13 @@
 
 import type { Editor } from "@tiptap/react";
 import { promptForLink } from "./link-prompt";
+import { HIGHLIGHT_COLORS, TEXT_COLORS } from "./toolbar/palette";
 
 const ALIGNMENTS: { value: string; icon: string; title: string }[] = [
   { value: "left", icon: "⯇", title: "Align left" },
   { value: "center", icon: "⯅", title: "Align center" },
   { value: "right", icon: "⯈", title: "Align right" },
 ];
-
-const TEXT_COLORS = ["#3b5bdb", "#1f9d6b", "#c23b3b", "#b4690e", "#7048e8"];
-const HIGHLIGHT_COLORS = ["#fff3bf", "#e9f7f0", "#fbecec", "#eef2fe", "#f3f0ff"];
 
 /** Bold/italic/strike/code/badge + color swatches — the old toolbar's inline
  * formatting group, moved onto the selection so it's reachable without the
@@ -86,13 +84,13 @@ export function FormattingRow({ editor }: { editor: Editor }) {
         </button>
       ))}
       <span className="ai-bubble-divider" aria-hidden />
-      {TEXT_COLORS.map((color) => (
+      {TEXT_COLORS.map((swatch) => (
         <button
-          key={color}
+          key={swatch.hex}
           className="ai-bubble-swatch"
-          style={{ background: color }}
-          onClick={() => editor.chain().focus().setColor(color).run()}
-          title={`Text color ${color}`}
+          style={{ background: swatch.hex }}
+          onClick={() => editor.chain().focus().setColor(swatch.hex).run()}
+          title={`Text color: ${swatch.label}`}
         />
       ))}
       <button
@@ -103,13 +101,15 @@ export function FormattingRow({ editor }: { editor: Editor }) {
         ✕
       </button>
       <span className="ai-bubble-divider" aria-hidden />
-      {HIGHLIGHT_COLORS.map((color) => (
+      {HIGHLIGHT_COLORS.map((swatch) => (
         <button
-          key={color}
+          key={swatch.hex}
           className="ai-bubble-swatch"
-          style={{ background: color }}
-          onClick={() => editor.chain().focus().toggleHighlight({ color }).run()}
-          title={`Highlight ${color}`}
+          style={{ background: swatch.hex }}
+          onClick={() =>
+            editor.chain().focus().toggleHighlight({ color: swatch.hex }).run()
+          }
+          title={`Highlight: ${swatch.label}`}
         />
       ))}
       <button
