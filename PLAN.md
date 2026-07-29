@@ -18,7 +18,7 @@ U8 → U9 → U10 → U11 → U12.
 | 2 | Modern, intuitive web UI usable by non-technical users | P0 | P0 | Core value |
 | 3 | AI writing help: generation, summaries, rephrasing | P0 | P0 | Core value |
 | 4 | Modern, polished formatting: tables, columns, headers, colors, callouts | P0 | P0 | Core differentiator |
-| 5 | Charts & diagrams blocks | P0 (implicit in #4) | **P1** | Split out: a large sub-project; MVP ships text/table/layout formatting first. Charts pulled forward into [STEP U6](#step-u6--data-viz-blocks--rich-cover); diagrams stay in STEP 10 |
+| 5 | Charts & diagrams blocks | P0 (implicit in #4) | **P1** | Split out: a large sub-project; MVP ships text/table/layout formatting first. Charts landed in [STEP U6](#step-u6--data-viz-blocks--rich-cover), diagrams in [STEP 10](#step-10--integrations--maturity). **Done** |
 | 6 | Quick retouches / fast edits of generated content | P0 | P0 | Core value; trust requires easy correction |
 | 7 | Export Markdown + PDF | P1 | **P0** | Without export, documents are trapped in the tool; PDF is the #1 professional sharing format |
 | 8 | Export docx, slides, Confluence | P1 | P1 | Post-MVP; docx/slides fidelity is genuinely hard |
@@ -281,8 +281,35 @@ Acceptance:
 - Cloud storage (#18); Confluence/Jira/Notion/Drive read-create-update, no
   delete, enterprise permission inheritance (#21).
 - Version history UI (#20); advanced search (#19).
-- Diagrams blocks (#5, the flow/architecture half) — charts were pulled forward
-  into [STEP U6](#step-u6--data-viz-blocks--rich-cover).
+- ~~Diagrams blocks (#5, the flow/architecture half)~~ — **done**, ahead of the
+  rest of this STEP, at the maintainer's call. Charts were pulled forward into
+  [STEP U6](#step-u6--data-viz-blocks--rich-cover); the diagram block copies
+  their shape exactly.
+
+  Five kinds — flow, architecture, sequence, hierarchy, phase axis — as one
+  atom node whose attrs are the graph. Three decisions carry the rest:
+
+  - **Meaning, never coordinates.** The AI and the panel declare nodes, edges
+    and groups; `domain/documents/diagram/layout/` computes where every box
+    lands. Nothing can be dragged, so nothing can be dragged out of place, and
+    a model that cannot place a diagram well never has to.
+  - **No layout library and no mermaid.** The mermaid rejection recorded in
+    STEP U6 stands: async render, rigid grammar, unvalidatable. The four
+    families have regular geometry, so ~600 lines of pure maths replace a
+    general graph-layout dependency — and the tests pin what makes the drawings
+    trustworthy (no overlap, nothing off-canvas, orthogonal edges, determinism)
+    rather than how they are computed.
+  - **One scene, two emitters.** The editor paints theme tokens; the export
+    path paints literal values, because librsvg — `sharp`'s renderer — resolves
+    no CSS variable, no `currentColor` and no web font. `sharp` is promoted to
+    a declared dependency for that: it rasterises a figure without the headless
+    Chromium this plan decided not to carry.
+
+  Where it lands per target: HTML and print get the inline SVG, Word an
+  embedded PNG, Confluence rich HTML and Trilium a `data:` PNG. Confluence
+  storage format and Notion get the relations in words — storage models images
+  as attachments that must already exist on the page, and Notion's payload is
+  markdown. That is a limit of those targets, not an omission.
 
 **Exit criteria:** per integration: connect, list, import, push update without leaving the app.
 
