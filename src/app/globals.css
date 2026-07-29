@@ -173,6 +173,9 @@ body {
   /* Density moves block spacing a lot and leading only a little: a compact
      document should be tighter, not cramped to read. */
   --doc-lead: calc(1.72 * (0.85 + 0.15 * var(--doc-space)));
+  /* The margin the text column sits in. A full-bleed image is exactly what
+     breaks out of it, so the two must be the same number. */
+  --doc-gutter: calc(4.5rem * var(--doc-space));
 }
 
 .doc-sheet {
@@ -181,7 +184,7 @@ body {
   border-radius: var(--radius);
   box-shadow: 0 1px 2px rgba(20, 22, 30, 0.04),
     0 12px 32px -12px rgba(20, 22, 30, 0.12);
-  padding: calc(4rem * var(--doc-space)) calc(4.5rem * var(--doc-space));
+  padding: calc(4rem * var(--doc-space)) var(--doc-gutter);
 }
 
 /* ---- Document typography (the "pretty" layer) ---------------------------- */
@@ -1700,6 +1703,31 @@ body {
   /* Tailwind's preflight makes images block-level, so `text-align: center`
      on the figure does not center them — auto margins do. */
   margin-inline: auto;
+}
+/* Where the image sits, and what the text does around it. Floats wrap on
+   screen and on paper alike, so print needs no rule of its own. */
+.doc .doc-image[data-align="left"] {
+  float: left;
+  margin: calc(0.4rem * var(--doc-space)) calc(1.6rem * var(--doc-space))
+    calc(1rem * var(--doc-space)) 0;
+}
+.doc .doc-image[data-align="right"] {
+  float: right;
+  margin: calc(0.4rem * var(--doc-space)) 0 calc(1rem * var(--doc-space))
+    calc(1.6rem * var(--doc-space));
+}
+.doc .doc-image[data-align="full"] {
+  margin-inline: calc(-1 * var(--doc-gutter));
+}
+.doc .doc-image[data-align="full"] img {
+  border-radius: 0;
+}
+/* A heading starts a new part of the document: it never sits in the gutter
+   left by the image above it. */
+.doc h1,
+.doc h2,
+.doc hr {
+  clear: both;
 }
 .doc .doc-image figcaption {
   margin-top: calc(0.5rem * var(--doc-space));
