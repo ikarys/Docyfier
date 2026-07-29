@@ -1,4 +1,5 @@
 import type { DocumentNode } from "@/domain/documents/body";
+import { embedLink } from "../embed-link";
 import { imageToMarkdown, inlineToMarkdown, plainText, plainTextRaw } from "./inline";
 import {
   chartToMarkdown,
@@ -126,6 +127,10 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
   blockMath: (node) => `$$\n${String(node.attrs?.latex ?? "")}\n$$`,
   table: tableToMarkdown,
   image: imageBlockToMarkdown,
+  embed: (node) => {
+    const { label, href } = embedLink(node);
+    return href ? `[${label}](${href})` : "";
+  },
   callout: (node) => {
     const alert = ALERT_BY_VARIANT[String(node.attrs?.variant ?? "note")] ?? "NOTE";
     const body = blocksToMarkdown(node.content ?? []);

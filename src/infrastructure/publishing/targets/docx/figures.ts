@@ -1,6 +1,7 @@
 import type { DocumentNode } from "@/domain/documents/body";
 import type { Paragraph as ParagraphType, Table as TableType } from "docx";
 import { diagramLines, diagramTexts } from "@/infrastructure/rendering/diagram-lines";
+import { embedLink } from "@/infrastructure/rendering/embed-link";
 import { EXPORT_SCALE, type DiagramImages } from "../../diagram-images";
 import type { DocxModule, RunBuilder } from "./runs";
 
@@ -42,6 +43,22 @@ export function figureBuilder(d: DocxModule, runs: RunBuilder, images: DiagramIm
     new d.Paragraph({ children: [linkRun(node)] }),
     ...caption((node.attrs?.caption as string | null) ?? null),
   ];
+
+  /** An embed as the link it stands for: Word draws no frame. */
+  const embed = (node: DocumentNode): ParagraphType[] => {
+    const { label, href } = embedLink(node);
+    if (!href) return [];
+    return [
+      new d.Paragraph({
+        children: [
+          new d.ExternalHyperlink({
+            children: [new d.TextRun({ text: label, style: "Hyperlink" })],
+            link: href,
+          }),
+        ],
+      }),
+    ];
+  };
 
   /**
    * A gallery as a one-row table: Word has no other way to keep pictures side
@@ -101,5 +118,5 @@ export function figureBuilder(d: DocxModule, runs: RunBuilder, images: DiagramIm
     ];
   };
 
-  return { image, gallery, diagram };
+  return { image, gallery, embed, diagram };
 }

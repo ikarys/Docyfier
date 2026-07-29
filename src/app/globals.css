@@ -1752,6 +1752,42 @@ body {
   margin: 0;
 }
 
+/* An embedded page. The frame is a screen thing; the link under it is what
+   paper and every export are left with. */
+.doc .embed {
+  margin: calc(1.75rem * var(--doc-space)) 0;
+  position: relative;
+}
+.doc .embed iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--rule);
+}
+.doc .embed figcaption {
+  margin-top: calc(0.5rem * var(--doc-space));
+  font-size: 0.85em;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+.doc .embed[data-framed="true"] .embed-fallback {
+  display: none;
+}
+.doc .embed-fallback {
+  color: var(--accent);
+  font-weight: 600;
+}
+.doc-editor .embed[data-selected="true"] iframe {
+  outline: 3px solid var(--accent-soft);
+}
+.embed-provider {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-faint);
+  padding: 0.2rem 0.5rem;
+}
+
 /* News about an upload, where the picture is going to land. */
 .upload-note {
   display: inline-block;
@@ -3194,10 +3230,18 @@ body {
   .doc .doc-toc,
   .doc .doc-image,
   .doc .image-row,
+  .doc .embed,
   .doc .details,
   .doc .code-block,
   .doc .task-item {
     break-inside: avoid;
+  }
+  /* Paper draws no frame: what is left is the link that names the page. */
+  .doc .embed iframe {
+    display: none;
+  }
+  .doc .embed[data-framed="true"] .embed-fallback {
+    display: inline;
   }
   /* Editing affordances that live inside the document, not in `.no-print`. */
   .doc .image-bar,

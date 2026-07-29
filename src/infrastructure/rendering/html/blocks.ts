@@ -1,5 +1,6 @@
 import type { DocumentNode } from "@/domain/documents/body";
 import type { HtmlContext } from "./contract";
+import { embedLink } from "../embed-link";
 import { escapeHtml } from "./escape";
 import { imageTag, rawText } from "./inline";
 import {
@@ -138,6 +139,10 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
   table: tableToHtml,
   image: imageToHtml,
   imageRow: galleryToHtml,
+  embed: (node) => {
+    const { label, href } = embedLink(node);
+    return href ? `<p><a href="${escapeHtml(href)}">${escapeHtml(label)}</a></p>` : "";
+  },
   callout: (node, ctx) => {
     const label = CALLOUT_LABEL[String(node.attrs?.variant ?? "note")] ?? "Note";
     return `<blockquote><p><strong>${label}</strong></p>${ctx.blocks(

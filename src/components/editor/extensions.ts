@@ -12,6 +12,7 @@ import { ChartNode } from "../chart/ChartView";
 import { DiagramNode } from "../diagram/DiagramView";
 import { CodeBlockNode } from "./CodeBlockView";
 import { ImageNode } from "../ImageView";
+import { EmbedNode } from "../EmbedView";
 import { TocNode } from "../TocView";
 import { EmojiCommand } from "./emoji-command";
 import { Shortcuts } from "./shortcuts";
@@ -33,6 +34,7 @@ const VIEWS: Record<string, AnyExtension> = {
   [ChartNode.name]: ChartNode,
   [DiagramNode.name]: DiagramNode,
   [ImageNode.name]: ImageNode,
+  [EmbedNode.name]: EmbedNode,
   [TocNode.name]: TocNode,
   [CodeBlockNode.name]: CodeBlockNode,
 };

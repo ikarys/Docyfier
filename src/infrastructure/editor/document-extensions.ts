@@ -26,6 +26,7 @@ import { Diagram } from "./diagram";
 import { HighlightedCodeBlock } from "./code-block";
 import { DocImage } from "./doc-image";
 import { ImageRow } from "./image-row";
+import { Embed } from "./embed";
 import { TableOfContents } from "./toc";
 
 /**
@@ -88,4 +89,11 @@ export const DOCUMENT_EXTENSIONS = [
  * shape by construction. A node that gains a view — or loses one — changes
  * nothing here.
  */
-export const VIEWED_NODES = [Chart, Diagram, DocImage, TableOfContents, HighlightedCodeBlock];
+export const VIEWED_NODES = [
+  Chart,
+  Diagram,
+  DocImage,
+  Embed,
+  TableOfContents,
+  HighlightedCodeBlock,
+];

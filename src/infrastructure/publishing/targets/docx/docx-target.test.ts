@@ -232,6 +232,18 @@ describe("docxTarget", () => {
     expect(xml).toContain("droite");
   });
 
+  it("sends an embed out as a hyperlink Word can follow", async () => {
+    const xml = await documentXml([
+      {
+        type: "embed",
+        attrs: { provider: "YouTube", href: "https://youtu.be/abc123", title: "La démo" },
+      },
+    ]);
+
+    expect(xml).toContain("La démo");
+    expect(xml).toContain("Hyperlink");
+  });
+
   it("leaves an absolute image URL alone", async () => {
     const xml = await documentXml([
       { type: "image", attrs: { src: "https://cdn.example.com/a.png", alt: "" } },

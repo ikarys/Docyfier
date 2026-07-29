@@ -1,5 +1,6 @@
 import type { DocumentNode } from "@/domain/documents/body";
 import { diagramLines, diagramTexts } from "./diagram-lines";
+import { embedLink } from "./embed-link";
 
 /**
  * Jira classic wiki markup — what Jira's description field understands.
@@ -121,6 +122,10 @@ function blockToJira(node: DocumentNode, prefix = ""): string {
       return tableToJira(node);
     case "image":
       return imageToJira(node, "\n");
+    case "embed": {
+      const { label, href } = embedLink(node);
+      return href ? `[${escapeInline(label)}|${href}]` : escapeInline(label);
+    }
     // A gallery is a row, and a row in Jira is a table row. A cell holds no
     // newline, so there the caption follows its image on the same line.
     case "imageRow": {

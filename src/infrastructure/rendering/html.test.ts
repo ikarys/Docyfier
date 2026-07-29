@@ -205,6 +205,29 @@ describe("docToHtml", () => {
     );
   });
 
+  it("sends an embed out as the link it stands for: a dead frame is worse", () => {
+    const embed = {
+      type: "embed",
+      attrs: {
+        provider: "YouTube",
+        href: "https://www.youtube.com/watch?v=abc123",
+        src: "https://www.youtube.com/embed/abc123",
+        title: "La démo",
+      },
+    };
+    expect(docToHtml({ type: "doc", content: [embed] })).toBe(
+      '<p><a href="https://www.youtube.com/watch?v=abc123">La démo</a></p>',
+    );
+  });
+
+  it("falls back to the provider when an embed was never titled", () => {
+    const embed = {
+      type: "embed",
+      attrs: { provider: "Vimeo", href: "https://vimeo.com/1", src: "x", title: null },
+    };
+    expect(docToHtml({ type: "doc", content: [embed] })).toContain(">Vimeo</a>");
+  });
+
   it("makes an image absolute for a reader outside this instance", () => {
     const image = { type: "image", attrs: { src: "/api/uploads/a.png" } };
     const out = docToHtml({ type: "doc", content: [image] }, {}, {

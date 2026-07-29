@@ -40,6 +40,14 @@ describe("docToText", () => {
     expect(out).toBe("un\n\ndeux");
   });
 
+  it("writes an embed as its title and the address behind it", () => {
+    const embed = {
+      type: "embed",
+      attrs: { provider: "YouTube", href: "https://youtu.be/abc123", title: "La démo" },
+    };
+    expect(docToText(doc(embed))).toBe("La démo — https://youtu.be/abc123");
+  });
+
   it("keeps an image's caption, the only words it has", () => {
     const image = { type: "image", attrs: { src: "/x.png", caption: "Fig. 1" } };
     expect(docToText(doc(p(text("un")), image))).toBe("un\n\nFig. 1");

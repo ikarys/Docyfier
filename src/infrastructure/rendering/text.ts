@@ -1,5 +1,6 @@
 import type { DocumentNode } from "@/domain/documents/body";
 import { diagramLines, diagramTexts } from "./diagram-lines";
+import { embedLink } from "./embed-link";
 
 /**
  * A document as plain text, for destinations that render no markup at all —
@@ -94,6 +95,10 @@ function blockToText(node: DocumentNode): string {
     // Plain text draws nothing, so the caption is all an image leaves behind.
     case "image":
       return String(node.attrs?.caption ?? "");
+    case "embed": {
+      const { label, href } = embedLink(node);
+      return href ? `${label} — ${href}` : label;
+    }
     default:
       return node.content ? blocksToText(node.content) : "";
   }

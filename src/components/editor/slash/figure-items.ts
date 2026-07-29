@@ -21,6 +21,19 @@ function pickImages(editor: Editor, insert: InsertImages): void {
   input.click();
 }
 
+/**
+ * Ask for the page to embed. Only the providers the domain allows can answer,
+ * so a URL nobody frames is refused where it was typed rather than inserted as
+ * a block that renders nothing.
+ */
+function promptForEmbed(editor: Editor): void {
+  const url = window.prompt("Page to embed (YouTube, Vimeo, Loom, Figma)");
+  if (url === null || url.trim() === "") return;
+  if (!editor.chain().focus().insertEmbed(url.trim()).run()) {
+    window.alert("Nothing here can be embedded from that address.");
+  }
+}
+
 /** Everything the reader looks at rather than reads: charts, diagrams, pictures. */
 export const FIGURE_ITEMS: SlashItem[] = [
   {
@@ -81,6 +94,15 @@ export const FIGURE_ITEMS: SlashItem[] = [
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).run();
       pickImages(editor, insertUploadedImages);
+    },
+  },
+  {
+    title: "Embed",
+    icon: "▶",
+    keywords: ["embed", "video", "youtube", "vimeo", "loom", "figma", "integration"],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      promptForEmbed(editor);
     },
   },
   {
