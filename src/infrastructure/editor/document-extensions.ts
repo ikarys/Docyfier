@@ -27,6 +27,7 @@ import { HighlightedCodeBlock } from "./code-block";
 import { DocImage } from "./doc-image";
 import { ImageRow } from "./image-row";
 import { Embed } from "./embed";
+import { Attachment } from "./attachment";
 import { TableOfContents } from "./toc";
 
 /**
@@ -94,6 +95,7 @@ export const VIEWED_NODES = [
   Diagram,
   DocImage,
   Embed,
+  Attachment,
   TableOfContents,
   HighlightedCodeBlock,
 ];

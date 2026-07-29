@@ -1,21 +1,36 @@
 import type { Editor } from "@tiptap/core";
 import {
+  filesOf,
   imageFilesOf,
+  insertUploadedFiles,
   insertUploadedGallery,
-  insertUploadedImages,
 } from "@/components/editor/image-upload";
 import type { SlashItem } from "./contract";
 
-type InsertImages = (view: Editor["view"], files: File[], pos: number) => Promise<void>;
+type InsertFiles = (view: Editor["view"], files: File[], pos: number) => Promise<void>;
 
-/** Open the OS file picker and hand whatever comes back to `insert`. */
-function pickImages(editor: Editor, insert: InsertImages): void {
+/** Open the OS file picker on pictures only, and insert what comes back. */
+function pickImages(editor: Editor, insert: InsertFiles): void {
+  pick(editor, "image/*", imageFilesOf, insert);
+}
+
+/** The same, on anything this instance accepts. */
+function pickAnyFile(editor: Editor, insert: InsertFiles): void {
+  pick(editor, "", filesOf, insert);
+}
+
+function pick(
+  editor: Editor,
+  accept: string,
+  chosen: (list: FileList | null) => File[],
+  insert: InsertFiles,
+): void {
   const input = document.createElement("input");
   input.type = "file";
-  input.accept = "image/*";
+  input.accept = accept;
   input.multiple = true;
   input.onchange = () => {
-    const files = imageFilesOf(input.files);
+    const files = chosen(input.files);
     if (files.length > 0) void insert(editor.view, files, editor.state.selection.from);
   };
   input.click();
@@ -93,7 +108,16 @@ export const FIGURE_ITEMS: SlashItem[] = [
     keywords: ["image", "picture", "photo", "illustration"],
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).run();
-      pickImages(editor, insertUploadedImages);
+      pickImages(editor, insertUploadedFiles);
+    },
+  },
+  {
+    title: "File attachment",
+    icon: "⇩",
+    keywords: ["file", "attachment", "pdf", "document", "fichier", "piece jointe"],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      pickAnyFile(editor, insertUploadedFiles);
     },
   },
   {

@@ -1,6 +1,6 @@
 import type { DocumentNode } from "@/domain/documents/body";
 import { diagramLines, diagramTexts } from "./diagram-lines";
-import { embedLink } from "./embed-link";
+import { attachmentLink, embedLink, type BlockLink } from "./block-links";
 
 /**
  * A document as plain text, for destinations that render no markup at all —
@@ -95,13 +95,18 @@ function blockToText(node: DocumentNode): string {
     // Plain text draws nothing, so the caption is all an image leaves behind.
     case "image":
       return String(node.attrs?.caption ?? "");
-    case "embed": {
-      const { label, href } = embedLink(node);
-      return href ? `${label} — ${href}` : label;
-    }
+    case "embed":
+      return linkToText(embedLink(node));
+    case "attachment":
+      return linkToText(attachmentLink(node));
     default:
       return node.content ? blocksToText(node.content) : "";
   }
+}
+
+/** A link, as the only two things plain text can say about one. */
+function linkToText({ label, href }: BlockLink): string {
+  return href ? `${label} — ${href}` : label;
 }
 
 /**

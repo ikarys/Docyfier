@@ -228,6 +228,19 @@ describe("docToHtml", () => {
     expect(docToHtml({ type: "doc", content: [embed] })).toContain(">Vimeo</a>");
   });
 
+  it("sends an attachment out as a link that names the file and its weight", () => {
+    const attachment = {
+      type: "attachment",
+      attrs: { href: "/api/uploads/a.pdf", name: "rapport.pdf", size: 1_200_000 },
+    };
+    const out = docToHtml({ type: "doc", content: [attachment] }, {}, {
+      baseUrl: "https://docs.example.com",
+    });
+    expect(out).toBe(
+      '<p><a href="https://docs.example.com/api/uploads/a.pdf">rapport.pdf · 1.2 MB</a></p>',
+    );
+  });
+
   it("makes an image absolute for a reader outside this instance", () => {
     const image = { type: "image", attrs: { src: "/api/uploads/a.png" } };
     const out = docToHtml({ type: "doc", content: [image] }, {}, {

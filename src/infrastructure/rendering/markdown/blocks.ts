@@ -1,5 +1,5 @@
 import type { DocumentNode } from "@/domain/documents/body";
-import { embedLink } from "../embed-link";
+import { attachmentLink, embedLink } from "../block-links";
 import { imageToMarkdown, inlineToMarkdown, plainText, plainTextRaw } from "./inline";
 import {
   chartToMarkdown,
@@ -129,6 +129,10 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
   image: imageBlockToMarkdown,
   embed: (node) => {
     const { label, href } = embedLink(node);
+    return href ? `[${label}](${href})` : "";
+  },
+  attachment: (node) => {
+    const { label, href } = attachmentLink(node);
     return href ? `[${label}](${href})` : "";
   },
   callout: (node) => {

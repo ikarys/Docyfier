@@ -1,7 +1,7 @@
 import type { DocumentNode } from "@/domain/documents/body";
 import type { Paragraph as ParagraphType, Table as TableType } from "docx";
 import { diagramLines, diagramTexts } from "@/infrastructure/rendering/diagram-lines";
-import { embedLink } from "@/infrastructure/rendering/embed-link";
+import { attachmentLink, embedLink, type BlockLink } from "@/infrastructure/rendering/block-links";
 import { EXPORT_SCALE, type DiagramImages } from "../../diagram-images";
 import type { DocxModule, RunBuilder } from "./runs";
 
@@ -44,20 +44,28 @@ export function figureBuilder(d: DocxModule, runs: RunBuilder, images: DiagramIm
     ...caption((node.attrs?.caption as string | null) ?? null),
   ];
 
-  /** An embed as the link it stands for: Word draws no frame. */
-  const embed = (node: DocumentNode): ParagraphType[] => {
-    const { label, href } = embedLink(node);
-    if (!href) return [];
-    return [
-      new d.Paragraph({
-        children: [
-          new d.ExternalHyperlink({
-            children: [new d.TextRun({ text: label, style: "Hyperlink" })],
-            link: href,
+  /** A block Word can only point at: one paragraph, one hyperlink. */
+  const linkParagraph = ({ label, href }: BlockLink): ParagraphType[] =>
+    href
+      ? [
+          new d.Paragraph({
+            children: [
+              new d.ExternalHyperlink({
+                children: [new d.TextRun({ text: label, style: "Hyperlink" })],
+                link: href,
+              }),
+            ],
           }),
-        ],
-      }),
-    ];
+        ]
+      : [];
+
+  /** An embed as the link it stands for: Word draws no frame. */
+  const embed = (node: DocumentNode): ParagraphType[] => linkParagraph(embedLink(node));
+
+  /** An attachment stays on this instance, so its link has to reach back to it. */
+  const attachment = (node: DocumentNode): ParagraphType[] => {
+    const { label, href } = attachmentLink(node);
+    return linkParagraph({ label, href: href ? runs.url(href) : "" });
   };
 
   /**
@@ -118,5 +126,5 @@ export function figureBuilder(d: DocxModule, runs: RunBuilder, images: DiagramIm
     ];
   };
 
-  return { image, gallery, embed, diagram };
+  return { image, gallery, embed, attachment, diagram };
 }

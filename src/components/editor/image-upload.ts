@@ -17,6 +17,10 @@ import { uploadFailureNote, uploadProgressNote, type UploadFailure } from "./upl
 export interface UploadResult {
   url: string;
   alt: string;
+  name: string;
+  size: number;
+  /** What the server decided it is: something to draw, or something to attach. */
+  kind: "image" | "file";
 }
 
 /** How long a failure stays on screen before it stops being news. */
@@ -27,24 +31,35 @@ export async function uploadImage(file: File): Promise<UploadResult> {
   body.append("file", file);
   const res = await fetch("/api/uploads", { method: "POST", body });
   const json = (await res.json().catch(() => null)) as
-    | (UploadResult & { error?: string })
+    | (Partial<UploadResult> & { error?: string })
     | null;
   if (!res.ok || !json?.url) {
     throw new Error(json?.error ?? `Upload failed (${res.status})`);
   }
-  return { url: json.url, alt: json.alt ?? "" };
+  return {
+    url: json.url,
+    alt: json.alt ?? "",
+    name: json.name ?? file.name,
+    size: json.size ?? file.size,
+    kind: json.kind === "file" ? "file" : "image",
+  };
 }
 
-/** Image files out of a paste or drop payload, ignoring everything else. */
-export function imageFilesOf(list: FileList | DataTransferItemList | null): File[] {
+/** Every file in a paste or drop payload; the server decides what each is. */
+export function filesOf(list: FileList | DataTransferItemList | null): File[] {
   if (!list) return [];
   const files: File[] = [];
   for (let i = 0; i < list.length; i++) {
     const entry = list[i];
     const file = entry instanceof File ? entry : entry.getAsFile();
-    if (file && file.type.startsWith("image/")) files.push(file);
+    if (file) files.push(file);
   }
   return files;
+}
+
+/** Only the images among them — what a picture-shaped flow accepts. */
+export function imageFilesOf(list: FileList | DataTransferItemList | null): File[] {
+  return filesOf(list).filter((file) => file.type.startsWith("image/"));
 }
 
 /**
@@ -91,13 +106,23 @@ function imageNodes(view: EditorView, uploaded: UploadResult[]): PMNode[] {
   return uploaded.map(({ url, alt }) => type.create({ src: url, alt, width: 100 }));
 }
 
+/** A picture is drawn where it landed; anything else is a file row. */
+function uploadedNodes(view: EditorView, uploaded: UploadResult[]): PMNode[] {
+  const { image, attachment } = view.state.schema.nodes;
+  return uploaded.map((file) =>
+    file.kind === "image"
+      ? image.create({ src: file.url, alt: file.alt, width: 100 })
+      : attachment.create({ href: file.url, name: file.name, size: file.size }),
+  );
+}
+
 /** Upload the files and insert them at `pos`, one under the other. */
-export async function insertUploadedImages(
+export async function insertUploadedFiles(
   view: EditorView,
   files: File[],
   pos: number,
 ): Promise<void> {
-  const nodes = imageNodes(view, await uploadEach(view, files, pos));
+  const nodes = uploadedNodes(view, await uploadEach(view, files, pos));
   if (nodes.length > 0) view.dispatch(view.state.tr.insert(pos, nodes));
 }
 

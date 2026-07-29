@@ -48,6 +48,14 @@ describe("docToText", () => {
     expect(docToText(doc(embed))).toBe("La démo — https://youtu.be/abc123");
   });
 
+  it("writes an attachment as the file it points at", () => {
+    const attachment = {
+      type: "attachment",
+      attrs: { href: "/api/uploads/a.pdf", name: "rapport.pdf", size: 1_200_000 },
+    };
+    expect(docToText(doc(attachment))).toBe("rapport.pdf · 1.2 MB — /api/uploads/a.pdf");
+  });
+
   it("keeps an image's caption, the only words it has", () => {
     const image = { type: "image", attrs: { src: "/x.png", caption: "Fig. 1" } };
     expect(docToText(doc(p(text("un")), image))).toBe("un\n\nFig. 1");

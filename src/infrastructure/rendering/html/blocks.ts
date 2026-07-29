@@ -1,6 +1,6 @@
 import type { DocumentNode } from "@/domain/documents/body";
 import type { HtmlContext } from "./contract";
-import { embedLink } from "../embed-link";
+import { attachmentLink, embedLink } from "../block-links";
 import { escapeHtml } from "./escape";
 import { imageTag, rawText } from "./inline";
 import {
@@ -142,6 +142,10 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
   embed: (node) => {
     const { label, href } = embedLink(node);
     return href ? `<p><a href="${escapeHtml(href)}">${escapeHtml(label)}</a></p>` : "";
+  },
+  attachment: (node, ctx) => {
+    const { label, href } = attachmentLink(node);
+    return href ? `<p><a href="${escapeHtml(ctx.url(href))}">${escapeHtml(label)}</a></p>` : "";
   },
   callout: (node, ctx) => {
     const label = CALLOUT_LABEL[String(node.attrs?.variant ?? "note")] ?? "Note";

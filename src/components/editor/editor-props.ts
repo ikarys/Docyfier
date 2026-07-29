@@ -1,7 +1,7 @@
 "use client";
 
 import type { EditorProps } from "@tiptap/pm/view";
-import { imageFilesOf, insertUploadedImages } from "./image-upload";
+import { filesOf, imageFilesOf, insertUploadedFiles } from "./image-upload";
 import { insertPastedText } from "./paste-insert";
 
 /**
@@ -18,7 +18,7 @@ export function documentEditorProps(): EditorProps {
       // ProseMirror from also inserting the browser's own base64 copy.
       const files = imageFilesOf(event.clipboardData?.files ?? null);
       if (files.length > 0) {
-        void insertUploadedImages(view, files, view.state.selection.from);
+        void insertUploadedFiles(view, files, view.state.selection.from);
         return true;
       }
       // Then text that deserves better than a wall of characters: a spreadsheet
@@ -28,10 +28,12 @@ export function documentEditorProps(): EditorProps {
 
     handleDrop: (view, event, _slice, moved) => {
       if (moved) return false;
-      const files = imageFilesOf(event.dataTransfer?.files ?? null);
+      // A drop may be anything the instance accepts: a picture is drawn where
+      // it landed, a document becomes a file row there.
+      const files = filesOf(event.dataTransfer?.files ?? null);
       if (files.length === 0) return false;
       const at = view.posAtCoords({ left: event.clientX, top: event.clientY });
-      void insertUploadedImages(view, files, at?.pos ?? view.state.selection.from);
+      void insertUploadedFiles(view, files, at?.pos ?? view.state.selection.from);
       return true;
     },
   };

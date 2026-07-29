@@ -244,6 +244,21 @@ describe("docxTarget", () => {
     expect(xml).toContain("Hyperlink");
   });
 
+  it("sends an attachment out as a hyperlink to this instance", async () => {
+    const xml = await documentXml(
+      [
+        {
+          type: "attachment",
+          attrs: { href: "/api/uploads/a.pdf", name: "rapport.pdf", size: 1_200_000 },
+        },
+      ],
+      { baseUrl: "https://docs.example.com" },
+    );
+
+    expect(xml).toContain("rapport.pdf");
+    expect(xml).toContain("Hyperlink");
+  });
+
   it("leaves an absolute image URL alone", async () => {
     const xml = await documentXml([
       { type: "image", attrs: { src: "https://cdn.example.com/a.png", alt: "" } },

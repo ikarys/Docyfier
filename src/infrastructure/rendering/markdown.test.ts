@@ -239,6 +239,14 @@ describe("docToMarkdown", () => {
     expect(md(embed)).toBe("[La maquette](https://www.figma.com/design/a)");
   });
 
+  it("sends an attachment out as a link to the file", () => {
+    const attachment = {
+      type: "attachment",
+      attrs: { href: "/api/uploads/a.pdf", name: "rapport.pdf", size: 1_200_000 },
+    };
+    expect(md(attachment)).toBe("[rapport.pdf · 1.2 MB](/api/uploads/a.pdf)");
+  });
+
   it("turns a hard break into the two trailing spaces markdown needs", () => {
     expect(md(p(text("un"), { type: "hardBreak" }, text("deux")))).toBe("un  \ndeux");
   });

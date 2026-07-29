@@ -1752,6 +1752,34 @@ body {
   margin: 0;
 }
 
+/* A file carried by the document: one row, one link, nothing to preview. */
+.doc .attachment-row {
+  margin: calc(1rem * var(--doc-space)) 0;
+}
+.doc .attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.92em;
+  font-weight: 600;
+  text-decoration: none;
+}
+.doc .attachment:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.doc .attachment-icon {
+  color: var(--accent);
+}
+.doc-editor .attachment-row[data-selected="true"] .attachment {
+  outline: 3px solid var(--accent-soft);
+}
+
 /* An embedded page. The frame is a screen thing; the link under it is what
    paper and every export are left with. */
 .doc .embed {
@@ -3231,6 +3259,7 @@ body {
   .doc .doc-image,
   .doc .image-row,
   .doc .embed,
+  .doc .attachment-row,
   .doc .details,
   .doc .code-block,
   .doc .task-item {

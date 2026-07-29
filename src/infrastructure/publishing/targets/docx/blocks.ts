@@ -149,6 +149,8 @@ export function blockBuilder(d: DocxModule, baseUrl: string, images: DiagramImag
         return [figures.gallery(node)];
       case "embed":
         return figures.embed(node);
+      case "attachment":
+        return figures.attachment(node);
       case "callout":
         return [tables.callout(node)];
       case "chart":

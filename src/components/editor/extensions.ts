@@ -13,6 +13,7 @@ import { DiagramNode } from "../diagram/DiagramView";
 import { CodeBlockNode } from "./CodeBlockView";
 import { ImageNode } from "../ImageView";
 import { EmbedNode } from "../EmbedView";
+import { AttachmentNode } from "../AttachmentView";
 import { TocNode } from "../TocView";
 import { EmojiCommand } from "./emoji-command";
 import { Shortcuts } from "./shortcuts";
@@ -35,6 +36,7 @@ const VIEWS: Record<string, AnyExtension> = {
   [DiagramNode.name]: DiagramNode,
   [ImageNode.name]: ImageNode,
   [EmbedNode.name]: EmbedNode,
+  [AttachmentNode.name]: AttachmentNode,
   [TocNode.name]: TocNode,
   [CodeBlockNode.name]: CodeBlockNode,
 };
