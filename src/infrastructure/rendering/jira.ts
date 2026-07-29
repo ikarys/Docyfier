@@ -120,8 +120,9 @@ function blockToJira(node: DocumentNode, prefix = ""): string {
     case "table":
       return tableToJira(node);
     case "image": {
-      const src = (node.attrs ?? {}).src as string | undefined;
-      return src ? `!${src}!` : "";
+      const { src, caption } = (node.attrs ?? {}) as { src?: string; caption?: string | null };
+      if (!src) return "";
+      return caption ? `!${src}!\n_${caption}_` : `!${src}!`;
     }
     case "callout": {
       const variant = String(node.attrs?.variant ?? "note").toUpperCase();

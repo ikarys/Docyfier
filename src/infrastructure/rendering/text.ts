@@ -91,8 +91,9 @@ function blockToText(node: DocumentNode): string {
       return blocksToText(node.content ?? []);
     case "diagram":
       return diagramToText(node);
+    // Plain text draws nothing, so the caption is all an image leaves behind.
     case "image":
-      return "";
+      return String(node.attrs?.caption ?? "");
     default:
       return node.content ? blocksToText(node.content) : "";
   }

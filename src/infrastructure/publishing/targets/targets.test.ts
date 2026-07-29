@@ -69,6 +69,16 @@ describe("confluenceTarget", () => {
     expect(out).not.toContain("ac:structured-macro");
   });
 
+  it("keeps an image's caption in storage format, which has no figure element", async () => {
+    const image = {
+      type: "image",
+      attrs: { src: "https://cdn.example.com/a.png", caption: "Fig. 1" },
+    };
+    const out = await render(confluenceTarget, doc(image), { format: "storage" });
+    expect(out).toContain("<ac:image>");
+    expect(out).toContain("<p><em>Fig. 1</em></p>");
+  });
+
   it("emits the macros that make a callout a real panel in the storage flavour", async () => {
     const out = await render(confluenceTarget, doc(callout), { format: "storage" });
     expect(out).toContain('ac:name="note"');

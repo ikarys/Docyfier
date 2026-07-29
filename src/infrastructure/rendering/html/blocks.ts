@@ -54,6 +54,19 @@ function tableToHtml(node: DocumentNode, ctx: HtmlContext): string {
   return rows.length ? `<table><tbody>${rows.join("")}</tbody></table>` : "";
 }
 
+/**
+ * A figure only when there is a caption to carry: a bare `<figure>` says
+ * nothing a receiving tool can use, while a paragraph is what every one of
+ * them keeps.
+ */
+function imageToHtml(node: DocumentNode, ctx: HtmlContext): string {
+  const tag = imageTag(node, ctx.url);
+  if (!tag) return "";
+  const caption = (node.attrs?.caption as string | null) ?? null;
+  if (!caption) return `<p>${tag}</p>`;
+  return `<figure>${tag}<figcaption>${escapeHtml(caption)}</figcaption></figure>`;
+}
+
 function coverToHtml(node: DocumentNode, ctx: HtmlContext): string {
   // The cover's own heading is the document title; its extra lines are
   // subtitle, chips and meta.
@@ -109,7 +122,7 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
   // receiving tool renders or shows it rather than losing it.
   blockMath: (node) => `<p><code>$$${escapeHtml(String(node.attrs?.latex ?? ""))}$$</code></p>`,
   table: tableToHtml,
-  image: (node, ctx) => `<p>${imageTag(node, ctx.url)}</p>`,
+  image: imageToHtml,
   callout: (node, ctx) => {
     const label = CALLOUT_LABEL[String(node.attrs?.variant ?? "note")] ?? "Note";
     return `<blockquote><p><strong>${label}</strong></p>${ctx.blocks(

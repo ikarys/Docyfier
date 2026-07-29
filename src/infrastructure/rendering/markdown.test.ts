@@ -214,6 +214,12 @@ describe("docToMarkdown", () => {
     expect(md(p({ type: "image", attrs: { src: "/a.png" } }))).toBe("![](/a.png)");
   });
 
+  it("puts an image's caption on its own line, and never on an inline one", () => {
+    const attrs = { src: "/a.png", alt: "schéma", caption: "Fig. 1" };
+    expect(md({ type: "image", attrs })).toBe("![schéma](/a.png)\n\n*Fig. 1*");
+    expect(md(p({ type: "image", attrs }))).toBe("![schéma](/a.png)");
+  });
+
   it("turns a hard break into the two trailing spaces markdown needs", () => {
     expect(md(p(text("un"), { type: "hardBreak" }, text("deux")))).toBe("un  \ndeux");
   });

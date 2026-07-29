@@ -208,6 +208,14 @@ describe("docxTarget", () => {
     expect(xml).toContain("Hyperlink");
   });
 
+  it("writes an image's caption under the link that stands for it", async () => {
+    const xml = await documentXml([
+      { type: "image", attrs: { src: "/api/uploads/a.png", alt: "schéma", caption: "Fig. 1" } },
+    ]);
+
+    expect(xml).toContain("Fig. 1");
+  });
+
   it("leaves an absolute image URL alone", async () => {
     const xml = await documentXml([
       { type: "image", attrs: { src: "https://cdn.example.com/a.png", alt: "" } },

@@ -26,6 +26,13 @@ export const DocImage = Image.configure({ inline: false, allowBase64: false }).e
           style: `width:${attrs.width}%`,
         }),
       },
+      // Shaped like the chart's caption, so both read the same way to the
+      // renderers and to the model writing them.
+      caption: {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-caption"),
+        renderHTML: (attrs) => (attrs.caption ? { "data-caption": attrs.caption } : {}),
+      },
     };
   },
 });

@@ -1701,6 +1701,12 @@ body {
      on the figure does not center them — auto margins do. */
   margin-inline: auto;
 }
+.doc .doc-image figcaption {
+  margin-top: calc(0.5rem * var(--doc-space));
+  font-size: 0.85em;
+  font-style: italic;
+  color: var(--ink-faint);
+}
 .doc-editor .doc-image[data-selected="true"] img {
   outline: 3px solid var(--accent-soft);
 }

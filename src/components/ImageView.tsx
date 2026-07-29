@@ -15,10 +15,11 @@ export const ImageNode = DocImage.extend({
 });
 
 export function ImageView({ node, updateAttributes, selected, editor }: NodeViewProps) {
-  const { src, alt, width } = node.attrs as {
+  const { src, alt, width, caption } = node.attrs as {
     src: string;
     alt: string | null;
     width: number;
+    caption: string | null;
   };
 
   return (
@@ -27,6 +28,7 @@ export function ImageView({ node, updateAttributes, selected, editor }: NodeView
           served raw by /api/uploads; next/image would add a second pipeline
           for no benefit and would not print any better. */}
       <img src={src} alt={alt ?? ""} style={{ width: `${width}%` }} />
+      {caption && <figcaption>{caption}</figcaption>}
 
       {selected && editor.isEditable && (
         <div className="image-bar" contentEditable={false} onMouseDown={(e) => e.preventDefault()}>
@@ -45,6 +47,14 @@ export function ImageView({ node, updateAttributes, selected, editor }: NodeView
             placeholder="Alt text"
             value={alt ?? ""}
             onChange={(e) => updateAttributes({ alt: e.target.value })}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+          <input
+            className="image-alt"
+            placeholder="Caption"
+            value={caption ?? ""}
+            // Empty means no caption at all, not an empty line under the image.
+            onChange={(e) => updateAttributes({ caption: e.target.value || null })}
             onKeyDown={(e) => e.stopPropagation()}
           />
         </div>

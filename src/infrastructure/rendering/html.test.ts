@@ -179,6 +179,18 @@ describe("docToHtml", () => {
     );
   });
 
+  it("wraps a captioned image in a figure, and leaves an uncaptioned one a paragraph", () => {
+    const captioned = {
+      type: "image",
+      attrs: { src: "/a.png", alt: "schéma", caption: "Fig. 1 — le flux" },
+    };
+    expect(docToHtml({ type: "doc", content: [captioned] })).toBe(
+      '<figure><img src="/a.png" alt="schéma" /><figcaption>Fig. 1 — le flux</figcaption></figure>',
+    );
+    const bare = { type: "image", attrs: { src: "/a.png", alt: "" } };
+    expect(docToHtml({ type: "doc", content: [bare] })).toBe('<p><img src="/a.png" alt="" /></p>');
+  });
+
   it("makes an image absolute for a reader outside this instance", () => {
     const image = { type: "image", attrs: { src: "/api/uploads/a.png" } };
     const out = docToHtml({ type: "doc", content: [image] }, {}, {

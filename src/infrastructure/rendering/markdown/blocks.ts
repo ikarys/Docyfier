@@ -34,6 +34,13 @@ function prefixLines(block: string, first: string, rest: string): string {
     .join("\n");
 }
 
+/** A block image may name itself; the inline form has nowhere to put a caption. */
+function imageBlockToMarkdown(node: DocumentNode): string {
+  const image = imageToMarkdown(node);
+  const caption = (node.attrs?.caption as string | null) ?? null;
+  return image && caption ? `${image}\n\n*${caption}*` : image;
+}
+
 function markedList(node: DocumentNode, marker: (index: number) => string): string {
   return (node.content ?? [])
     .map((item, index) => {
@@ -118,7 +125,7 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
   horizontalRule: () => "---",
   blockMath: (node) => `$$\n${String(node.attrs?.latex ?? "")}\n$$`,
   table: tableToMarkdown,
-  image: imageToMarkdown,
+  image: imageBlockToMarkdown,
   callout: (node) => {
     const alert = ALERT_BY_VARIANT[String(node.attrs?.variant ?? "note")] ?? "NOTE";
     const body = blocksToMarkdown(node.content ?? []);

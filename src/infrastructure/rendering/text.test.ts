@@ -40,6 +40,11 @@ describe("docToText", () => {
     expect(out).toBe("un\n\ndeux");
   });
 
+  it("keeps an image's caption, the only words it has", () => {
+    const image = { type: "image", attrs: { src: "/x.png", caption: "Fig. 1" } };
+    expect(docToText(doc(p(text("un")), image))).toBe("un\n\nFig. 1");
+  });
+
   it("keeps list markers and indents wrapped lines under them", () => {
     expect(docToText(doc({ type: "bulletList", content: [item("un"), item("deux")] })))
       .toBe("- un\n- deux");
