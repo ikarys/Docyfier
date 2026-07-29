@@ -1,6 +1,9 @@
 import type { DocumentNode } from "@/domain/documents/body";
 import { docToHtml, escapeHtml, rawText, type HtmlDialect } from "@/infrastructure/rendering/html";
 import { optionValue, type ExportTarget } from "@/domain/publishing/export-target";
+import { diagramImageDialect, diagramOutlineHtml } from "../diagram-image-dialect";
+import { rasterizeDiagrams } from "../diagram-images";
+import { sharpRasterizer } from "../sharp-rasterizer";
 
 /**
  * Confluence export.
@@ -57,6 +60,11 @@ const storageDialect: HtmlDialect = {
       case "tableOfContents":
         // Confluence builds its own from the headings it just received.
         return macro("toc", "");
+      case "diagram":
+        // Storage format models an image as an attachment that already exists
+        // on the page, so an exported payload has nothing to point at: the
+        // relations go in as words. Rich HTML carries the drawing itself.
+        return diagramOutlineHtml(node);
       case "pageBreak":
         return macro("pagebreak", "");
       case "image": {
@@ -97,11 +105,14 @@ export const confluenceTarget: ExportTarget = {
       ],
     },
   ],
-  render(doc, values) {
+  async render(doc, values) {
     const storage = optionValue(confluenceTarget, values, "format") === "storage";
+    const images = storage
+      ? new Map()
+      : await rasterizeDiagrams(doc.content, sharpRasterizer);
     // `baseUrl` is injected by the caller from the shared export settings, not
     // declared here: every target that emits images needs the same value.
-    return docToHtml(doc.content, storage ? storageDialect : {}, {
+    return docToHtml(doc.content, storage ? storageDialect : diagramImageDialect(images), {
       baseUrl: values.baseUrl ?? "",
     });
   },

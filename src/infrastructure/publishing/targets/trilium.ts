@@ -1,5 +1,8 @@
 import { docToHtml, escapeHtml } from "@/infrastructure/rendering/html";
 import { optionValue, type ExportTarget } from "@/domain/publishing/export-target";
+import { diagramImageDialect } from "../diagram-image-dialect";
+import { rasterizeDiagrams } from "../diagram-images";
+import { sharpRasterizer } from "../sharp-rasterizer";
 
 /**
  * Trilium Notes export.
@@ -26,8 +29,11 @@ export const triliumTarget: ExportTarget = {
       help: "Needed for Import → HTML, which names the note after <title>. Leave off to paste into an open note.",
     },
   ],
-  render(doc, values) {
-    const body = docToHtml(doc.content, {}, { baseUrl: values.baseUrl ?? "" });
+  async render(doc, values) {
+    const images = await rasterizeDiagrams(doc.content, sharpRasterizer);
+    const body = docToHtml(doc.content, diagramImageDialect(images), {
+      baseUrl: values.baseUrl ?? "",
+    });
     if (optionValue(triliumTarget, values, "document") !== "on") return body;
     return [
       "<!doctype html>",

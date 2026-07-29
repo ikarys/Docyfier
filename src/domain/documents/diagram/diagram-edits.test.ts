@@ -3,6 +3,9 @@ import { MAX_LABEL, type DiagramAttrs } from "./diagram";
 import {
   addEdge,
   addNode,
+  setCaption,
+  setEdgeStyle,
+  setTitle,
   flipDirection,
   moveToGroup,
   removeEdge,
@@ -132,5 +135,44 @@ describe("flipDirection", () => {
     const once = flipDirection(flow());
     expect(once.direction).toBe("right");
     expect(flipDirection(once).direction).toBe("down");
+  });
+});
+
+describe("texts and lines", () => {
+  it("keeps a title and a caption, and forgets an empty one", () => {
+    const titled = setTitle(flow(), "Parcours");
+    expect(titled.title).toBe("Parcours");
+    expect(setTitle(titled, "   ").title).toBeNull();
+
+    const captioned = setCaption(flow(), "v2");
+    expect(captioned.caption).toBe("v2");
+    expect(setCaption(captioned, "").caption).toBeNull();
+  });
+
+  it("dashes an arrow and solidifies it again", () => {
+    const dashed = setEdgeStyle(flow(), 0, "dashed");
+    expect(dashed.edges[0].style).toBe("dashed");
+    expect(setEdgeStyle(dashed, 0, "solid").edges[0].style).toBe("solid");
+  });
+
+  it("forgets an arrow label made empty", () => {
+    expect(setEdgeLabel(flow(), 1, "  ").edges[1].label).toBeNull();
+  });
+
+  it("hangs a new box off the root of a hierarchy, not off its last leaf", () => {
+    const next = addNode(sampleDiagram("hierarchy"));
+    const added = next.nodes[next.nodes.length - 1];
+    expect(next.edges.some((e) => e.from === "root" && e.to === added.id)).toBe(true);
+  });
+
+  it("adds a phase to an axis without inventing an arrow", () => {
+    const next = addNode(sampleDiagram("timeline"));
+    expect(next.nodes).toHaveLength(4);
+    expect(next.edges).toEqual([]);
+  });
+
+  it("drops an arrow by position", () => {
+    const next = removeEdge(flow(), 1);
+    expect(links(next)).toEqual(["request->review", "review->rejected"]);
   });
 });

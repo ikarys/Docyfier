@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
 import type { DocumentNode } from "@/domain/documents/body";
+import { sampleDiagram, sampleDiagramNode } from "@/domain/documents/diagram/sample";
 import { docxTarget } from "./docx-target";
 
 /**
@@ -246,5 +247,34 @@ describe("docxTarget", () => {
     ]);
 
     expect(xml).toContain("survivant");
+  });
+});
+
+/**
+ * Word is the one target that takes real bytes, so a diagram goes in as the
+ * drawing rather than as a projection of it.
+ */
+describe("docxTarget, diagrams", () => {
+  it("embeds the drawing as an image part, not as a list of arrows", async () => {
+    const diagram = sampleDiagramNode("flow");
+    const payload = (await docxTarget.render(
+      { title: "Parcours", content: { type: "doc", content: [diagram] } },
+      {},
+    )) as Uint8Array;
+    const zip = await JSZip.loadAsync(payload);
+    const media = Object.values(zip.files).filter(
+      (entry) => !entry.dir && entry.name.startsWith("word/media/"),
+    );
+
+    expect(media).toHaveLength(1);
+    expect(media[0].name).toMatch(/\.png$/);
+  });
+
+  it("keeps the title and caption around the drawing", async () => {
+    const attrs = { ...sampleDiagram("flow"), title: "Parcours", caption: "v2" };
+    const xml = await documentXml([{ type: "diagram", attrs }]);
+
+    expect(xml).toContain("Parcours");
+    expect(xml).toContain("v2");
   });
 });

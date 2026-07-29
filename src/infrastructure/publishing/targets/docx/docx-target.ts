@@ -1,4 +1,6 @@
 import { optionValue, type ExportTarget } from "@/domain/publishing/export-target";
+import { rasterizeDiagrams } from "../../diagram-images";
+import { sharpRasterizer } from "../../sharp-rasterizer";
 import { blockBuilder, ORDERED_REFERENCE } from "./blocks";
 
 /**
@@ -47,7 +49,8 @@ export const docxTarget: ExportTarget = {
 
   async render(doc, values) {
     const d = await import("docx");
-    const blocks = blockBuilder(d, values.baseUrl ?? "");
+    const images = await rasterizeDiagrams(doc.content, sharpRasterizer);
+    const blocks = blockBuilder(d, values.baseUrl ?? "", images);
     const size = PAGE_SIZES[optionValue(docxTarget, values, "pageSize")] ?? PAGE_SIZES.a4;
     const mm = d.convertMillimetersToTwip;
 

@@ -1,3 +1,4 @@
+import type { DocumentNode } from "../body";
 import type { DiagramAttrs, DiagramEdge, DiagramKind } from "./diagram";
 
 /**
@@ -89,4 +90,15 @@ const SAMPLES: Record<DiagramKind, Omit<DiagramAttrs, "kind">> = {
 
 export function sampleDiagram(kind: DiagramKind = "flow"): DiagramAttrs {
   return structuredClone({ kind, ...SAMPLES[kind] });
+}
+
+/**
+ * The same sample as the block that carries it.
+ *
+ * A node's attrs are an open record while `DiagramAttrs` is a closed shape, so
+ * something has to widen the one into the other; it happens here, once, rather
+ * than at every call site that builds a document containing a diagram.
+ */
+export function sampleDiagramNode(kind: DiagramKind = "flow"): DocumentNode {
+  return { type: "diagram", attrs: sampleDiagram(kind) as unknown as Record<string, unknown> };
 }
