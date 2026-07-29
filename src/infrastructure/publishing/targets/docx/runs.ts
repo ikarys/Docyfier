@@ -19,6 +19,8 @@ export const MONO = "Consolas";
 export const CODE_FILL = "F3F4F6";
 
 export interface RunBuilder {
+  /** A stored path made absolute, so a link still works outside this instance. */
+  url(src: string): string;
   /** Every character of text a node holds, whitespace collapsed. */
   text(node: DocumentNode): string;
   /** The same, verbatim — what a code block needs. */
@@ -85,6 +87,7 @@ export function runBuilder(d: DocxModule, baseUrl: string): RunBuilder {
   };
 
   return {
+    url,
     text,
     rawText,
     inline,

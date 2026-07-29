@@ -1,5 +1,6 @@
 import type { DocumentNode } from "@/domain/documents/body";
 import type { HtmlContext } from "./contract";
+import { attachmentLink, embedLink } from "../block-links";
 import { escapeHtml } from "./escape";
 import { imageTag, rawText } from "./inline";
 import {
@@ -52,6 +53,33 @@ function tableToHtml(node: DocumentNode, ctx: HtmlContext): string {
     return `<tr>${cells.join("")}</tr>`;
   });
   return rows.length ? `<table><tbody>${rows.join("")}</tbody></table>` : "";
+}
+
+/**
+ * An image, with its caption when it has one. A figure only then: a bare
+ * `<figure>` says nothing a receiving tool can use.
+ */
+function figureOf(node: DocumentNode, ctx: HtmlContext): string {
+  const tag = imageTag(node, ctx.url);
+  if (!tag) return "";
+  const caption = (node.attrs?.caption as string | null) ?? null;
+  return caption ? `<figure>${tag}<figcaption>${escapeHtml(caption)}</figcaption></figure>` : tag;
+}
+
+/** On its own, an image still needs a block around it; a paragraph is the one
+ * every receiving tool keeps. */
+function imageToHtml(node: DocumentNode, ctx: HtmlContext): string {
+  const figure = figureOf(node, ctx);
+  if (!figure) return "";
+  return node.attrs?.caption ? figure : `<p>${figure}</p>`;
+}
+
+/** A gallery stays a row in the one layout every reader has: a table. */
+function galleryToHtml(node: DocumentNode, ctx: HtmlContext): string {
+  const cells = (node.content ?? [])
+    .map((image) => `<td>${figureOf(image, ctx)}</td>`)
+    .join("");
+  return cells ? `<table><tbody><tr>${cells}</tr></tbody></table>` : "";
 }
 
 function coverToHtml(node: DocumentNode, ctx: HtmlContext): string {
@@ -109,7 +137,16 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
   // receiving tool renders or shows it rather than losing it.
   blockMath: (node) => `<p><code>$$${escapeHtml(String(node.attrs?.latex ?? ""))}$$</code></p>`,
   table: tableToHtml,
-  image: (node, ctx) => `<p>${imageTag(node, ctx.url)}</p>`,
+  image: imageToHtml,
+  imageRow: galleryToHtml,
+  embed: (node) => {
+    const { label, href } = embedLink(node);
+    return href ? `<p><a href="${escapeHtml(href)}">${escapeHtml(label)}</a></p>` : "";
+  },
+  attachment: (node, ctx) => {
+    const { label, href } = attachmentLink(node);
+    return href ? `<p><a href="${escapeHtml(ctx.url(href))}">${escapeHtml(label)}</a></p>` : "";
+  },
   callout: (node, ctx) => {
     const label = CALLOUT_LABEL[String(node.attrs?.variant ?? "note")] ?? "Note";
     return `<blockquote><p><strong>${label}</strong></p>${ctx.blocks(

@@ -179,6 +179,68 @@ describe("docToHtml", () => {
     );
   });
 
+  it("wraps a captioned image in a figure, and leaves an uncaptioned one a paragraph", () => {
+    const captioned = {
+      type: "image",
+      attrs: { src: "/a.png", alt: "schéma", caption: "Fig. 1 — le flux" },
+    };
+    expect(docToHtml({ type: "doc", content: [captioned] })).toBe(
+      '<figure><img src="/a.png" alt="schéma" /><figcaption>Fig. 1 — le flux</figcaption></figure>',
+    );
+    const bare = { type: "image", attrs: { src: "/a.png", alt: "" } };
+    expect(docToHtml({ type: "doc", content: [bare] })).toBe('<p><img src="/a.png" alt="" /></p>');
+  });
+
+  it("keeps a gallery a row, in the one layout every reader has: a table", () => {
+    const row = {
+      type: "imageRow",
+      content: [
+        { type: "image", attrs: { src: "/a.png", alt: "a" } },
+        { type: "image", attrs: { src: "/b.png", alt: "b" } },
+      ],
+    };
+    expect(docToHtml({ type: "doc", content: [row] })).toBe(
+      '<table><tbody><tr><td><img src="/a.png" alt="a" /></td>' +
+        '<td><img src="/b.png" alt="b" /></td></tr></tbody></table>',
+    );
+  });
+
+  it("sends an embed out as the link it stands for: a dead frame is worse", () => {
+    const embed = {
+      type: "embed",
+      attrs: {
+        provider: "YouTube",
+        href: "https://www.youtube.com/watch?v=abc123",
+        src: "https://www.youtube.com/embed/abc123",
+        title: "La démo",
+      },
+    };
+    expect(docToHtml({ type: "doc", content: [embed] })).toBe(
+      '<p><a href="https://www.youtube.com/watch?v=abc123">La démo</a></p>',
+    );
+  });
+
+  it("falls back to the provider when an embed was never titled", () => {
+    const embed = {
+      type: "embed",
+      attrs: { provider: "Vimeo", href: "https://vimeo.com/1", src: "x", title: null },
+    };
+    expect(docToHtml({ type: "doc", content: [embed] })).toContain(">Vimeo</a>");
+  });
+
+  it("sends an attachment out as a link that names the file and its weight", () => {
+    const attachment = {
+      type: "attachment",
+      attrs: { href: "/api/uploads/a.pdf", name: "rapport.pdf", size: 1_200_000 },
+    };
+    const out = docToHtml({ type: "doc", content: [attachment] }, {}, {
+      baseUrl: "https://docs.example.com",
+    });
+    expect(out).toBe(
+      '<p><a href="https://docs.example.com/api/uploads/a.pdf">rapport.pdf · 1.2 MB</a></p>',
+    );
+  });
+
   it("makes an image absolute for a reader outside this instance", () => {
     const image = { type: "image", attrs: { src: "/api/uploads/a.png" } };
     const out = docToHtml({ type: "doc", content: [image] }, {}, {

@@ -5,7 +5,10 @@ import {
   ReactNodeViewRenderer,
   type NodeViewProps,
 } from "@tiptap/react";
-import { DocImage, IMAGE_WIDTHS } from "@/infrastructure/editor/doc-image";
+import { useCallback } from "react";
+import { DocImage } from "@/infrastructure/editor/doc-image";
+import { ImageBar, type ImagePlacement } from "./image/ImageBar";
+import { useImageResize } from "./image/use-image-resize";
 
 /** The image node wired to its React rendering — this is what the editor loads. */
 export const ImageNode = DocImage.extend({
@@ -15,39 +18,44 @@ export const ImageNode = DocImage.extend({
 });
 
 export function ImageView({ node, updateAttributes, selected, editor }: NodeViewProps) {
-  const { src, alt, width } = node.attrs as {
-    src: string;
-    alt: string | null;
-    width: number;
-  };
+  const { src, alt, width, align, caption } = node.attrs as ImagePlacement & { src: string };
+  const setWidth = useCallback(
+    (value: number) => updateAttributes({ width: value }),
+    [updateAttributes],
+  );
+  const { resizing, handleProps } = useImageResize(width, align, setWidth);
+  const editing = selected && editor.isEditable;
 
   return (
-    <NodeViewWrapper as="figure" className="doc-image" data-selected={selected}>
+    <NodeViewWrapper
+      as="figure"
+      className="doc-image"
+      data-selected={selected}
+      data-align={align}
+      data-resizing={resizing}
+      // The figure carries the width, not the image: a float has to be as wide
+      // as the picture inside it for the text to know where to flow.
+      style={align === "full" ? undefined : { width: `${width}%` }}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element -- uploads are
           served raw by /api/uploads; next/image would add a second pipeline
           for no benefit and would not print any better. */}
-      <img src={src} alt={alt ?? ""} style={{ width: `${width}%` }} />
+      <img src={src} alt={alt ?? ""} />
+      {caption && <figcaption>{caption}</figcaption>}
 
-      {selected && editor.isEditable && (
-        <div className="image-bar" contentEditable={false} onMouseDown={(e) => e.preventDefault()}>
-          {IMAGE_WIDTHS.map((w) => (
-            <button
-              key={w}
-              type="button"
-              className={w === width ? "image-size is-active" : "image-size"}
-              onClick={() => updateAttributes({ width: w })}
-            >
-              {w}%
-            </button>
-          ))}
-          <input
-            className="image-alt"
-            placeholder="Alt text"
-            value={alt ?? ""}
-            onChange={(e) => updateAttributes({ alt: e.target.value })}
-            onKeyDown={(e) => e.stopPropagation()}
-          />
-        </div>
+      {editing && (
+        <span
+          className="image-handle"
+          contentEditable={false}
+          title={`${width}% of the column`}
+          {...handleProps}
+        />
+      )}
+      {editing && (
+        <ImageBar
+          placement={{ alt, width, align, caption }}
+          onChange={updateAttributes}
+        />
       )}
     </NodeViewWrapper>
   );

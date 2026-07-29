@@ -1,4 +1,5 @@
 import type { DocumentNode } from "@/domain/documents/body";
+import { attachmentLink, embedLink } from "../block-links";
 import { imageToMarkdown, inlineToMarkdown, plainText, plainTextRaw } from "./inline";
 import {
   chartToMarkdown,
@@ -32,6 +33,13 @@ function prefixLines(block: string, first: string, rest: string): string {
     .split("\n")
     .map((line, i) => `${i === 0 ? first : rest}${line}`.trimEnd())
     .join("\n");
+}
+
+/** A block image may name itself; the inline form has nowhere to put a caption. */
+function imageBlockToMarkdown(node: DocumentNode): string {
+  const image = imageToMarkdown(node);
+  const caption = (node.attrs?.caption as string | null) ?? null;
+  return image && caption ? `${image}\n\n*${caption}*` : image;
 }
 
 function markedList(node: DocumentNode, marker: (index: number) => string): string {
@@ -118,7 +126,15 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
   horizontalRule: () => "---",
   blockMath: (node) => `$$\n${String(node.attrs?.latex ?? "")}\n$$`,
   table: tableToMarkdown,
-  image: imageToMarkdown,
+  image: imageBlockToMarkdown,
+  embed: (node) => {
+    const { label, href } = embedLink(node);
+    return href ? `[${label}](${href})` : "";
+  },
+  attachment: (node) => {
+    const { label, href } = attachmentLink(node);
+    return href ? `[${label}](${href})` : "";
+  },
   callout: (node) => {
     const alert = ALERT_BY_VARIANT[String(node.attrs?.variant ?? "note")] ?? "NOTE";
     const body = blocksToMarkdown(node.content ?? []);

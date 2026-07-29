@@ -22,6 +22,31 @@ describe("docToJira", () => {
     );
   });
 
+  it("puts an image's caption under it, in Jira's italics", () => {
+    const image = { type: "image", attrs: { src: "/a.png", caption: "Fig. 1" } };
+    expect(jira(image)).toBe("!/a.png!\n_Fig. 1_");
+    expect(jira({ type: "image", attrs: { src: "/a.png" } })).toBe("!/a.png!");
+  });
+
+  it("keeps a gallery a row, in the table syntax Jira reads", () => {
+    const row = {
+      type: "imageRow",
+      content: [
+        { type: "image", attrs: { src: "/a.png" } },
+        { type: "image", attrs: { src: "/b.png" } },
+      ],
+    };
+    expect(jira(row)).toBe("|!/a.png!|!/b.png!|");
+  });
+
+  it("sends an embed out as the link Jira writes", () => {
+    const embed = {
+      type: "embed",
+      attrs: { provider: "Loom", href: "https://www.loom.com/share/abc123", title: "Le point" },
+    };
+    expect(jira(embed)).toBe("[Le point|https://www.loom.com/share/abc123]");
+  });
+
   it("renders the marks Jira has", () => {
     expect(jira(p(text("g", [{ type: "bold" }])))).toBe("*g*");
     expect(jira(p(text("c", [{ type: "code" }])))).toBe("{{c}}");

@@ -23,6 +23,19 @@ export function insertPastedText(view: EditorView, clipboard: DataTransfer): boo
   const decision = decidePaste(clipboard.getData("text/plain"));
   if (!decision) return false;
 
+  // A URL pasted over a selection is meant to link it; only an empty caret
+  // means "put the picture here".
+  if (decision.kind === "image") {
+    if (!view.state.selection.empty) return false;
+    const image = view.state.schema.nodes.image.create({
+      src: decision.src,
+      alt: "",
+      width: 100,
+    });
+    view.dispatch(view.state.tr.replaceSelectionWith(image).scrollIntoView());
+    return true;
+  }
+
   if (decision.kind === "table") {
     const table = pastedTable(view.state.schema, decision.rows);
     view.dispatch(view.state.tr.replaceSelectionWith(table).scrollIntoView());

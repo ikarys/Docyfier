@@ -1,11 +1,11 @@
 import type { DocumentNode } from "@/domain/documents/body";
-import { diagramLines, diagramTexts } from "@/infrastructure/rendering/diagram-lines";
-import { EXPORT_SCALE, type DiagramImages } from "../../diagram-images";
+import type { DiagramImages } from "../../diagram-images";
 import type {
   Paragraph as ParagraphType,
   Table as TableType,
   TableOfContents as TableOfContentsType,
 } from "docx";
+import { figureBuilder } from "./figures";
 import { runBuilder, CODE_FILL, MONO, type DocxModule } from "./runs";
 import { tableBuilder } from "./tables";
 
@@ -35,26 +35,10 @@ const HEADING_BY_LEVEL = [
 /** One indent step, in twips — Word's own list indent. */
 const INDENT_STEP = 720;
 
-/** Widest an image may be drawn, in pixels: the text column of an A4 page. */
-const MAX_IMAGE_WIDTH = 620;
-
-/**
- * An image rendered at `EXPORT_SCALE` shown at its natural size, and no wider
- * than the page. Drawing it at its pixel size would print it several times too
- * large; leaving Word to shrink it loses the sharpness the scale bought.
- */
-function fitToPage(width: number, height: number): { width: number; height: number } {
-  const natural = width / EXPORT_SCALE;
-  const ratio = Math.min(1, MAX_IMAGE_WIDTH / Math.max(1, natural));
-  return {
-    width: Math.round(natural * ratio),
-    height: Math.round((height / EXPORT_SCALE) * ratio),
-  };
-}
-
 export function blockBuilder(d: DocxModule, baseUrl: string, images: DiagramImages = new Map()) {
   const runs = runBuilder(d, baseUrl);
-  const { text, rawText, inline, linkRun, paragraph, plain } = runs;
+  const { text, rawText, inline, paragraph, plain } = runs;
+  const figures = figureBuilder(d, runs, images);
   const tables = tableBuilder(d, runs, (nodes) => blocks(nodes) as (ParagraphType | TableType)[]);
 
   /** List items, flattened: Word carries the nesting on each paragraph. */
@@ -160,13 +144,19 @@ export function blockBuilder(d: DocxModule, baseUrl: string, images: DiagramImag
       case "table":
         return [tables.table(node)];
       case "image":
-        return [new d.Paragraph({ children: [linkRun(node)] })];
+        return figures.image(node);
+      case "imageRow":
+        return [figures.gallery(node)];
+      case "embed":
+        return figures.embed(node);
+      case "attachment":
+        return figures.attachment(node);
       case "callout":
         return [tables.callout(node)];
       case "chart":
         return tables.chart(node);
       case "diagram":
-        return diagram(node);
+        return figures.diagram(node);
       case "statRow":
         return (node.content ?? []).map((stat) => {
           const [value, label, delta] = (stat.content ?? []).map(text);
@@ -214,41 +204,6 @@ export function blockBuilder(d: DocxModule, baseUrl: string, images: DiagramImag
       default:
         return node.content ? blocks(node.content) : [];
     }
-  }
-
-  /**
-   * A diagram as the drawing itself, embedded.
-   *
-   * Word is the one target that takes real bytes, so it gets the picture rather
-   * than a projection. The image was rendered before the walk started — see
-   * `diagram-images.ts` — and a diagram that has none falls back to its
-   * relations in words rather than to an empty page.
-   */
-  function diagram(node: DocumentNode): BlockChild[] {
-    const { title, caption } = diagramTexts(node);
-    const image = images.get(node);
-    const drawing = image
-      ? [
-          new d.Paragraph({
-            children: [
-              new d.ImageRun({
-                type: "png",
-                data: image.bytes,
-                transformation: fitToPage(image.width, image.height),
-              }),
-            ],
-          }),
-        ]
-      : diagramLines(node).map((line) =>
-          plain(line.text, { bullet: { level: Math.min(2, line.depth) } }),
-        );
-    return [
-      ...(title ? [new d.Paragraph({ children: [new d.TextRun({ text: title, bold: true })] })] : []),
-      ...drawing,
-      ...(caption
-        ? [new d.Paragraph({ children: [new d.TextRun({ text: caption, italics: true })] })]
-        : []),
-    ];
   }
 
   function blocks(nodes: DocumentNode[]): BlockChild[] {

@@ -1,5 +1,6 @@
 import type { DocumentNode } from "@/domain/documents/body";
 import { diagramLines, diagramTexts } from "./diagram-lines";
+import { attachmentLink, embedLink, type BlockLink } from "./block-links";
 
 /**
  * Jira classic wiki markup — what Jira's description field understands.
@@ -119,9 +120,17 @@ function blockToJira(node: DocumentNode, prefix = ""): string {
       return "----";
     case "table":
       return tableToJira(node);
-    case "image": {
-      const src = (node.attrs ?? {}).src as string | undefined;
-      return src ? `!${src}!` : "";
+    case "image":
+      return imageToJira(node, "\n");
+    case "embed":
+      return linkToJira(embedLink(node));
+    case "attachment":
+      return linkToJira(attachmentLink(node));
+    // A gallery is a row, and a row in Jira is a table row. A cell holds no
+    // newline, so there the caption follows its image on the same line.
+    case "imageRow": {
+      const cells = (node.content ?? []).map((image) => imageToJira(image, " "));
+      return cells.length ? `|${cells.join("|")}|` : "";
     }
     case "callout": {
       const variant = String(node.attrs?.variant ?? "note").toUpperCase();
@@ -132,6 +141,18 @@ function blockToJira(node: DocumentNode, prefix = ""): string {
     default:
       return node.content ? blocksToJira(node.content, prefix) : "";
   }
+}
+
+/** A link in Jira's own syntax; its label is escaped, its address never is. */
+function linkToJira({ label, href }: BlockLink): string {
+  return href ? `[${escapeInline(label)}|${href}]` : escapeInline(label);
+}
+
+/** An image in Jira's own syntax, with the caption `between` it and them. */
+function imageToJira(node: DocumentNode, between: string): string {
+  const { src, caption } = (node.attrs ?? {}) as { src?: string; caption?: string | null };
+  if (!src) return "";
+  return caption ? `!${src}!${between}_${caption}_` : `!${src}!`;
 }
 
 /**

@@ -31,6 +31,14 @@ describe("validateDocJson", () => {
     ).not.toThrow();
   });
 
+  it("accepts a gallery row, and refuses one holding a single image", () => {
+    const image = { type: "image", attrs: { src: "/a.png" } };
+    expect(() =>
+      validateDocJson(doc({ type: "imageRow", content: [image, image] })),
+    ).not.toThrow();
+    expect(() => validateDocJson(doc({ type: "imageRow", content: [image] }))).toThrow();
+  });
+
   it("rejects anything that is not an object", () => {
     expect(() => validateDocJson(null)).toThrow(/not a JSON object/);
     expect(() => validateDocJson("doc")).toThrow(/not a JSON object/);

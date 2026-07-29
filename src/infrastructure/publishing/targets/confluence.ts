@@ -73,9 +73,15 @@ const storageDialect: HtmlDialect = {
         const absolute = ctx.url(src);
         // A relative src would resolve against the Confluence host, not this
         // instance, and silently render a broken image.
-        return absolute.startsWith("http")
-          ? `<ac:image><ri:url ri:value="${escapeHtml(absolute)}" /></ac:image>`
-          : "";
+        if (!absolute.startsWith("http")) return "";
+        const caption = (node.attrs?.caption as string | null) ?? null;
+        // Storage format has no figure element: the caption is the line under it.
+        return [
+          `<ac:image><ri:url ri:value="${escapeHtml(absolute)}" /></ac:image>`,
+          caption ? `<p><em>${escapeHtml(caption)}</em></p>` : "",
+        ]
+          .filter(Boolean)
+          .join("");
       }
       default:
         return null;

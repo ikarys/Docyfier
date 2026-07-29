@@ -12,10 +12,13 @@ import { ChartNode } from "../chart/ChartView";
 import { DiagramNode } from "../diagram/DiagramView";
 import { CodeBlockNode } from "./CodeBlockView";
 import { ImageNode } from "../ImageView";
+import { EmbedNode } from "../EmbedView";
+import { AttachmentNode } from "../AttachmentView";
 import { TocNode } from "../TocView";
 import { EmojiCommand } from "./emoji-command";
 import { Shortcuts } from "./shortcuts";
 import { SlashCommand } from "./slash-command";
+import { UploadNotes } from "./upload-notes";
 
 /**
  * Everything the editor loads: the document's own nodes and marks, and the
@@ -32,6 +35,8 @@ const VIEWS: Record<string, AnyExtension> = {
   [ChartNode.name]: ChartNode,
   [DiagramNode.name]: DiagramNode,
   [ImageNode.name]: ImageNode,
+  [EmbedNode.name]: EmbedNode,
+  [AttachmentNode.name]: AttachmentNode,
   [TocNode.name]: TocNode,
   [CodeBlockNode.name]: CodeBlockNode,
 };
@@ -52,6 +57,7 @@ export function editorExtensions({ smartTypography, emoji }: TypingPreferences) 
     Shortcuts,
     AiDiff,
     Search,
+    UploadNotes,
     CharacterCount,
     ...(smartTypography ? [Typography] : []),
     // Emoji off is a rule about this instance's writing, not only about what

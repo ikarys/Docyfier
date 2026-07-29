@@ -208,6 +208,57 @@ describe("docxTarget", () => {
     expect(xml).toContain("Hyperlink");
   });
 
+  it("writes an image's caption under the link that stands for it", async () => {
+    const xml = await documentXml([
+      { type: "image", attrs: { src: "/api/uploads/a.png", alt: "schéma", caption: "Fig. 1" } },
+    ]);
+
+    expect(xml).toContain("Fig. 1");
+  });
+
+  it("keeps a gallery a row, which in Word is a one-row table", async () => {
+    const xml = await documentXml([
+      {
+        type: "imageRow",
+        content: [
+          { type: "image", attrs: { src: "/a.png", alt: "gauche" } },
+          { type: "image", attrs: { src: "/b.png", alt: "droite" } },
+        ],
+      },
+    ]);
+
+    expect(xml).toContain("<w:tbl>");
+    expect(xml).toContain("gauche");
+    expect(xml).toContain("droite");
+  });
+
+  it("sends an embed out as a hyperlink Word can follow", async () => {
+    const xml = await documentXml([
+      {
+        type: "embed",
+        attrs: { provider: "YouTube", href: "https://youtu.be/abc123", title: "La démo" },
+      },
+    ]);
+
+    expect(xml).toContain("La démo");
+    expect(xml).toContain("Hyperlink");
+  });
+
+  it("sends an attachment out as a hyperlink to this instance", async () => {
+    const xml = await documentXml(
+      [
+        {
+          type: "attachment",
+          attrs: { href: "/api/uploads/a.pdf", name: "rapport.pdf", size: 1_200_000 },
+        },
+      ],
+      { baseUrl: "https://docs.example.com" },
+    );
+
+    expect(xml).toContain("rapport.pdf");
+    expect(xml).toContain("Hyperlink");
+  });
+
   it("leaves an absolute image URL alone", async () => {
     const xml = await documentXml([
       { type: "image", attrs: { src: "https://cdn.example.com/a.png", alt: "" } },

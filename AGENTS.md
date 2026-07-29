@@ -75,12 +75,35 @@ librsvg resolves no CSS variable. `sharp` is a declared dependency for that one
 purpose: rasterising a figure for Word, Confluence and Trilium without a
 headless Chromium.
 
-What the editor still cannot do is written down as STEPS **U8–U12** in PLAN.md:
-find and replace, paste that understands markdown or a spreadsheet, a table bar
-past three commands, checkboxes, collapsible sections, math, highlighted code,
-images with a caption and a place on the page, AI at the caret, and comments,
-suggestions and version history. Next: **STEP U8**, then U9 → U12, then the
-rest of STEP 10 and STEP 6 (multi-tenant). PDF stays print-based on purpose; a headless-Chromium renderer
+STEPS U8 and U9 are in and were released as v0.5.0 and v0.6.0: find and
+replace with one undo, paste that reads a spreadsheet range or a markdown
+snippet (`components/editor/paste-conversion.ts` decides, `paste-insert.ts`
+inserts), a real table bar, smart typography behind the Style setting, a
+shortcut overlay — then checklists, collapsible sections, sub- and
+superscript, a `:` emoji picker, highlighted code with a language, and maths.
+
+STEP U10 is in: an image is a figure now, not an `<img>`. It carries a
+caption shaped like the chart's, one of four places on the page (wrapped left,
+centred, wrapped right, full bleed across the gutter) and a width the writer
+drags — always a percentage of the text column, never pixels. The vocabulary
+and the rules that go with it are `src/domain/documents/image.ts`: an unknown
+placement falls back to centred, a wrapped image is narrowed so text has room
+to flow, and a batch of uploads is shared out into gallery rows of two to four.
+Three families joined the document with it — `imageRow` (the gallery, copying
+`cardGrid`), `embed` (a page framed only if `src/domain/documents/embed.ts`
+allows the host, checked again by `schema.ts` and again by the node view) and
+`attachment` (a file row; `src/lib/uploads.ts` now carries PDF, Word, Excel,
+PowerPoint, CSV and text, still refuses SVG, and hands every non-image over as
+a download). Everywhere no frame can be drawn, an embed and an attachment are
+the link they stand for, written once in
+`infrastructure/rendering/block-links.ts`. `@tiptap/extension-youtube` was
+deliberately not installed: the allowlist already covers YouTube, and a second
+node for one provider would mean two shapes and two exports.
+
+What the editor still cannot do is written down as STEPS **U11–U12** in
+PLAN.md: AI at the caret, and comments, suggestions and version history.
+Next: **STEP U11**, then U12, then the rest of STEP 10 and STEP 6
+(multi-tenant). PDF stays print-based on purpose; a headless-Chromium renderer
 is the only open item of STEP 3 and was judged not worth its weight.
 
 ## Working conventions

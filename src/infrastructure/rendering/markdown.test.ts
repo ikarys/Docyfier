@@ -214,6 +214,39 @@ describe("docToMarkdown", () => {
     expect(md(p({ type: "image", attrs: { src: "/a.png" } }))).toBe("![](/a.png)");
   });
 
+  it("puts an image's caption on its own line, and never on an inline one", () => {
+    const attrs = { src: "/a.png", alt: "schéma", caption: "Fig. 1" };
+    expect(md({ type: "image", attrs })).toBe("![schéma](/a.png)\n\n*Fig. 1*");
+    expect(md(p({ type: "image", attrs }))).toBe("![schéma](/a.png)");
+  });
+
+  it("stacks a gallery, since markdown has no columns to keep it in", () => {
+    const row = {
+      type: "imageRow",
+      content: [
+        { type: "image", attrs: { src: "/a.png", alt: "a" } },
+        { type: "image", attrs: { src: "/b.png", alt: "b" } },
+      ],
+    };
+    expect(md(row)).toBe("![a](/a.png)\n\n![b](/b.png)");
+  });
+
+  it("sends an embed out as a titled link", () => {
+    const embed = {
+      type: "embed",
+      attrs: { provider: "Figma", href: "https://www.figma.com/design/a", title: "La maquette" },
+    };
+    expect(md(embed)).toBe("[La maquette](https://www.figma.com/design/a)");
+  });
+
+  it("sends an attachment out as a link to the file", () => {
+    const attachment = {
+      type: "attachment",
+      attrs: { href: "/api/uploads/a.pdf", name: "rapport.pdf", size: 1_200_000 },
+    };
+    expect(md(attachment)).toBe("[rapport.pdf · 1.2 MB](/api/uploads/a.pdf)");
+  });
+
   it("turns a hard break into the two trailing spaces markdown needs", () => {
     expect(md(p(text("un"), { type: "hardBreak" }, text("deux")))).toBe("un  \ndeux");
   });

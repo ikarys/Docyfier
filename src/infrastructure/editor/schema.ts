@@ -3,6 +3,7 @@ import { getSchema, type JSONContent } from "@tiptap/core";
 import { Node as PMNode } from "@tiptap/pm/model";
 import { chartError } from "@/domain/documents/chart";
 import { diagramError } from "@/domain/documents/diagram/validation";
+import { embedError } from "@/domain/documents/embed";
 import { DOCUMENT_EXTENSIONS, VIEWED_NODES } from "./document-extensions";
 
 /**
@@ -16,6 +17,7 @@ import { DOCUMENT_EXTENSIONS, VIEWED_NODES } from "./document-extensions";
 const ATTRIBUTE_RULES: Record<string, (attrs: unknown) => string | null> = {
   chart: chartError,
   diagram: diagramError,
+  embed: embedError,
 };
 
 /**
