@@ -13,13 +13,12 @@ import {
   type DocumentTheme,
   type Theme,
 } from "@/lib/themes";
-import { AiPanel } from "./AiPanel";
-import { AiDiffBar } from "./AiDiffBar";
-import { DesignPanel } from "./DesignPanel";
 import { documentEditorProps } from "./editor/editor-props";
+import { EditorNotices } from "./editor/EditorNotices";
 import { EditorSurface } from "./editor/EditorSurface";
 import { editorExtensions } from "./editor/extensions";
 import { MenuBar, type PanelName } from "./editor/MenuBar";
+import { PanelHost } from "./editor/PanelHost";
 import { SearchBar } from "./editor/SearchBar";
 import { useAiReview } from "./editor/useAiReview";
 import { useDocumentSearch } from "./editor/useDocumentSearch";
@@ -107,39 +106,17 @@ export function DocumentEditor({
             onAiEdit={review.run}
           />
         </main>
-        {panel === "ai" && (
-          <AiPanel
-            editor={editor}
-            onApply={applyDocument}
-            onChangeTheme={changeTheme}
-            onClose={() => setPanel(null)}
-          />
-        )}
-        {panel === "design" && (
-          <DesignPanel
-            editor={editor}
-            theme={theme}
-            presets={presets}
-            onChange={changeTheme}
-            onClose={() => setPanel(null)}
-          />
-        )}
-      </div>
-      {review.changed !== null && (
-        <AiDiffBar
-          count={review.changed}
-          onAccept={review.accept}
-          onReject={review.reject}
+        <PanelHost
+          panel={panel}
+          editor={editor}
+          theme={theme}
+          presets={presets}
+          onApply={applyDocument}
+          onChangeTheme={changeTheme}
+          onClose={() => setPanel(null)}
         />
-      )}
-      {generation.error && (
-        <div className="gen-error-bar no-print" role="alert">
-          <span className="ai-diff-bar-label">{generation.error}</span>
-          <button className="btn" onClick={generation.dismissError}>
-            Dismiss
-          </button>
-        </div>
-      )}
+      </div>
+      <EditorNotices review={review} generation={generation} />
     </div>
   );
 }
