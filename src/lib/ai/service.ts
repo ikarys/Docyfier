@@ -11,6 +11,11 @@ import {
   restyleDocument as chooseDress,
 } from "@/application/authoring/plan-document";
 import {
+  continueWriting as finishSentence,
+  writeAtCaret as writeHere,
+  type CaretContext,
+} from "@/application/authoring/write-at-caret";
+import {
   generateDocument as writeDocument,
   transformDocument as editDocument,
   type TransformOutcome,
@@ -110,6 +115,24 @@ export async function rewriteSelectionText(
   instruction: string,
 ): Promise<string> {
   return rewriteText(await authoringDeps(), text, instruction);
+}
+
+export type { CaretContext };
+
+/**
+ * Surface 5, blocking — what the model writes where the caret is, for a
+ * provider whose stream the route could not open.
+ */
+export async function writeAtCaret(
+  context: CaretContext,
+  instruction: string,
+): Promise<DocumentNode[]> {
+  return writeHere(await authoringDeps(), context, instruction);
+}
+
+/** Surface 5b — the continuation the writer accepts with Tab, or nothing. */
+export async function continueWriting(context: CaretContext): Promise<string | null> {
+  return finishSentence(await authoringDeps(), context);
 }
 
 /** Surface 4 — the composers (PLAN.md STEP 8): plain text in, plain text out. */

@@ -1,44 +1,19 @@
-import { streamText, type TextStreamPart, type ToolSet } from "ai";
-import {
-  callOptions,
-  isTimeout,
-  languageModel,
-  timeoutMessage,
-} from "@/lib/ai/provider";
 import { themeFromArt } from "@/application/documents/theme-from-art";
-import { parseModelJson } from "@/domain/authoring/model-answer";
 import { writerSystem } from "@/domain/authoring/prompts";
 import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
+import { blockStreamResponse } from "@/lib/ai/block-stream-response";
 import { planDocument } from "@/lib/ai/service";
-import { validateDocJson } from "@/infrastructure/editor/schema";
-import { BlockScanner } from "@/lib/ai/stream-blocks";
-import { line, providerMessage as message } from "@/lib/ai/ndjson";
-import { beautify } from "@/domain/authoring/beautify";
-import { getAiSettings, getStyleParameters } from "@/lib/settings";
-import type { StyleParameters } from "@/domain/authoring/style-parameters";
+import { getStyleParameters } from "@/lib/settings";
 import { isAuthorized } from "@/lib/auth";
 
 /**
  * Surface 1, streaming (PLAN.md STEP U4). Emits NDJSON: one `{"block":…}` line
  * per finished top-level block, then a terminal `{"done":…}` or `{"error":…}`.
  *
- * A provider that cannot stream at all fails before the response is returned,
- * so the caller gets a non-OK status and can fall back to the blocking action.
- * Once the stream is open, problems are reported inside it — whatever already
- * reached the editor stays.
+ * The reading of that stream is `block-stream-response.ts`, shared with the
+ * caret surface; what belongs here is only what makes this generation this
+ * one — the plan, the recipe it chose, and the dress that goes out first.
  */
-
-/**
- * One block through the same pipeline as the non-streaming path: schema
- * validation, then the deterministic formatter. Both rules `beautify` applies
- * are block-local, so a single-block document is a faithful wrapper.
- */
-function prepare(raw: string, style: StyleParameters): unknown {
-  const doc = validateDocJson({ type: "doc", content: [parseModelJson(raw)] });
-  const polished = beautify(doc, style);
-  return (validateDocJson(polished).content ?? [])[0];
-}
-
 export async function POST(req: Request): Promise<Response> {
   if (!(await isAuthorized())) {
     return new Response("Unauthorized", { status: 401 });
@@ -48,129 +23,21 @@ export async function POST(req: Request): Promise<Response> {
     return Response.json({ error: "Missing prompt" }, { status: 400 });
   }
 
-  type Part = TextStreamPart<ToolSet>;
-  let parts: AsyncIterator<Part>;
-  let firstText: string | null = null;
-  let openError: unknown = null;
-
   // The plan comes first and blocks: what the document is decides the prompt
   // the writing stream is opened with. It is one short call, and a model that
   // cannot produce it hands back the default brief rather than failing.
   const brief = await planDocument(prompt);
   const recipe = findRecipe(brief.kind) ?? DEFAULT_RECIPE;
   const style = await getStyleParameters();
+  // The dress before the first block: the document is styled while it is still
+  // being written, rather than changing look once it is done.
+  const theme = themeFromArt(brief.art);
 
-  try {
-    const model = await languageModel();
-    const { maxOutputTokens } = await getAiSettings();
-    // `fullStream`, not `textStream`: the SDK reports provider failures as an
-    // `error` part rather than by throwing, so a rate-limited or misconfigured
-    // server would otherwise look like a perfectly successful empty document.
-    parts = streamText({
-      model,
-      system: writerSystem(recipe, brief, style),
-      prompt,
-      temperature: 0.7,
-      maxOutputTokens,
-      ...callOptions(),
-    }).fullStream[Symbol.asyncIterator]();
-
-    // Read up to the first token before committing to a 200: whatever goes
-    // wrong this early must surface as a failed request, so the client can
-    // retry through the non-streaming path instead of showing half a document.
-    for (;;) {
-      const next = await parts.next();
-      if (next.done) break;
-      if (next.value.type === "text-delta") {
-        firstText = next.value.text;
-        break;
-      }
-      if (next.value.type === "error") {
-        openError = next.value.error;
-        break;
-      }
-    }
-  } catch (err) {
-    openError = err;
-  }
-
-  if (firstText === null) {
-    console.error("[ai] streaming generate failed:", openError);
-    return Response.json(
-      {
-        error: isTimeout(openError)
-          ? timeoutMessage()
-          : openError
-            ? message(openError)
-            : "The AI returned nothing.",
-      },
-      { status: 502 },
-    );
-  }
-
-  const scanner = new BlockScanner();
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      let blocks = 0;
-      let skipped = 0;
-
-      const emit = (raw: string) => {
-        try {
-          controller.enqueue(encoder.encode(line({ block: prepare(raw, style) })));
-          blocks++;
-        } catch (err) {
-          // A block the schema rejects is dropped rather than aborting the
-          // document; the count is reported in the terminal line.
-          console.error("[ai] streamed block rejected:", message(err));
-          skipped++;
-        }
-      };
-
-      try {
-        let failure: string | null = null;
-        // The dress before the first block: the document is styled while it is
-        // still being written, rather than changing look once it is done.
-        const theme = themeFromArt(brief.art);
-        if (theme) controller.enqueue(encoder.encode(line({ theme })));
-        for (const raw of scanner.push(firstText)) emit(raw);
-
-        while (!scanner.finished) {
-          const next = await parts.next();
-          if (next.done) break;
-          if (next.value.type === "text-delta") {
-            for (const raw of scanner.push(next.value.text)) emit(raw);
-          } else if (next.value.type === "error") {
-            failure = message(next.value.error);
-            break;
-          } else if (
-            next.value.type === "finish" &&
-            next.value.finishReason === "length"
-          ) {
-            failure = "The document was cut short — raise Max output tokens in Settings.";
-          }
-        }
-
-        controller.enqueue(
-          encoder.encode(
-            failure
-              ? line({ error: failure, blocks })
-              : line({ done: true, blocks, skipped }),
-          ),
-        );
-      } catch (err) {
-        console.error("[ai] streaming generate interrupted:", err);
-        controller.enqueue(encoder.encode(line({ error: message(err), blocks })));
-      }
-      controller.close();
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "content-type": "application/x-ndjson; charset=utf-8",
-      "cache-control": "no-store",
-    },
+  return blockStreamResponse({
+    system: writerSystem(recipe, brief, style),
+    prompt,
+    temperature: 0.7,
+    style,
+    ...(theme ? { prelude: { theme } } : {}),
   });
 }

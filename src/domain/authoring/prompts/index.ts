@@ -19,4 +19,10 @@ export {
   selectionBlocksSystem,
   selectionTextPrompt,
 } from "./selection";
+export {
+  CARET_CONTINUE_SYSTEM,
+  caretContinuePrompt,
+  caretPrompt,
+  caretSystem,
+} from "./caret";
 export { retryPrompt } from "./retry";

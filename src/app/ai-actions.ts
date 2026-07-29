@@ -7,11 +7,14 @@ import type { JSONContent } from "@tiptap/core";
 import { createDocument, updateDocument } from "@/lib/store";
 import type { DocumentTheme } from "@/lib/themes";
 import {
+  continueWriting,
   generateDocument,
   restyleDocument,
   transformDocument,
   rewriteSelectionBlocks,
   rewriteSelectionText,
+  writeAtCaret,
+  type CaretContext,
   type TransformOutcome,
 } from "@/lib/ai/service";
 
@@ -32,6 +35,14 @@ export type RestyleResult =
 export type SelectionInput =
   | { mode: "text"; text: string; instruction: string }
   | { mode: "blocks"; blocks: JSONContent[]; instruction: string };
+
+export type CaretResult =
+  | { ok: true; blocks: JSONContent[] }
+  | { ok: false; error: string };
+
+export type ContinuationResult =
+  | { ok: true; text: string | null }
+  | { ok: false; error: string };
 
 export type SelectionResult =
   | { ok: true; mode: "text"; text: string }
@@ -106,6 +117,36 @@ export async function restyleDocumentAction(
     return theme
       ? { ok: true, theme }
       : { ok: false, error: "The AI had no styling to suggest for this document." };
+  } catch (err) {
+    return { ok: false, error: message(err) };
+  }
+}
+
+/**
+ * Surface 5, fallback — the blocks to insert at the caret, for a provider whose
+ * stream the route handler could not open.
+ */
+export async function writeAtCaretAction(
+  context: CaretContext,
+  instruction: string,
+): Promise<CaretResult> {
+  await requireAuth();
+  const trimmed = instruction.trim();
+  if (!trimmed) return { ok: false, error: "Empty instruction" };
+  try {
+    return { ok: true, blocks: await writeAtCaret(context, trimmed) };
+  } catch (err) {
+    return { ok: false, error: message(err) };
+  }
+}
+
+/** Surface 5b — the continuation offered as ghost text. */
+export async function continueWritingAction(
+  context: CaretContext,
+): Promise<ContinuationResult> {
+  await requireAuth();
+  try {
+    return { ok: true, text: await continueWriting(context) };
   } catch (err) {
     return { ok: false, error: message(err) };
   }
