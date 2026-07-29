@@ -1,4 +1,5 @@
 import type { DocumentNode } from "@/domain/documents/body";
+import { diagramLines, diagramTexts } from "./diagram-lines";
 
 /**
  * A document as plain text, for destinations that render no markup at all —
@@ -88,11 +89,25 @@ function blockToText(node: DocumentNode): string {
       return tableToText(node);
     case "callout":
       return blocksToText(node.content ?? []);
+    case "diagram":
+      return diagramToText(node);
     case "image":
       return "";
     default:
       return node.content ? blocksToText(node.content) : "";
   }
+}
+
+/**
+ * A diagram as its relations, indented.
+ *
+ * Plain text renders no drawing, and an atom has no children for the default
+ * branch to fall into — so without this a diagram left nothing behind at all.
+ */
+function diagramToText(node: DocumentNode): string {
+  const { title, caption } = diagramTexts(node);
+  const lines = diagramLines(node).map((line) => `${"  ".repeat(line.depth)}- ${line.text}`);
+  return [title, ...lines, caption].filter((part) => part !== null && part !== "").join("\n");
 }
 
 function blocksToText(blocks: DocumentNode[]): string {

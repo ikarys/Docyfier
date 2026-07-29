@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { JSONContent } from "@tiptap/core";
+import { sampleDiagram } from "@/domain/documents/diagram/sample";
 import { docToJira } from "./jira";
 
 const text = (value: string, marks?: JSONContent["marks"]) => ({
@@ -105,5 +106,23 @@ describe("docToJira", () => {
   it("separates blocks with a blank line and returns nothing for an empty document", () => {
     expect(jira(p(text("un")), p(text("deux")))).toBe("un\n\ndeux");
     expect(docToJira({ type: "doc" })).toBe("");
+  });
+});
+
+/**
+ * An atom has no children for the default branch to fall into, so a block like
+ * this leaves nothing behind unless it is handled by name.
+ */
+describe("docToJira, diagrams", () => {
+  it("writes a diagram's relations out rather than dropping the block", () => {
+    expect(jira({ type: "diagram", attrs: sampleDiagram("flow") })).toBe(
+      "* Request → Review\n* Review → Approved (yes)\n* Review → Rejected (no)",
+    );
+  });
+
+  it("nests a hierarchy the way Jira nests a list", () => {
+    expect(jira({ type: "diagram", attrs: sampleDiagram("hierarchy") })).toBe(
+      "* Product\n** Design\n** Build",
+    );
   });
 });

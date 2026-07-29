@@ -2,6 +2,7 @@ import type { DocumentNode } from "@/domain/documents/body";
 import { imageToMarkdown, inlineToMarkdown, plainText, plainTextRaw } from "./inline";
 import {
   chartToMarkdown,
+  diagramToMarkdown,
   pyramidToMarkdown,
   statRowToMarkdown,
   stepListToMarkdown,
@@ -124,6 +125,7 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
     return prefixLines(`[!${alert}]\n${body}`, "> ", "> ");
   },
   chart: chartToMarkdown,
+  diagram: diagramToMarkdown,
   statRow: statRowToMarkdown,
   docCover: coverToMarkdown,
   pyramid: pyramidToMarkdown,

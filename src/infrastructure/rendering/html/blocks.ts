@@ -4,6 +4,7 @@ import { escapeHtml } from "./escape";
 import { imageTag, rawText } from "./inline";
 import {
   chartToHtml,
+  diagramToHtml,
   pyramidToHtml,
   statRowToHtml,
   stepListToHtml,
@@ -116,6 +117,7 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
     )}</blockquote>`;
   },
   chart: chartToHtml,
+  diagram: diagramToHtml,
   statRow: statRowToHtml,
   docCover: coverToHtml,
   pyramid: pyramidToHtml,

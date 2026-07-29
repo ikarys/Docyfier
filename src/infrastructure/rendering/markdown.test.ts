@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sampleDiagram } from "@/domain/documents/diagram/sample";
 import type { JSONContent } from "@tiptap/core";
 import { docToMarkdown, markdownFilename } from "./markdown";
 
@@ -170,6 +171,18 @@ describe("docToMarkdown", () => {
     expect(md(chart)).toBe(
       "**Ventes**\n\n|  | Q1 | Q2 |\n| --- | --- | --- |\n| **2026** | 10 | 20 |\n\n*en k€*",
     );
+  });
+
+  it("keeps a diagram's relations when it cannot keep the drawing", () => {
+    const diagram = { type: "diagram", attrs: sampleDiagram("flow") };
+    expect(md(diagram)).toBe(
+      "- Request → Review\n- Review → Approved (yes)\n- Review → Rejected (no)",
+    );
+  });
+
+  it("nests a hierarchy, which is the whole of what it says", () => {
+    const diagram = { type: "diagram", attrs: sampleDiagram("hierarchy") };
+    expect(md(diagram)).toBe("- Product\n  - Design\n  - Build");
   });
 
   it("keeps stat figures as a list rather than losing them with the layout", () => {

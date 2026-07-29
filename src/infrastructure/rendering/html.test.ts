@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sampleDiagram } from "@/domain/documents/diagram/sample";
 import type { JSONContent } from "@tiptap/core";
 import { docToHtml, escapeHtml, rawText, type HtmlDialect } from "./html";
 
@@ -152,6 +153,23 @@ describe("docToHtml", () => {
     };
     expect(html(chart)).toContain("<th>Q1</th>");
     expect(html(chart)).toContain("<td>10</td>");
+  });
+
+  it("exports a diagram as the drawing itself, standing on its own", () => {
+    const diagram = { type: "diagram", attrs: sampleDiagram("flow") };
+    const out = html(diagram);
+    expect(out).toContain("<svg xmlns=");
+    expect(out).toContain("Request");
+    expect(out).not.toContain("var(");
+  });
+
+  it("keeps a diagram's texts around the drawing", () => {
+    const diagram = {
+      type: "diagram",
+      attrs: { ...sampleDiagram("flow"), title: "Parcours", caption: "v2" },
+    };
+    expect(html(diagram)).toContain("<p><strong>Parcours</strong></p>");
+    expect(html(diagram)).toContain("<p><em>v2</em></p>");
   });
 
   it("leaves an image relative when no origin is configured", () => {

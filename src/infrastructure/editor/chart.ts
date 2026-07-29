@@ -1,22 +1,12 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { sampleChart, type ChartAttrs, type ChartKind } from "@/domain/documents/chart";
+import { parseJsonAttr } from "./json-attr";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     chart: {
       insertChart: (kind?: ChartKind) => ReturnType;
     };
-  }
-}
-
-/** Read one JSON-encoded attribute off the DOM, falling back on parse errors. */
-function parseJsonAttr<T>(el: HTMLElement, name: string, fallback: T): T {
-  const raw = el.getAttribute(name);
-  if (!raw) return fallback;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
   }
 }
 

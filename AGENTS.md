@@ -62,12 +62,25 @@ vocabulary and `src/application/documents/theme-from-art.ts` is the only place
 it becomes a `DocumentTheme`. "Style for me" in the Design panel runs the same
 pass over an existing document.
 
+The diagram half of STEP 10 is in, ahead of U8–U12 at the maintainer's call:
+five kinds (flow, architecture, sequence, hierarchy, phase axis) under
+`src/domain/documents/diagram/`, copying `chart`'s shape exactly — an atom node
+whose attrs are the graph, a `diagramError` shared by the node view, the panel
+and `schema.ts`. Three rules carry it: a diagram declares **meaning, never
+coordinates** (`layout/` places every box, so nothing can be dragged out of
+place); there is **no layout library and no mermaid** (the STEP U6 rejection
+stands); and one **scene** feeds two emitters — the editor paints theme tokens,
+`infrastructure/rendering/svg/scene-to-svg.ts` paints literal values, because
+librsvg resolves no CSS variable. `sharp` is a declared dependency for that one
+purpose: rasterising a figure for Word, Confluence and Trilium without a
+headless Chromium.
+
 What the editor still cannot do is written down as STEPS **U8–U12** in PLAN.md:
 find and replace, paste that understands markdown or a spreadsheet, a table bar
 past three commands, checkboxes, collapsible sections, math, highlighted code,
 images with a caption and a place on the page, AI at the caret, and comments,
-suggestions and version history. Next: **STEP U8**, then U9 → U12, then STEP 6
-(multi-tenant). PDF stays print-based on purpose; a headless-Chromium renderer
+suggestions and version history. Next: **STEP U8**, then U9 → U12, then the
+rest of STEP 10 and STEP 6 (multi-tenant). PDF stays print-based on purpose; a headless-Chromium renderer
 is the only open item of STEP 3 and was judged not worth its weight.
 
 ## Working conventions

@@ -15,8 +15,8 @@ someone thought about.
 
 Getting there normally costs an afternoon: a chatbot hands you a wall of
 markdown, Word hands you a blank page and a style menu. Docyfier hands you the
-finished document — cover, table of contents, callouts, tables, charts, stat
-cards — from a prompt, or from the draft you already have. Then you edit it
+finished document — cover, table of contents, callouts, tables, charts,
+diagrams, stat cards — from a prompt, or from the draft you already have. Then you edit it
 like a real document, because it is one, in a real block editor. Not a chat
 transcript you reformat by hand.
 
@@ -51,6 +51,9 @@ transcript you reformat by hand.
 - **Presentation blocks**: card grids, columns, key-figure rows, dashboard stat
   cards, timelines, step lists, pyramids, and bar & line **charts** rendered as
   inline SVG.
+- **Diagrams**: flows, architectures, sequences, hierarchies and phase axes.
+  You say what relates to what — the app decides where every box lands, so a
+  diagram cannot be dragged into a mess and an AI-written one arrives placed.
 - **Images**: paste, drag-drop or pick a file, re-rendered at 25 / 50 / 75 /
   100 % of the text column.
 - **Cover page and table of contents**, with print control for both.
@@ -288,10 +291,11 @@ it; that is the intended extension point.
 ## Roadmap
 
 Shipped so far: the editor, the AI surfaces, themes, templates, import/export,
-the composers, single-user auth, and the instance's own identity and writing
-style. Next up: multi-tenant workspaces with per-user permissions, diagrams, and
-print-quality PDF through headless Chromium — today's PDF goes through the
-browser print dialog on purpose.
+the composers, single-user auth, the instance's own identity and writing style,
+and diagrams — flows, architectures, sequences, hierarchies and phase axes,
+placed by the app rather than by whoever wrote them. Next up: multi-tenant
+workspaces with per-user permissions, and print-quality PDF through headless
+Chromium — today's PDF goes through the browser print dialog on purpose.
 
 [PLAN.md](PLAN.md) holds the ordered roadmap; [docs/vision.md](docs/vision.md)
 holds the product intent behind it.

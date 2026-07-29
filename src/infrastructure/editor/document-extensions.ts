@@ -22,6 +22,7 @@ import { Pyramid, PyramidTier } from "./pyramid";
 import { DocCover, CoverLine } from "./cover";
 import { PageBreak } from "./page-break";
 import { Chart } from "./chart";
+import { Diagram } from "./diagram";
 import { HighlightedCodeBlock } from "./code-block";
 import { DocImage } from "./doc-image";
 import { TableOfContents } from "./toc";
@@ -85,4 +86,4 @@ export const DOCUMENT_EXTENSIONS = [
  * shape by construction. A node that gains a view — or loses one — changes
  * nothing here.
  */
-export const VIEWED_NODES = [Chart, DocImage, TableOfContents, HighlightedCodeBlock];
+export const VIEWED_NODES = [Chart, Diagram, DocImage, TableOfContents, HighlightedCodeBlock];

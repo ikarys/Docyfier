@@ -25,7 +25,23 @@ function lineOf(node: DocumentNode): string {
     return `${"#".repeat(level)} ${flatten(node)}`.trim();
   }
   if (node.type === "paragraph") return flatten(node);
+  if (node.type === "diagram") return diagramLine(node);
   return `[${node.type}]`;
+}
+
+/**
+ * A diagram is named *with its boxes*, unlike the other blocks.
+ *
+ * What a chart contains says nothing about how the document should look, but a
+ * diagram's labels are the only trace of the system it describes: without them
+ * a later pass asked to amend it would have to invent the graph again.
+ */
+function diagramLine(node: DocumentNode): string {
+  const declared = node.attrs?.nodes;
+  const labels = (Array.isArray(declared) ? declared : [])
+    .map((entry) => (entry as { label?: unknown }).label)
+    .filter((label): label is string => typeof label === "string");
+  return labels.length > 0 ? `[diagram: ${labels.join(" · ")}]` : "[diagram]";
 }
 
 export function digestOf(body: DocumentBody): string {

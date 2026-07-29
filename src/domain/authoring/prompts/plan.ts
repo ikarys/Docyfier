@@ -29,8 +29,8 @@ ${recipeChoices()}
 
 "sections" — 3 to 8 entries in reading order. "heading" is the section title as
 it will appear. "block" names the block that section should mostly be (statRow,
-cardGrid, timeline, stepList, chart, table, callout, paragraph, list…). "note"
-is one line on what goes in it. Plan only: never write the document's sentences.
+cardGrid, timeline, stepList, chart, diagram, table, callout, paragraph, list…).
+"note" is one line on what goes in it. Plan only: never write the document's sentences.
 
 "art" — dress the document for its subject and its audience, not by habit:
 - "preset", one of:

@@ -28,6 +28,24 @@ describe("digestOf", () => {
     expect(digest).toBe("[chart]\n[statRow]");
   });
 
+  /**
+   * A later pass asked to amend a diagram has nothing else to go on: the labels
+   * are the only trace of the system the document describes.
+   */
+  it("names a diagram with its boxes", () => {
+    const nodes = [{ id: "a", label: "Web app" }, { id: "b", label: "API" }];
+    const digest = digestOf({ type: "doc", content: [{ type: "diagram", attrs: { nodes } }] });
+
+    expect(digest).toBe("[diagram: Web app · API]");
+  });
+
+  it("falls back to naming a diagram whose boxes it cannot read", () => {
+    expect(digestOf({ type: "doc", content: [{ type: "diagram" }] })).toBe("[diagram]");
+    expect(digestOf({ type: "doc", content: [{ type: "diagram", attrs: { nodes: "?" } }] })).toBe(
+      "[diagram]",
+    );
+  });
+
   it("cuts a paragraph down to its opening", () => {
     const digest = digestOf({ type: "doc", content: [paragraph("x".repeat(400))] });
 
