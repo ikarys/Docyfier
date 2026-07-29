@@ -5,6 +5,9 @@ import { EditorContent, type Editor } from "@tiptap/react";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import { SelectionAiMenu } from "../SelectionAiMenu";
+import { BlockActionMenu } from "./BlockActionMenu";
+import { useBlockAction } from "./useBlockAction";
+import type { AiReview } from "./useAiReview";
 
 /**
  * The sheet the document is written on: the editor itself, the selection menu
@@ -14,15 +17,16 @@ import { SelectionAiMenu } from "../SelectionAiMenu";
 export function EditorSurface({
   editor,
   generating,
-  onAiEdit,
+  review,
 }: {
   editor: Editor;
   /** A generation has started but no block has arrived yet. */
   generating: boolean;
-  onAiEdit: (apply: () => void) => void;
+  review: AiReview;
 }) {
   /** Position of the top-level block currently under the drag handle. */
   const [hovered, setHovered] = useState<{ pos: number; size: number } | null>(null);
+  const blockAction = useBlockAction(editor, review);
 
   // Stable identity: DragHandle re-registers its ProseMirror plugin whenever
   // this callback's reference changes, so an inline arrow here would loop.
@@ -49,13 +53,17 @@ export function EditorSurface({
     <article className="doc-sheet">
       {generating && <GenerationSkeleton />}
       <EditorContent editor={editor} />
-      <SelectionAiMenu editor={editor} onAiEdit={onAiEdit} />
+      <SelectionAiMenu editor={editor} onAiEdit={review.run} />
       <DragHandle
         editor={editor}
         className="drag-handle no-print"
         onNodeChange={onNodeChange}
       >
         <div className="drag-handle-controls">
+          <BlockActionMenu
+            running={blockAction.running}
+            onPick={(action) => hovered && void blockAction.run(action, hovered)}
+          />
           <button
             type="button"
             className="drag-handle-btn"
@@ -69,6 +77,14 @@ export function EditorSurface({
           </span>
         </div>
       </DragHandle>
+      {blockAction.error && (
+        <div className="gen-error-bar no-print" role="alert">
+          <span className="ai-diff-bar-label">{blockAction.error}</span>
+          <button className="btn" onClick={blockAction.dismissError}>
+            Dismiss
+          </button>
+        </div>
+      )}
     </article>
   );
 }

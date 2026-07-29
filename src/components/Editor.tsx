@@ -108,7 +108,7 @@ export function DocumentEditor({
           <EditorSurface
             editor={editor}
             generating={generation.streamed === 0}
-            onAiEdit={review.run}
+            review={review}
           />
         </main>
         <PanelHost
