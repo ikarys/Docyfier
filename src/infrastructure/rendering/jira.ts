@@ -1,4 +1,5 @@
 import type { DocumentNode } from "@/domain/documents/body";
+import { diagramLines, diagramTexts } from "./diagram-lines";
 
 /**
  * Jira classic wiki markup — what Jira's description field understands.
@@ -126,9 +127,25 @@ function blockToJira(node: DocumentNode, prefix = ""): string {
       const variant = String(node.attrs?.variant ?? "note").toUpperCase();
       return `{panel:title=${variant}}\n${blocksToJira(node.content ?? [])}\n{panel}`;
     }
+    case "diagram":
+      return diagramToJira(node);
     default:
       return node.content ? blocksToJira(node.content, prefix) : "";
   }
+}
+
+/**
+ * A diagram as its relations, bulleted.
+ *
+ * Jira renders no drawing of ours, and an empty block is what a diagram used to
+ * come out as — an atom has no children for the default branch to fall into.
+ */
+function diagramToJira(node: DocumentNode): string {
+  const { title, caption } = diagramTexts(node);
+  const lines = diagramLines(node).map((line) => `${"*".repeat(line.depth + 1)} ${line.text}`);
+  return [title ? `*${escapeInline(title)}*` : null, ...lines, caption ? `_${caption}_` : null]
+    .filter((part) => part !== null)
+    .join("\n");
 }
 
 function blocksToJira(blocks: DocumentNode[], prefix = ""): string {

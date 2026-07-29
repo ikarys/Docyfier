@@ -1,4 +1,8 @@
 import type { DocumentNode } from "@/domain/documents/body";
+import { placeNodes } from "@/domain/documents/diagram/layout/place";
+import { toScene } from "@/domain/documents/diagram/scene";
+import { isDiagramAttrs } from "@/domain/documents/diagram/validation";
+import { sceneToSvg } from "../svg/scene-to-svg";
 import type { HtmlContext } from "./contract";
 import { escapeHtml } from "./escape";
 
@@ -29,6 +33,26 @@ export function chartToHtml(node: DocumentNode): string {
   return [
     title ? `<p><strong>${escapeHtml(title)}</strong></p>` : "",
     `<table><tbody>${head}${body}</tbody></table>`,
+    caption ? `<p><em>${escapeHtml(caption)}</em></p>` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * A diagram exports as the drawing itself, inline.
+ *
+ * HTML is the one target that can carry it: the SVG is standalone, its colours
+ * are literal values, and it survives a copy into Confluence or a print to PDF.
+ * A stored diagram whose attrs no longer hold — hand-edited HTML, a document
+ * from an older shape — keeps its relations in words rather than disappearing.
+ */
+export function diagramToHtml(node: DocumentNode): string {
+  const attrs = node.attrs ?? {};
+  const { title, caption } = attrs as { title?: string | null; caption?: string | null };
+  return [
+    title ? `<p><strong>${escapeHtml(title)}</strong></p>` : "",
+    `<figure>${isDiagramAttrs(attrs) ? sceneToSvg(toScene(placeNodes(attrs))) : ""}</figure>`,
     caption ? `<p><em>${escapeHtml(caption)}</em></p>` : "",
   ]
     .filter(Boolean)

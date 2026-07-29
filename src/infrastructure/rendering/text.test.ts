@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { JSONContent } from "@tiptap/core";
+import { sampleDiagram } from "@/domain/documents/diagram/sample";
 import { docToText } from "./text";
 
 const text = (value: string, marks?: JSONContent["marks"]) => ({
@@ -102,5 +103,19 @@ describe("docToText", () => {
 
   it("returns an empty string for an empty document", () => {
     expect(docToText({ type: "doc" })).toBe("");
+  });
+});
+
+describe("docToText, diagrams", () => {
+  it("writes a diagram's relations out rather than dropping the block", () => {
+    expect(docToText(doc({ type: "diagram", attrs: sampleDiagram("flow") }))).toBe(
+      "- Request → Review\n- Review → Approved (yes)\n- Review → Rejected (no)",
+    );
+  });
+
+  it("reads a phase axis as its phases, notes and all", () => {
+    expect(docToText(doc({ type: "diagram", attrs: sampleDiagram("timeline") }))).toBe(
+      "- Discovery — Q1\n- Build — Q2\n- Launch — Q3",
+    );
   });
 });

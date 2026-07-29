@@ -1,4 +1,5 @@
 import type { DocumentNode } from "@/domain/documents/body";
+import { diagramLines, diagramTexts } from "../diagram-lines";
 import { plainText } from "./inline";
 
 /**
@@ -31,6 +32,20 @@ export function chartToMarkdown(node: DocumentNode): string {
     caption ? `*${caption}*` : null,
   ]
     .filter(Boolean)
+    .join("\n\n");
+}
+
+/**
+ * A diagram as its relations, one per line.
+ *
+ * Markdown has no drawing to offer, and a picture nobody can read beats
+ * nothing far less than the arrows written out do.
+ */
+export function diagramToMarkdown(node: DocumentNode): string {
+  const { title, caption } = diagramTexts(node);
+  const lines = diagramLines(node).map((line) => `${"  ".repeat(line.depth)}- ${line.text}`);
+  return [title ? `**${title}**` : null, lines.join("\n"), caption ? `*${caption}*` : null]
+    .filter((part) => part !== null && part !== "")
     .join("\n\n");
 }
 
