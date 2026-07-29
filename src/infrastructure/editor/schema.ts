@@ -2,7 +2,21 @@ import "server-only";
 import { getSchema, type JSONContent } from "@tiptap/core";
 import { Node as PMNode } from "@tiptap/pm/model";
 import { chartError } from "@/domain/documents/chart";
+import { diagramError } from "@/domain/documents/diagram/validation";
 import { DOCUMENT_EXTENSIONS, VIEWED_NODES } from "./document-extensions";
+
+/**
+ * Nodes whose attributes carry rules ProseMirror knows nothing about.
+ *
+ * ProseMirror checks node and mark shape only; a chart's series lengths and a
+ * diagram's edge endpoints are the domain's business. Each rule is registered
+ * here rather than typed into a branch, so a new block with its own invariants
+ * is one line — the shape the export targets and the composers already use.
+ */
+const ATTRIBUTE_RULES: Record<string, (attrs: unknown) => string | null> = {
+  chart: chartError,
+  diagram: diagramError,
+};
 
 /**
  * The headless ProseMirror schema, built from the very extensions the editor
@@ -22,12 +36,12 @@ export function validateDocJson(json: unknown): JSONContent {
   }
   const node = PMNode.fromJSON(editorSchema, json);
   node.check();
-  // ProseMirror only checks node/mark shape; chart attrs carry their own rules
-  // (series/category lengths, numeric values) that must fail loudly here so the
-  // AI retry loop can fix them instead of persisting an unrenderable block.
+  // These must fail loudly here so the AI retry loop can fix them instead of
+  // persisting a block nothing can render.
   node.descendants((child) => {
-    if (child.type.name !== "chart") return true;
-    const error = chartError(child.attrs);
+    const rule = ATTRIBUTE_RULES[child.type.name];
+    if (!rule) return true;
+    const error = rule(child.attrs);
     if (error) throw new Error(error);
     return false;
   });

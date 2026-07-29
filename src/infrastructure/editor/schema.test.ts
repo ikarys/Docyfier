@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validateDocJson } from "./schema";
 import { TEMPLATES } from "@/lib/templates";
 import { sampleChart } from "@/domain/documents/chart";
+import { sampleDiagram } from "@/domain/documents/diagram/sample";
 
 const text = (value: string) => ({ type: "text", text: value });
 const doc = (...content: object[]) => ({ type: "doc", content });
@@ -24,6 +25,7 @@ describe("validateDocJson", () => {
           { type: "heading", attrs: { level: 2 }, content: [text("Titre")] },
           { type: "callout", content: [{ type: "paragraph", content: [text("note")] }] },
           { type: "chart", attrs: sampleChart() },
+          { type: "diagram", attrs: sampleDiagram("architecture") },
         ),
       ),
     ).not.toThrow();
@@ -57,6 +59,22 @@ describe("validateDocJson", () => {
     const broken = { ...sampleChart(), series: [{ label: "s", values: [1] }] };
     expect(() => validateDocJson(doc({ type: "chart", attrs: broken }))).toThrow(
       /chart series "s" has 1 values/,
+    );
+  });
+
+  it("rejects a diagram whose edge points at a node that was never declared", () => {
+    const attrs = sampleDiagram("flow");
+    const broken = { ...attrs, edges: [{ ...attrs.edges[0], to: "ghost" }] };
+    expect(() => validateDocJson(doc({ type: "diagram", attrs: broken }))).toThrow(
+      /points at "ghost"/,
+    );
+  });
+
+  it("rejects a hierarchy the tree layout could not draw", () => {
+    const attrs = sampleDiagram("hierarchy");
+    const broken = { ...attrs, edges: [] };
+    expect(() => validateDocJson(doc({ type: "diagram", attrs: broken }))).toThrow(
+      /needs exactly one root, found 3/,
     );
   });
 });
