@@ -16,6 +16,7 @@ import { EmbedNode } from "../EmbedView";
 import { AttachmentNode } from "../AttachmentView";
 import { TocNode } from "../TocView";
 import { EmojiCommand } from "./emoji-command";
+import { GhostText } from "./ghost-text";
 import { Shortcuts } from "./shortcuts";
 import { SlashCommand } from "./slash-command";
 import { UploadNotes } from "./upload-notes";
@@ -58,6 +59,7 @@ export function editorExtensions({ smartTypography, emoji }: TypingPreferences) 
     AiDiff,
     Search,
     UploadNotes,
+    GhostText,
     CharacterCount,
     ...(smartTypography ? [Typography] : []),
     // Emoji off is a rule about this instance's writing, not only about what

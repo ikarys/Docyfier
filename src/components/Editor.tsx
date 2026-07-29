@@ -23,6 +23,7 @@ import { PanelHost } from "./editor/PanelHost";
 import { SearchBar } from "./editor/SearchBar";
 import { useAiReview } from "./editor/useAiReview";
 import { useCaretPrompt } from "./editor/useCaretPrompt";
+import { useContinuation } from "./editor/useContinuation";
 import { useDocumentSearch } from "./editor/useDocumentSearch";
 import { useAutosave, type Autosave } from "./editor/useAutosave";
 import { useDocumentTheme } from "./editor/useDocumentTheme";
@@ -80,6 +81,7 @@ export function DocumentEditor({
   const review = useAiReview(editor, autosave);
   const search = useDocumentSearch(editor);
   const caret = useCaretPrompt(editor, review);
+  useContinuation(editor);
 
   if (!editor) return null;
 

@@ -5,6 +5,7 @@ const SHORTCUTS: { keys: string; label: string }[] = [
   { keys: "Mod-F", label: "Find and replace in the document" },
   { keys: "Mod-S", label: "Save now (saving is automatic anyway)" },
   { keys: "Mod-K", label: "Ask the AI to write here" },
+  { keys: "Mod-Enter", label: "Continue writing — Tab accepts, Escape discards" },
   { keys: "Mod-Shift-K", label: "Link the selection" },
   { keys: "Mod-B", label: "Bold" },
   { keys: "Mod-I", label: "Italic" },

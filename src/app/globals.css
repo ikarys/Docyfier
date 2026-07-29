@@ -1752,6 +1752,15 @@ body {
   margin: 0;
 }
 
+/* A continuation offered, not written: it is a decoration, so nothing here is
+   ever part of the document or of what gets saved. */
+.ghost-text {
+  opacity: 0.45;
+  font-style: italic;
+  pointer-events: none;
+  white-space: pre-wrap;
+}
+
 /* The prompt `Mod-K` opens at the caret. Fixed, not absolute: the sheet
    scrolls under it and the caret is what it stays attached to. */
 .caret-prompt {
