@@ -13,6 +13,7 @@ import {
   type DocumentTheme,
   type Theme,
 } from "@/lib/themes";
+import { CaretPrompt } from "./editor/CaretPrompt";
 import { documentEditorProps } from "./editor/editor-props";
 import { EditorNotices } from "./editor/EditorNotices";
 import { EditorSurface } from "./editor/EditorSurface";
@@ -21,6 +22,7 @@ import { MenuBar, type PanelName } from "./editor/MenuBar";
 import { PanelHost } from "./editor/PanelHost";
 import { SearchBar } from "./editor/SearchBar";
 import { useAiReview } from "./editor/useAiReview";
+import { useCaretPrompt } from "./editor/useCaretPrompt";
 import { useDocumentSearch } from "./editor/useDocumentSearch";
 import { useAutosave, type Autosave } from "./editor/useAutosave";
 import { useDocumentTheme } from "./editor/useDocumentTheme";
@@ -77,6 +79,7 @@ export function DocumentEditor({
   const generation = useStreamedGeneration(id, editor, autosave, changeTheme);
   const review = useAiReview(editor, autosave);
   const search = useDocumentSearch(editor);
+  const caret = useCaretPrompt(editor, review);
 
   if (!editor) return null;
 
@@ -116,6 +119,7 @@ export function DocumentEditor({
           onClose={() => setPanel(null)}
         />
       </div>
+      <CaretPrompt prompt={caret} />
       <EditorNotices review={review} generation={generation} />
     </div>
   );

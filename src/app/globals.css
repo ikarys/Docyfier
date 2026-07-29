@@ -1752,6 +1752,47 @@ body {
   margin: 0;
 }
 
+/* The prompt `Mod-K` opens at the caret. Fixed, not absolute: the sheet
+   scrolls under it and the caret is what it stays attached to. */
+.caret-prompt {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 22rem;
+  max-width: min(34rem, 92vw);
+  margin-top: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  box-shadow: 0 12px 34px -16px rgba(20, 22, 30, 0.5);
+}
+.caret-prompt-mark {
+  color: var(--accent);
+  font-weight: 700;
+}
+.caret-prompt-input {
+  flex: 1 1 auto;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--ink);
+  outline: none;
+}
+.caret-prompt-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+.caret-prompt-error {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
 /* A file carried by the document: one row, one link, nothing to preview. */
 .doc .attachment-row {
   margin: calc(1rem * var(--doc-space)) 0;

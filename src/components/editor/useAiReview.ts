@@ -20,6 +20,8 @@ export interface AiReview {
   changed: number | null;
   /** Run an AI edit and open the review over the blocks it touched. */
   run(apply: () => void): void;
+  /** The same for an edit that lands in instalments: one snapshot, one bar. */
+  runStreamed(apply: () => Promise<void>): Promise<void>;
   accept(): void;
   reject(): void;
 }
@@ -30,11 +32,10 @@ export function useAiReview(editor: Editor | null, autosave: Autosave): AiReview
   const snapshot = useRef<JSONContent | null>(null);
   const { saveNow } = autosave;
 
-  const run = useCallback(
-    (apply: () => void) => {
+  /** Close the review over everything that happened since `before`. */
+  const settle = useCallback(
+    (before: JSONContent) => {
       if (!editor) return;
-      const before = toPlainJSON(editor.getJSON());
-      apply();
       const marks = changedBlocks(before, toPlainJSON(editor.getJSON()));
       const touched = marks.filter((mark) => mark !== "same").length;
       saveNow();
@@ -44,6 +45,34 @@ export function useAiReview(editor: Editor | null, autosave: Autosave): AiReview
       setChanged(touched);
     },
     [editor, saveNow],
+  );
+
+  const run = useCallback(
+    (apply: () => void) => {
+      if (!editor) return;
+      const before = toPlainJSON(editor.getJSON());
+      apply();
+      settle(before);
+    },
+    [editor, settle],
+  );
+
+  /**
+   * A streamed edit is one edit: the snapshot is taken before the first block
+   * and the bar opens after the last, so Reject undoes the whole answer rather
+   * than the instalment that happened to arrive last.
+   */
+  const runStreamed = useCallback(
+    async (apply: () => Promise<void>) => {
+      if (!editor) return;
+      const before = toPlainJSON(editor.getJSON());
+      try {
+        await apply();
+      } finally {
+        settle(before);
+      }
+    },
+    [editor, settle],
   );
 
   const accept = useCallback(() => {
@@ -62,5 +91,5 @@ export function useAiReview(editor: Editor | null, autosave: Autosave): AiReview
     saveNow();
   }, [editor, saveNow]);
 
-  return { changed, run, accept, reject };
+  return { changed, run, runStreamed, accept, reject };
 }
