@@ -4,6 +4,7 @@ import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tip
 import type { DiagramAttrs } from "@/domain/documents/diagram/diagram";
 import { diagramError } from "@/domain/documents/diagram/validation";
 import { Diagram } from "@/infrastructure/editor/diagram";
+import { DiagramPanel } from "./DiagramPanel";
 import { DiagramPlot } from "./DiagramPlot";
 
 /** The `diagram` node wired to its React rendering — this is what the editor loads. */
@@ -13,7 +14,7 @@ export const DiagramNode = Diagram.extend({
   },
 });
 
-export function DiagramView({ node, selected }: NodeViewProps) {
+export function DiagramView({ node, updateAttributes, selected, editor }: NodeViewProps) {
   const attrs = node.attrs as DiagramAttrs;
   const error = diagramError(attrs);
 
@@ -28,6 +29,10 @@ export function DiagramView({ node, selected }: NodeViewProps) {
       )}
 
       {attrs.caption && <figcaption className="diagram-caption">{attrs.caption}</figcaption>}
+
+      {selected && editor.isEditable && (
+        <DiagramPanel attrs={attrs} update={updateAttributes} />
+      )}
     </NodeViewWrapper>
   );
 }
