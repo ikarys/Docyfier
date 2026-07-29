@@ -114,7 +114,7 @@ export function GenerateHero() {
 
       <div className="hero-blank">
         <Link className="btn-ghost" href="/new">
-          or start from a template →
+          or start from a template, a blank page or a file →
         </Link>
       </div>
     </section>
