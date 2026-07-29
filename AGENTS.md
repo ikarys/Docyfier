@@ -100,11 +100,29 @@ the link they stand for, written once in
 deliberately not installed: the allowlist already covers YouTube, and a second
 node for one provider would mean two shapes and two exports.
 
-What the editor still cannot do is written down as STEPS **U11–U12** in
-PLAN.md: AI at the caret, and comments, suggestions and version history.
-Next: **STEP U11**, then U12, then the rest of STEP 10 and STEP 6
-(multi-tenant). PDF stays print-based on purpose; a headless-Chromium renderer
-is the only open item of STEP 3 and was judged not worth its weight.
+STEP U11 is in: the assistant is where the caret is. `Mod-K` opens a prompt at
+the caret and the answer streams in at that very point (the link prompt moved
+to `Mod-Shift-K`); `Mod-Enter` offers the rest of the sentence as ghost text,
+taken with `Tab` and thrown away with `Escape` — a decoration, never a node, so
+an autosave landing mid-suggestion cannot store it; the drag handle offers what
+the AI can do to one block, a catalog under
+`src/domain/authoring/block-actions/` (rewrite / shorten / expand / turn into a
+table, steps, key figures, chart) run through the selection use case, replacing
+exactly the range that block occupied; and the panel has a second mode that
+answers a question from the digest, cites the headings it used and writes
+nothing until Insert. Two rules of the caret surface are stated over the
+document body rather than over a selection so tests can drive them without an
+editor (`components/editor/caret-context.ts`,
+`components/editor/ghost-suggestion.ts`). Reading a model answer block by block
+is `src/lib/ai/block-stream-response.ts` now, shared by the generation and
+caret routes; `useAiReview` closes over a streamed edit with one snapshot and
+one bar, so Reject undoes the whole answer.
+
+What the editor still cannot do is written down as **STEP U12** in PLAN.md:
+comments, suggestions and version history. Next: **STEP U12**, then the rest of
+STEP 10 and STEP 6 (multi-tenant). PDF stays print-based on purpose; a
+headless-Chromium renderer is the only open item of STEP 3 and was judged not
+worth its weight.
 
 ## Working conventions
 
