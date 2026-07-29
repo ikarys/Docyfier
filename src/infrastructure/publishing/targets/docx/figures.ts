@@ -1,5 +1,5 @@
 import type { DocumentNode } from "@/domain/documents/body";
-import type { Paragraph as ParagraphType } from "docx";
+import type { Paragraph as ParagraphType, Table as TableType } from "docx";
 import { diagramLines, diagramTexts } from "@/infrastructure/rendering/diagram-lines";
 import { EXPORT_SCALE, type DiagramImages } from "../../diagram-images";
 import type { DocxModule, RunBuilder } from "./runs";
@@ -44,6 +44,31 @@ export function figureBuilder(d: DocxModule, runs: RunBuilder, images: DiagramIm
   ];
 
   /**
+   * A gallery as a one-row table: Word has no other way to keep pictures side
+   * by side, and its borders are turned off so the row reads as a row of
+   * images rather than as a table.
+   */
+  const gallery = (node: DocumentNode): TableType =>
+    new d.Table({
+      width: { size: 100, type: d.WidthType.PERCENTAGE },
+      borders: {
+        top: { style: d.BorderStyle.NONE },
+        bottom: { style: d.BorderStyle.NONE },
+        left: { style: d.BorderStyle.NONE },
+        right: { style: d.BorderStyle.NONE },
+        insideHorizontal: { style: d.BorderStyle.NONE },
+        insideVertical: { style: d.BorderStyle.NONE },
+      },
+      rows: [
+        new d.TableRow({
+          children: (node.content ?? []).map(
+            (child) => new d.TableCell({ children: image(child) }),
+          ),
+        }),
+      ],
+    });
+
+  /**
    * A diagram as the drawing itself, embedded.
    *
    * Word is the one target that takes real bytes, so it gets the picture rather
@@ -76,5 +101,5 @@ export function figureBuilder(d: DocxModule, runs: RunBuilder, images: DiagramIm
     ];
   };
 
-  return { image, diagram };
+  return { image, gallery, diagram };
 }

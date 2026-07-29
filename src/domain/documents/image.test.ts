@@ -1,5 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { clampImageWidth, imageAlignment, widthForAlignment } from "./image";
+import { clampImageWidth, imageAlignment, imageRowSizes, widthForAlignment } from "./image";
+
+describe("imageRowSizes", () => {
+  it("makes a single row of a batch a row can hold", () => {
+    expect(imageRowSizes(2)).toEqual([2]);
+    expect(imageRowSizes(4)).toEqual([4]);
+  });
+
+  it("leaves one image alone: one picture is not a gallery", () => {
+    expect(imageRowSizes(0)).toEqual([]);
+    expect(imageRowSizes(1)).toEqual([]);
+  });
+
+  it("splits a longer batch as evenly as it can, never leaving a widow", () => {
+    expect(imageRowSizes(5)).toEqual([3, 2]);
+    expect(imageRowSizes(7)).toEqual([4, 3]);
+    expect(imageRowSizes(9)).toEqual([3, 3, 3]);
+  });
+});
 
 describe("clampImageWidth", () => {
   it("stores whole percents, since half a percent of a column is not a size", () => {

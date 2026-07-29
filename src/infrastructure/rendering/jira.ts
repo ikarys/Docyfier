@@ -119,10 +119,13 @@ function blockToJira(node: DocumentNode, prefix = ""): string {
       return "----";
     case "table":
       return tableToJira(node);
-    case "image": {
-      const { src, caption } = (node.attrs ?? {}) as { src?: string; caption?: string | null };
-      if (!src) return "";
-      return caption ? `!${src}!\n_${caption}_` : `!${src}!`;
+    case "image":
+      return imageToJira(node, "\n");
+    // A gallery is a row, and a row in Jira is a table row. A cell holds no
+    // newline, so there the caption follows its image on the same line.
+    case "imageRow": {
+      const cells = (node.content ?? []).map((image) => imageToJira(image, " "));
+      return cells.length ? `|${cells.join("|")}|` : "";
     }
     case "callout": {
       const variant = String(node.attrs?.variant ?? "note").toUpperCase();
@@ -133,6 +136,13 @@ function blockToJira(node: DocumentNode, prefix = ""): string {
     default:
       return node.content ? blocksToJira(node.content, prefix) : "";
   }
+}
+
+/** An image in Jira's own syntax, with the caption `between` it and them. */
+function imageToJira(node: DocumentNode, between: string): string {
+  const { src, caption } = (node.attrs ?? {}) as { src?: string; caption?: string | null };
+  if (!src) return "";
+  return caption ? `!${src}!${between}_${caption}_` : `!${src}!`;
 }
 
 /**

@@ -191,6 +191,20 @@ describe("docToHtml", () => {
     expect(docToHtml({ type: "doc", content: [bare] })).toBe('<p><img src="/a.png" alt="" /></p>');
   });
 
+  it("keeps a gallery a row, in the one layout every reader has: a table", () => {
+    const row = {
+      type: "imageRow",
+      content: [
+        { type: "image", attrs: { src: "/a.png", alt: "a" } },
+        { type: "image", attrs: { src: "/b.png", alt: "b" } },
+      ],
+    };
+    expect(docToHtml({ type: "doc", content: [row] })).toBe(
+      '<table><tbody><tr><td><img src="/a.png" alt="a" /></td>' +
+        '<td><img src="/b.png" alt="b" /></td></tr></tbody></table>',
+    );
+  });
+
   it("makes an image absolute for a reader outside this instance", () => {
     const image = { type: "image", attrs: { src: "/api/uploads/a.png" } };
     const out = docToHtml({ type: "doc", content: [image] }, {}, {

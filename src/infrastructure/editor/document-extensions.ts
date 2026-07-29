@@ -25,6 +25,7 @@ import { Chart } from "./chart";
 import { Diagram } from "./diagram";
 import { HighlightedCodeBlock } from "./code-block";
 import { DocImage } from "./doc-image";
+import { ImageRow } from "./image-row";
 import { TableOfContents } from "./toc";
 
 /**
@@ -76,6 +77,7 @@ export const DOCUMENT_EXTENSIONS = [
   DocCover,
   CoverLine,
   PageBreak,
+  ImageRow,
   TextAlign.configure({ types: ["heading", "paragraph"] }),
 ];
 

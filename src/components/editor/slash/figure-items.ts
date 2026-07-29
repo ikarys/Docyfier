@@ -1,0 +1,95 @@
+import type { Editor } from "@tiptap/core";
+import {
+  imageFilesOf,
+  insertUploadedGallery,
+  insertUploadedImages,
+} from "@/components/editor/image-upload";
+import type { SlashItem } from "./contract";
+
+type InsertImages = (view: Editor["view"], files: File[], pos: number) => Promise<void>;
+
+/** Open the OS file picker and hand whatever comes back to `insert`. */
+function pickImages(editor: Editor, insert: InsertImages): void {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.multiple = true;
+  input.onchange = () => {
+    const files = imageFilesOf(input.files);
+    if (files.length > 0) void insert(editor.view, files, editor.state.selection.from);
+  };
+  input.click();
+}
+
+/** Everything the reader looks at rather than reads: charts, diagrams, pictures. */
+export const FIGURE_ITEMS: SlashItem[] = [
+  {
+    title: "Bar chart",
+    icon: "▊",
+    keywords: ["chart", "bar", "graph", "graphique", "barres", "histogramme"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertChart("bar").run(),
+  },
+  {
+    title: "Line chart",
+    icon: "📈",
+    keywords: ["chart", "line", "trend", "graphique", "courbe", "ligne", "tendance"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertChart("line").run(),
+  },
+  {
+    title: "Flow diagram",
+    icon: "⤵",
+    keywords: ["diagram", "flow", "process", "schema", "diagramme", "flux", "processus"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertDiagram("flow").run(),
+  },
+  {
+    title: "Architecture diagram",
+    icon: "▥",
+    keywords: ["diagram", "architecture", "system", "schema", "systeme", "composants"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertDiagram("architecture").run(),
+  },
+  {
+    title: "Sequence diagram",
+    icon: "⇄",
+    keywords: ["diagram", "sequence", "messages", "echanges", "acteurs"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertDiagram("sequence").run(),
+  },
+  {
+    title: "Hierarchy diagram",
+    icon: "⑂",
+    keywords: ["diagram", "hierarchy", "tree", "org", "hierarchie", "arbre", "organigramme"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertDiagram("hierarchy").run(),
+  },
+  {
+    // The `timeline` block is a list of moments; this one is an axis with
+    // phases strung along it. Keywords are kept apart so the two never compete.
+    title: "Phase axis",
+    icon: "⟶",
+    keywords: ["diagram", "axis", "phases", "milestones", "axe", "jalons", "etapes cles"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertDiagram("timeline").run(),
+  },
+  {
+    title: "Image",
+    icon: "🖼",
+    keywords: ["image", "picture", "photo", "illustration"],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      pickImages(editor, insertUploadedImages);
+    },
+  },
+  {
+    title: "Gallery",
+    icon: "🖼🖼",
+    keywords: ["gallery", "images", "row", "galerie", "photos", "mosaique"],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      pickImages(editor, insertUploadedGallery);
+    },
+  },
+];

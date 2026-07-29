@@ -216,6 +216,22 @@ describe("docxTarget", () => {
     expect(xml).toContain("Fig. 1");
   });
 
+  it("keeps a gallery a row, which in Word is a one-row table", async () => {
+    const xml = await documentXml([
+      {
+        type: "imageRow",
+        content: [
+          { type: "image", attrs: { src: "/a.png", alt: "gauche" } },
+          { type: "image", attrs: { src: "/b.png", alt: "droite" } },
+        ],
+      },
+    ]);
+
+    expect(xml).toContain("<w:tbl>");
+    expect(xml).toContain("gauche");
+    expect(xml).toContain("droite");
+  });
+
   it("leaves an absolute image URL alone", async () => {
     const xml = await documentXml([
       { type: "image", attrs: { src: "https://cdn.example.com/a.png", alt: "" } },

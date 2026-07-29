@@ -220,6 +220,17 @@ describe("docToMarkdown", () => {
     expect(md(p({ type: "image", attrs }))).toBe("![schéma](/a.png)");
   });
 
+  it("stacks a gallery, since markdown has no columns to keep it in", () => {
+    const row = {
+      type: "imageRow",
+      content: [
+        { type: "image", attrs: { src: "/a.png", alt: "a" } },
+        { type: "image", attrs: { src: "/b.png", alt: "b" } },
+      ],
+    };
+    expect(md(row)).toBe("![a](/a.png)\n\n![b](/b.png)");
+  });
+
   it("turns a hard break into the two trailing spaces markdown needs", () => {
     expect(md(p(text("un"), { type: "hardBreak" }, text("deux")))).toBe("un  \ndeux");
   });

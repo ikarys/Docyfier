@@ -16,6 +16,22 @@ export type ImageAlignment = (typeof IMAGE_ALIGNMENTS)[number];
 
 export const DEFAULT_IMAGE_ALIGNMENT: ImageAlignment = "center";
 
+/** A gallery row holds two to four images; fewer is a picture, more is a wall. */
+export const IMAGE_ROW_MIN = 2;
+export const IMAGE_ROW_MAX = 4;
+
+/**
+ * How a batch of images lands: the size of each gallery row, sharing them out
+ * evenly so no row is left with a single widow beside a full one.
+ */
+export function imageRowSizes(count: number): number[] {
+  if (count < IMAGE_ROW_MIN) return [];
+  const rows = Math.ceil(count / IMAGE_ROW_MAX);
+  const perRow = Math.floor(count / rows);
+  const remainder = count % rows;
+  return Array.from({ length: rows }, (_, index) => perRow + (index < remainder ? 1 : 0));
+}
+
 /** The widest a wrapped image may be before the text beside it is a gutter. */
 const WRAPPED_MAX_WIDTH = 50;
 

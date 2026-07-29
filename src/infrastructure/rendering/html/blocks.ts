@@ -55,16 +55,30 @@ function tableToHtml(node: DocumentNode, ctx: HtmlContext): string {
 }
 
 /**
- * A figure only when there is a caption to carry: a bare `<figure>` says
- * nothing a receiving tool can use, while a paragraph is what every one of
- * them keeps.
+ * An image, with its caption when it has one. A figure only then: a bare
+ * `<figure>` says nothing a receiving tool can use.
  */
-function imageToHtml(node: DocumentNode, ctx: HtmlContext): string {
+function figureOf(node: DocumentNode, ctx: HtmlContext): string {
   const tag = imageTag(node, ctx.url);
   if (!tag) return "";
   const caption = (node.attrs?.caption as string | null) ?? null;
-  if (!caption) return `<p>${tag}</p>`;
-  return `<figure>${tag}<figcaption>${escapeHtml(caption)}</figcaption></figure>`;
+  return caption ? `<figure>${tag}<figcaption>${escapeHtml(caption)}</figcaption></figure>` : tag;
+}
+
+/** On its own, an image still needs a block around it; a paragraph is the one
+ * every receiving tool keeps. */
+function imageToHtml(node: DocumentNode, ctx: HtmlContext): string {
+  const figure = figureOf(node, ctx);
+  if (!figure) return "";
+  return node.attrs?.caption ? figure : `<p>${figure}</p>`;
+}
+
+/** A gallery stays a row in the one layout every reader has: a table. */
+function galleryToHtml(node: DocumentNode, ctx: HtmlContext): string {
+  const cells = (node.content ?? [])
+    .map((image) => `<td>${figureOf(image, ctx)}</td>`)
+    .join("");
+  return cells ? `<table><tbody><tr>${cells}</tr></tbody></table>` : "";
 }
 
 function coverToHtml(node: DocumentNode, ctx: HtmlContext): string {
@@ -123,6 +137,7 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
   blockMath: (node) => `<p><code>$$${escapeHtml(String(node.attrs?.latex ?? ""))}$$</code></p>`,
   table: tableToHtml,
   image: imageToHtml,
+  imageRow: galleryToHtml,
   callout: (node, ctx) => {
     const label = CALLOUT_LABEL[String(node.attrs?.variant ?? "note")] ?? "Note";
     return `<blockquote><p><strong>${label}</strong></p>${ctx.blocks(
