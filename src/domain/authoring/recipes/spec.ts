@@ -9,9 +9,10 @@ export const spec: DocumentRecipe = {
 3. tableOfContents.
 4. Level-2 "Goals" and "Non-goals" as a columnList of two lists.
 5. One level-2 heading per design section: a paragraph, plus a codeBlock wherever an interface or a payload says it better than prose.
-6. table — the API surface or the schema, one row per field, with the type and whether it is required.
-7. callout warn — the open questions, one line each.
-8. stepList — the rollout, one step per stage.`,
+6. An architecture diagram of the parts you were given and what talks to what, grouped by tier — and a sequence diagram for the exchange that carries the design, when the spec describes one.
+7. table — the API surface or the schema, one row per field, with the type and whether it is required.
+8. callout warn — the open questions, one line each.
+9. stepList — the rollout, one step per stage.`,
   art: {
     preset: "minimal",
     accent: "#111827",

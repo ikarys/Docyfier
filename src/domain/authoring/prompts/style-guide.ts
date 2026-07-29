@@ -29,6 +29,12 @@ const SHARED = `Professional document style — modern, visual, striking:
   per feature, weekly volume) is a chart. A handful of standalone KPIs stays a
   statRow — three big numbers are not a chart. Charts need real data: if the
   source has none, write prose instead of inventing figures.
+- A relation between named things is a diagram, not a paragraph describing it:
+  a process that BRANCHES or loops (flow), the parts of a system and what talks
+  to what (architecture), an exchange between actors in order (sequence), a tree
+  of ownership or breakdown (hierarchy). A straight run of steps with no branch
+  stays a stepList. Diagrams need real relations: if the source states none, do
+  not draw one.
 - Use timeline for anything chronological or phased (roadmap, plan, history),
   stepList for a sequential process or method ("how it works"), and pyramid for
   a ranked hierarchy (priorities, levels). Prefer these over a plain list when

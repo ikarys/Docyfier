@@ -36,6 +36,7 @@ Block nodes:
 - {"type":"timeline","content":[2-8 timelineItem]} — roadmap / chronology. item = {"type":"timelineItem","attrs":{"accent":same as card},"content":[{"type":"paragraph",...} (short date or phase, e.g. "Q1 2025"),{"type":"heading","attrs":{"level":3},...} (milestone title),{"type":"paragraph",...} (description)]}. Order is fixed: date paragraph, then heading, then description block(s).
 - {"type":"stepList","content":[2-6 step]} — numbered process / how-it-works (the number is drawn automatically). step = {"type":"step","attrs":{"accent":same as card},"content":[{"type":"heading","attrs":{"level":3},...} (step title),{"type":"paragraph",...} (what to do)]}. Never write the number yourself.
 - {"type":"chart","attrs":{"kind":"bar"|"line","categories":["Q1","Q2",...],"series":[{"label":"Revenue","values":[12,19,...]}],"title":"..."|null,"caption":"..."|null,"showGrid":true,"showLegend":true}} — has NO "content". 2-24 categories, 1-4 series, and every series MUST have exactly as many values as there are categories, all plain numbers. Use "bar" to compare categories, "line" for a trend over time. ONLY emit a chart from figures that already appear in the user's request or in the document you were given — NEVER invent, extrapolate or round data. When you have no real series of numbers, do not emit a chart.
+- {"type":"diagram","attrs":{"kind":"flow"|"architecture"|"sequence"|"hierarchy"|"timeline","direction":"down"|"right","nodes":[{"id":"a","label":"Request","note":"optional second line","accent":1-4,"group":"g1"}],"edges":[{"from":"a","to":"b","label":"yes"|null,"style":"solid"|"dashed","head":"arrow"|"none"}],"groups":[{"id":"g1","label":"Backend"}],"title":"..."|null,"caption":"..."|null}} — has NO "content". You declare MEANING ONLY: never a coordinate, a width or a position — the editor places every box. 1-24 nodes, at most 40 edges, ids unique, and every "from"/"to" MUST name a declared node. "note", "accent" and "group" are optional; a "group" must appear in "groups" and draws a labelled band (architecture only, in practice). Kinds: "flow" = a process, which MAY loop back; "architecture" = named parts of a system, usually grouped; "sequence" = participants exchanging messages, one edge per message IN ORDER, needs 2+ nodes and 1+ edge; "hierarchy" = a TREE, exactly one root and exactly one parent per other node, no cycles; "timeline" = phases in the order of "nodes" and NO edges at all. ONLY draw relations stated in the user's request or already present in the document — NEVER invent an architecture, a team or a process you were not given.
 - {"type":"pyramid","content":[2-5 pyramidTier]} — hierarchy from narrow apex (first) to wide base (last): priorities, levels, vision→execution. tier = {"type":"pyramidTier","content":[{"type":"paragraph",...} (short label; optional second paragraph for a detail)]}. First tier = top of the pyramid.
 
 Inline nodes (only inside heading/paragraph and table-cell paragraphs):
@@ -61,9 +62,9 @@ Constraints:
   highlight) to the relevant words — do not just add symbols.
 - Never nest block nodes inside heading or paragraph.
 - Never nest cardGrid, statRow, columnList, timeline, stepList, pyramid,
-  chart, docCover, tableOfContents or pageBreak inside a card, column, stat,
-  callout, list item, table cell or each other — layout blocks live at the top
-  level only.
+  chart, diagram, docCover, tableOfContents or pageBreak inside a card, column,
+  stat, callout, list item, table cell or each other — layout blocks live at the
+  top level only.
 - Never emit "content": [] — omit the key instead.
 - THE USER'S EXPLICIT FORMAT REQUEST ALWAYS WINS over the style guide below:
   if they ask for bullet points, produce a bulletList — not cards, not stats,
