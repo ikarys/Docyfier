@@ -1752,11 +1752,35 @@ body {
   margin: 0;
 }
 
-/* Editing the document, or asking it something. */
+/* Editing the document, or asking it something. A segmented switch, not two
+   more chips: the row under it is chips, and the two must not read alike. */
 .ai-modes {
-  display: flex;
-  gap: 0.35rem;
-  padding: 0 0.9rem 0.5rem;
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 0.15rem;
+  margin: 0.7rem 0.9rem 0;
+  padding: 0.2rem;
+  background: color-mix(in srgb, var(--ink) 7%, var(--paper));
+  border-radius: 999px;
+}
+.ai-mode {
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.28rem 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.ai-mode:hover {
+  color: var(--ink);
+}
+.ai-mode[aria-selected="true"] {
+  background: var(--paper);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(20, 22, 30, 0.14);
 }
 /* An answer that changed nothing: where it came from, and the way in. */
 .ai-answer-foot {

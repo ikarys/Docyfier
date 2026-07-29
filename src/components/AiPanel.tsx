@@ -74,13 +74,13 @@ export function AiPanel({
         </button>
       </div>
 
-      <div className="ai-modes" role="tablist">
+      <div className="ai-modes" role="tablist" aria-label="What to do with the document">
         {(["edit", "ask"] as const).map((which) => (
           <button
             key={which}
             role="tab"
             aria-selected={mode === which}
-            className={mode === which ? "chip is-active" : "chip"}
+            className="ai-mode"
             onClick={() => setMode(which)}
           >
             {which === "edit" ? "Edit" : "Ask"}
@@ -88,18 +88,22 @@ export function AiPanel({
         ))}
       </div>
 
-      <div className="ai-quick">
-        {QUICK_ACTIONS.map((qa) => (
-          <button
-            key={qa.label}
-            className="chip"
-            disabled={busy || restyle.busy}
-            onClick={() => void runQuickAction(qa)}
-          >
-            {qa.label}
-          </button>
-        ))}
-      </div>
+      {/* The quick actions all rewrite the document: in Ask mode there is
+          nothing for them to do. */}
+      {mode === "edit" && (
+        <div className="ai-quick">
+          {QUICK_ACTIONS.map((qa) => (
+            <button
+              key={qa.label}
+              className="chip"
+              disabled={busy || restyle.busy}
+              onClick={() => void runQuickAction(qa)}
+            >
+              {qa.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <AiThread
         messages={messages}
