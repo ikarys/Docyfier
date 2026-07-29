@@ -1752,6 +1752,23 @@ body {
   margin: 0;
 }
 
+/* News about an upload, where the picture is going to land. */
+.upload-note {
+  display: inline-block;
+  margin: 0 0.35rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  vertical-align: middle;
+  background: var(--accent-soft);
+  color: var(--ink-faint);
+}
+.upload-note.is-failure {
+  background: color-mix(in srgb, #dc2626 14%, var(--paper));
+  color: #b91c1c;
+}
+
 /* Free resize: the presets are the four common answers, this is every other
    one. `touch-action` off, or a drag scrolls the page instead of sizing. */
 .image-handle {

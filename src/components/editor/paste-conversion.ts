@@ -13,6 +13,7 @@
 export type PasteDecision =
   | { readonly kind: "table"; readonly rows: readonly (readonly string[])[] }
   | { readonly kind: "markdown"; readonly source: string }
+  | { readonly kind: "image"; readonly src: string }
   | null;
 
 /** Markdown that announces itself at the start of a line. */
@@ -24,10 +25,29 @@ const INLINE_MARKDOWN = /(\*\*[^*\n]+\*\*|\[[^\]\n]+\]\([^)\n]+\)|`[^`\n]+`)/;
 export function decidePaste(text: string): PasteDecision {
   if (text.trim() === "") return null;
 
+  const src = imageUrl(text.trim());
+  if (src) return { kind: "image", src };
   const rows = tabularRows(text);
   if (rows) return { kind: "table", rows };
   if (looksLikeMarkdown(text)) return { kind: "markdown", source: text };
   return null;
+}
+
+/** A picture the browser can show, told apart from a page URL by its path. */
+const IMAGE_PATH = /\.(png|jpe?g|gif|webp|avif|bmp)$/i;
+
+function imageUrl(text: string): string | null {
+  if (/\s/.test(text)) return null;
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    return null;
+  }
+  // A query string is common on a CDN and says nothing about the file; the
+  // path is what names it. `http` only: nothing else renders as an image.
+  const http = url.protocol === "http:" || url.protocol === "https:";
+  return http && IMAGE_PATH.test(url.pathname) ? text : null;
 }
 
 /**

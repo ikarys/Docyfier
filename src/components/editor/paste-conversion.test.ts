@@ -15,6 +15,23 @@ describe("deciding what pasted text is", () => {
     });
   });
 
+  it("reads a URL that names a picture as an image", () => {
+    expect(decidePaste("https://cdn.example.com/a.png")).toEqual({
+      kind: "image",
+      src: "https://cdn.example.com/a.png",
+    });
+    expect(decidePaste("  https://cdn.example.com/a.JPG?v=2  ")).toEqual({
+      kind: "image",
+      src: "https://cdn.example.com/a.JPG?v=2",
+    });
+  });
+
+  it("leaves a page URL a link, and a sentence about a png a sentence", () => {
+    expect(decidePaste("https://example.com/article")).toBeNull();
+    expect(decidePaste("see https://example.com/a.png")).toBeNull();
+    expect(decidePaste("ftp://example.com/a.png")).toBeNull();
+  });
+
   it("refuses a ragged grid: two rows of different widths are not a table", () => {
     expect(decidePaste("a\tb\nc")).toBeNull();
   });

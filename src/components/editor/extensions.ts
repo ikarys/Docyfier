@@ -16,6 +16,7 @@ import { TocNode } from "../TocView";
 import { EmojiCommand } from "./emoji-command";
 import { Shortcuts } from "./shortcuts";
 import { SlashCommand } from "./slash-command";
+import { UploadNotes } from "./upload-notes";
 
 /**
  * Everything the editor loads: the document's own nodes and marks, and the
@@ -52,6 +53,7 @@ export function editorExtensions({ smartTypography, emoji }: TypingPreferences) 
     Shortcuts,
     AiDiff,
     Search,
+    UploadNotes,
     CharacterCount,
     ...(smartTypography ? [Typography] : []),
     // Emoji off is a rule about this instance's writing, not only about what
