@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { imageAlignment, widthForAlignment } from "./image";
+import { clampImageWidth, imageAlignment, widthForAlignment } from "./image";
+
+describe("clampImageWidth", () => {
+  it("stores whole percents, since half a percent of a column is not a size", () => {
+    expect(clampImageWidth(42.4)).toBe(42);
+    expect(clampImageWidth(42.6)).toBe(43);
+  });
+
+  it("keeps an image between a thumbnail and the column it sits in", () => {
+    expect(clampImageWidth(2)).toBe(10);
+    expect(clampImageWidth(140)).toBe(100);
+  });
+});
 
 describe("imageAlignment", () => {
   it("keeps a placement the document knows", () => {

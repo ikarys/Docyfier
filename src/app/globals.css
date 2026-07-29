@@ -1692,17 +1692,16 @@ body {
 }
 
 .doc .doc-image {
-  margin: calc(1.75rem * var(--doc-space)) 0;
+  margin: calc(1.75rem * var(--doc-space)) auto;
   text-align: center;
   position: relative;
 }
+/* The figure carries the width; the image fills it. A float has to be as wide
+   as its picture for the text to know where to flow around it. */
 .doc .doc-image img {
-  max-width: 100%;
+  width: 100%;
   height: auto;
   border-radius: var(--radius);
-  /* Tailwind's preflight makes images block-level, so `text-align: center`
-     on the figure does not center them — auto margins do. */
-  margin-inline: auto;
 }
 /* Where the image sits, and what the text does around it. Floats wrap on
    screen and on paper alike, so print needs no rule of its own. */
@@ -1736,6 +1735,25 @@ body {
   color: var(--ink-faint);
 }
 .doc-editor .doc-image[data-selected="true"] img {
+  outline: 3px solid var(--accent-soft);
+}
+/* Free resize: the presets are the four common answers, this is every other
+   one. `touch-action` off, or a drag scrolls the page instead of sizing. */
+.image-handle {
+  position: absolute;
+  top: 50%;
+  right: -0.55rem;
+  width: 1.1rem;
+  height: 2.4rem;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--accent);
+  border: 2px solid var(--paper);
+  box-shadow: 0 4px 12px -6px rgba(20, 22, 30, 0.5);
+  cursor: ew-resize;
+  touch-action: none;
+}
+.doc .doc-image[data-resizing="true"] img {
   outline: 3px solid var(--accent-soft);
 }
 .image-bar {
@@ -3150,6 +3168,7 @@ body {
   }
   /* Editing affordances that live inside the document, not in `.no-print`. */
   .doc .image-bar,
+  .doc .image-handle,
   .doc .chart-panel,
   .doc .diagram-panel {
     display: none !important;

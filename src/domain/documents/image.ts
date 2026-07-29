@@ -19,6 +19,15 @@ export const DEFAULT_IMAGE_ALIGNMENT: ImageAlignment = "center";
 /** The widest a wrapped image may be before the text beside it is a gutter. */
 const WRAPPED_MAX_WIDTH = 50;
 
+/** Narrower than this and the image is an icon the writer cannot grab again. */
+const MIN_WIDTH = 10;
+const MAX_WIDTH = 100;
+
+/** A width the document can store: whole percents of the text column. */
+export function clampImageWidth(width: number): number {
+  return Math.round(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, width)));
+}
+
 export function imageAlignment(value: unknown): ImageAlignment {
   return IMAGE_ALIGNMENTS.includes(value as ImageAlignment)
     ? (value as ImageAlignment)

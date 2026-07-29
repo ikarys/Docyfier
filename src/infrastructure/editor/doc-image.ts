@@ -18,13 +18,12 @@ export const DocImage = Image.configure({ inline: false, allowBase64: false }).e
   addAttributes() {
     return {
       ...this.parent?.(),
+      // The percentage is the figure's, not the image's — see `ImageView` —
+      // so nothing here writes a style the node view would contradict.
       width: {
         default: 100,
         parseHTML: (el) => Number(el.getAttribute("data-width") ?? 100),
-        renderHTML: (attrs) => ({
-          "data-width": attrs.width,
-          style: `width:${attrs.width}%`,
-        }),
+        renderHTML: (attrs) => ({ "data-width": attrs.width }),
       },
       align: {
         default: DEFAULT_IMAGE_ALIGNMENT,
