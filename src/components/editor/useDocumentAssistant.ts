@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
+import { askAboutDocumentAction } from "@/app/ai-actions";
+import { digestOf } from "@/domain/authoring/document-digest";
 import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 import { applyTransform } from "./applied-transform";
 import { requestTransform } from "./streamed-transform";
@@ -12,6 +14,12 @@ export interface AssistantMessage {
   role: "user" | "ai";
   text: string;
   error?: boolean;
+  /**
+   * An answer to a question, which changed nothing: the writer decides whether
+   * any of it goes into the document, and the headings it came from say where
+   * to check it.
+   */
+  answer?: { text: string; sections: string[] };
 }
 
 /**
@@ -88,5 +96,37 @@ export function useDocumentAssistant(
     }
   };
 
-  return { messages, busy, edits, ask, thread };
+  /**
+   * A question, not an instruction: the document is read through its digest and
+   * nothing is written. The answer waits in the thread until it is inserted.
+   */
+  const question = async (asked: string) => {
+    if (busy) return;
+    setBusy(true);
+    setEdits(0);
+    say({ role: "user", text: asked });
+
+    try {
+      const res = await askAboutDocumentAction(digestOf(toPlainJSON(editor.getJSON())), asked);
+      if (!res.ok) {
+        say({ role: "ai", text: res.error, error: true });
+        return;
+      }
+      say({
+        role: "ai",
+        text: res.answer.answer,
+        answer: { text: res.answer.answer, sections: res.answer.sections },
+      });
+    } catch (err) {
+      say({
+        role: "ai",
+        text: err instanceof Error ? err.message : "The AI request failed.",
+        error: true,
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return { messages, busy, edits, ask, question, thread };
 }

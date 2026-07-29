@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import type { DocumentTheme } from "@/lib/themes";
+import { AiThread } from "./editor/AiThread";
 import { useDocumentAssistant } from "./editor/useDocumentAssistant";
 import { useRestyle } from "./editor/useRestyle";
 
@@ -33,22 +34,30 @@ export function AiPanel({
   editor,
   onApply,
   onChangeTheme,
+  onInsert,
   onClose,
 }: {
   editor: Editor;
   onApply: (content: JSONContent) => void;
   onChangeTheme: (theme: DocumentTheme) => void;
+  /** Put an answer into the document — the only way a question ever writes. */
+  onInsert: (text: string) => void;
   onClose: () => void;
 }) {
   const [input, setInput] = useState("");
-  const { messages, busy, edits, ask, thread } = useDocumentAssistant(editor, onApply);
+  /** Editing the document, or asking it something. */
+  const [mode, setMode] = useState<"edit" | "ask">("edit");
+  const { messages, busy, edits, ask, question, thread } = useDocumentAssistant(
+    editor,
+    onApply,
+  );
   const restyle = useRestyle(editor, onChangeTheme);
 
   const submit = () => {
-    const instruction = input.trim();
-    if (!instruction) return;
+    const said = input.trim();
+    if (!said) return;
     setInput("");
-    void ask(instruction);
+    void (mode === "ask" ? question(said) : ask(said));
   };
 
   const runQuickAction = async (action: (typeof QUICK_ACTIONS)[number]) => {
@@ -65,6 +74,20 @@ export function AiPanel({
         </button>
       </div>
 
+      <div className="ai-modes" role="tablist">
+        {(["edit", "ask"] as const).map((which) => (
+          <button
+            key={which}
+            role="tab"
+            aria-selected={mode === which}
+            className={mode === which ? "chip is-active" : "chip"}
+            onClick={() => setMode(which)}
+          >
+            {which === "edit" ? "Edit" : "Ask"}
+          </button>
+        ))}
+      </div>
+
       <div className="ai-quick">
         {QUICK_ACTIONS.map((qa) => (
           <button
@@ -78,34 +101,28 @@ export function AiPanel({
         ))}
       </div>
 
-      <div className="ai-thread" ref={thread}>
-        {messages.length === 0 && (
-          <p className="ai-empty">
-            Ask for changes to the whole document — restructure, shorten, change
-            tone, add sections…
-          </p>
-        )}
-        {messages.map((message, i) => (
-          <div
-            key={i}
-            className={`ai-msg ai-msg-${message.role}${message.error ? " ai-msg-error" : ""}`}
-          >
-            {message.text}
-          </div>
-        ))}
-        {busy && (
-          <div className="ai-msg ai-msg-ai ai-msg-busy">
-            <span className="spinner" aria-hidden />{" "}
-            {edits ? `Working… ${edits} edit${edits > 1 ? "s" : ""}` : "Working…"}
-          </div>
-        )}
-      </div>
+      <AiThread
+        messages={messages}
+        busy={busy}
+        edits={edits}
+        empty={
+          mode === "ask"
+            ? "Ask the document a question — what it says, what it leaves out. Nothing is written until you insert an answer."
+            : "Ask for changes to the whole document — restructure, shorten, change tone, add sections…"
+        }
+        thread={thread}
+        onInsert={onInsert}
+      />
 
       <div className="ai-input-row">
         <textarea
           className="ai-input"
           rows={2}
-          placeholder="Ask for a change to the document…"
+          placeholder={
+            mode === "ask"
+              ? "Ask a question about this document…"
+              : "Ask for a change to the document…"
+          }
           value={input}
           disabled={busy}
           onChange={(e) => setInput(e.target.value)}

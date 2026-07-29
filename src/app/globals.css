@@ -1752,6 +1752,26 @@ body {
   margin: 0;
 }
 
+/* Editing the document, or asking it something. */
+.ai-modes {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0 0.9rem 0.5rem;
+}
+/* An answer that changed nothing: where it came from, and the way in. */
+.ai-answer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.ai-answer-sources {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
 /* The AI menu on the drag handle: two families, told apart by a rule. */
 .block-action-menu .popover-panel {
   min-width: 12rem;

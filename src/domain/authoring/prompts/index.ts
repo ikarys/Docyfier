@@ -25,4 +25,5 @@ export {
   caretPrompt,
   caretSystem,
 } from "./caret";
+export { QUESTION_SYSTEM, questionPrompt } from "./question";
 export { retryPrompt } from "./retry";

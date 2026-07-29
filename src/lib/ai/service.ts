@@ -11,6 +11,10 @@ import {
   restyleDocument as chooseDress,
 } from "@/application/authoring/plan-document";
 import {
+  askAboutDocument as answerFrom,
+  type DocumentAnswer,
+} from "@/application/authoring/ask-about-document";
+import {
   continueWriting as finishSentence,
   writeAtCaret as writeHere,
   type CaretContext,
@@ -117,7 +121,18 @@ export async function rewriteSelectionText(
   return rewriteText(await authoringDeps(), text, instruction);
 }
 
-export type { CaretContext };
+export type { CaretContext, DocumentAnswer };
+
+/**
+ * Surface 6 — a question about the document, answered from its digest. Nothing
+ * here writes: what the answer becomes in the document is the editor's call.
+ */
+export async function askAboutDocument(
+  digest: string,
+  question: string,
+): Promise<DocumentAnswer> {
+  return answerFrom(await authoringDeps(), digest, question);
+}
 
 /**
  * Surface 5, blocking — what the model writes where the caret is, for a

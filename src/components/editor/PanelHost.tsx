@@ -19,6 +19,7 @@ export function PanelHost({
   presets,
   onApply,
   onChangeTheme,
+  onInsert,
   onClose,
 }: {
   panel: PanelName | null;
@@ -27,6 +28,7 @@ export function PanelHost({
   presets: Theme[];
   onApply: (content: JSONContent) => void;
   onChangeTheme: (theme: DocumentTheme) => void;
+  onInsert: (text: string) => void;
   onClose: () => void;
 }) {
   if (panel === "ai") {
@@ -35,6 +37,7 @@ export function PanelHost({
         editor={editor}
         onApply={onApply}
         onChangeTheme={onChangeTheme}
+        onInsert={onInsert}
         onClose={onClose}
       />
     );

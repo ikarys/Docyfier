@@ -89,6 +89,15 @@ export function DocumentEditor({
   const applyDocument = (content: DocJSON) =>
     review.run(() => editor.commands.setContent(content, { emitUpdate: false }));
 
+  /** An answer put into the document at the caret — the writer's decision. */
+  const insertAnswer = (text: string) =>
+    review.run(() => {
+      editor.chain().focus().insertContent({
+        type: "paragraph",
+        content: [{ type: "text", text }],
+      }).run();
+    });
+
   return (
     <div className="editor-wrap">
       <MenuBar
@@ -118,6 +127,7 @@ export function DocumentEditor({
           presets={presets}
           onApply={applyDocument}
           onChangeTheme={changeTheme}
+          onInsert={insertAnswer}
           onClose={() => setPanel(null)}
         />
       </div>

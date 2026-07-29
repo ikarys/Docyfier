@@ -7,6 +7,7 @@ import type { JSONContent } from "@tiptap/core";
 import { createDocument, updateDocument } from "@/lib/store";
 import type { DocumentTheme } from "@/lib/themes";
 import {
+  askAboutDocument,
   continueWriting,
   generateDocument,
   restyleDocument,
@@ -15,6 +16,7 @@ import {
   rewriteSelectionText,
   writeAtCaret,
   type CaretContext,
+  type DocumentAnswer,
   type TransformOutcome,
 } from "@/lib/ai/service";
 
@@ -42,6 +44,10 @@ export type CaretResult =
 
 export type ContinuationResult =
   | { ok: true; text: string | null }
+  | { ok: false; error: string };
+
+export type AnswerResult =
+  | { ok: true; answer: DocumentAnswer }
   | { ok: false; error: string };
 
 export type SelectionResult =
@@ -147,6 +153,25 @@ export async function continueWritingAction(
   await requireAuth();
   try {
     return { ok: true, text: await continueWriting(context) };
+  } catch (err) {
+    return { ok: false, error: message(err) };
+  }
+}
+
+/**
+ * Surface 6 — a question about the document. The document is never written by
+ * this action: the answer travels back and the editor decides what becomes of
+ * it.
+ */
+export async function askAboutDocumentAction(
+  digest: string,
+  question: string,
+): Promise<AnswerResult> {
+  await requireAuth();
+  const trimmed = question.trim();
+  if (!trimmed) return { ok: false, error: "Empty question" };
+  try {
+    return { ok: true, answer: await askAboutDocument(digest, trimmed) };
   } catch (err) {
     return { ok: false, error: message(err) };
   }
