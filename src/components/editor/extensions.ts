@@ -9,6 +9,7 @@ import {
   VIEWED_NODES,
 } from "@/infrastructure/editor/document-extensions";
 import { ChartNode } from "../chart/ChartView";
+import { DiagramNode } from "../diagram/DiagramView";
 import { CodeBlockNode } from "./CodeBlockView";
 import { ImageNode } from "../ImageView";
 import { TocNode } from "../TocView";
@@ -29,6 +30,7 @@ import { SlashCommand } from "./slash-command";
  */
 const VIEWS: Record<string, AnyExtension> = {
   [ChartNode.name]: ChartNode,
+  [DiagramNode.name]: DiagramNode,
   [ImageNode.name]: ImageNode,
   [TocNode.name]: TocNode,
   [CodeBlockNode.name]: CodeBlockNode,

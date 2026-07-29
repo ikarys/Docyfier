@@ -187,6 +187,43 @@ export const SLASH_ITEMS: SlashItem[] = [
       editor.chain().focus().deleteRange(range).insertChart("line").run(),
   },
   {
+    title: "Flow diagram",
+    icon: "⤵",
+    keywords: ["diagram", "flow", "process", "schema", "diagramme", "flux", "processus"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertDiagram("flow").run(),
+  },
+  {
+    title: "Architecture diagram",
+    icon: "▥",
+    keywords: ["diagram", "architecture", "system", "schema", "systeme", "composants"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertDiagram("architecture").run(),
+  },
+  {
+    title: "Sequence diagram",
+    icon: "⇄",
+    keywords: ["diagram", "sequence", "messages", "echanges", "acteurs"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertDiagram("sequence").run(),
+  },
+  {
+    title: "Hierarchy diagram",
+    icon: "⑂",
+    keywords: ["diagram", "hierarchy", "tree", "org", "hierarchie", "arbre", "organigramme"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertDiagram("hierarchy").run(),
+  },
+  {
+    // The `timeline` block above is a list of moments; this one is an axis with
+    // phases strung along it. Keywords are kept apart so the two never compete.
+    title: "Phase axis",
+    icon: "⟶",
+    keywords: ["diagram", "axis", "phases", "milestones", "axe", "jalons", "etapes cles"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).insertDiagram("timeline").run(),
+  },
+  {
     title: "Cover",
     icon: "▤",
     keywords: ["cover", "title", "couverture", "titre", "header"],

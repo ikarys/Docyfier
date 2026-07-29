@@ -525,6 +525,57 @@ body {
   font-size: 0.9rem;
 }
 
+/* ---- Diagrams (PLAN.md STEP 10) ------------------------------------------
+   Colors are theme tokens here and literal values in the exported SVG: the
+   browser resolves `var()`, librsvg — which rasterizes for Word and Confluence
+   — does not. Both sides paint the same scene; only the palette differs.
+   See `src/infrastructure/rendering/svg/scene-to-svg.ts`. */
+.doc .diagram {
+  --diagram-surface: var(--paper);
+  --diagram-border: var(--rule-strong);
+  --diagram-line: var(--ink-faint);
+  --diagram-text: var(--ink);
+  --diagram-muted: var(--ink-faint);
+  --diagram-band: var(--paper-shell);
+  --diagram-band-border: var(--rule-strong);
+  --diagram-accent-1: var(--accent);
+  --diagram-accent-2: var(--tip);
+  --diagram-accent-3: var(--purple);
+  --diagram-accent-4: var(--warn);
+  margin: 1.75rem 0;
+  padding: 1.25rem;
+  background: #fafbfd;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.doc-editor .diagram[data-selected="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.doc .diagram-title {
+  font-weight: 650;
+  font-size: 1rem;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+}
+.doc .diagram-caption {
+  font-size: 0.84rem;
+  color: var(--ink-faint);
+  margin-top: 0.5rem;
+}
+.doc .diagram-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-sans);
+}
+.doc .diagram-error {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
 /* Chart data editor, visible only while the block is selected */
 .chart-panel {
   margin-top: 0.9rem;
@@ -2998,6 +3049,7 @@ body {
   .doc .stat-row,
   .doc .card-grid,
   .doc .chart,
+  .doc .diagram,
   .doc .timeline-item,
   .doc .step,
   .doc .pyramid,
@@ -3011,7 +3063,8 @@ body {
   }
   /* Editing affordances that live inside the document, not in `.no-print`. */
   .doc .image-bar,
-  .doc .chart-panel {
+  .doc .chart-panel,
+  .doc .diagram-panel {
     display: none !important;
   }
   /* The break itself must print — its dashed rule and label must not. */
