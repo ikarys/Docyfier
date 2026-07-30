@@ -18,6 +18,8 @@ export interface BlockActionRunner {
   /** The action running, by id; null when idle. */
   running: string | null;
   error: string | null;
+  /** A step the orchestrator dropped — said, never treated as a failure. */
+  note: string | null;
   dismissError(): void;
   run(action: BlockAction, at: { pos: number; size: number }): Promise<void>;
 }
@@ -25,6 +27,7 @@ export interface BlockActionRunner {
 export function useBlockAction(editor: Editor, review: AiReview): BlockActionRunner {
   const [running, setRunning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   const run = useCallback(
     async (action: BlockAction, at: { pos: number; size: number }) => {
@@ -33,12 +36,16 @@ export function useBlockAction(editor: Editor, review: AiReview): BlockActionRun
       if (!node) return;
       setRunning(action.id);
       setError(null);
+      setNote(null);
 
       try {
         const answer = await rewriteSelectionAction({
           mode: "blocks",
           blocks: [node.toJSON()],
           instruction: action.instruction,
+          // The catalog already says which assistant this action belongs to:
+          // "turn into" is layout, the rest is writing.
+          surface: { kind: "block-action", family: action.family },
         });
         if (!answer.ok) {
           setError(answer.error);
@@ -48,6 +55,7 @@ export function useBlockAction(editor: Editor, review: AiReview): BlockActionRun
           setError("The AI had nothing to put in this block's place.");
           return;
         }
+        setNote(answer.note);
         review.run(() => {
           editor
             .chain()
@@ -63,5 +71,10 @@ export function useBlockAction(editor: Editor, review: AiReview): BlockActionRun
     [editor, review, running],
   );
 
-  return { running, error, dismissError: () => setError(null), run };
+  const dismissError = () => {
+    setError(null);
+    setNote(null);
+  };
+
+  return { running, error, note, dismissError, run };
 }

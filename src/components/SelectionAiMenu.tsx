@@ -28,13 +28,14 @@ export function SelectionAiMenu({
   onAiEdit: (apply: () => void) => void;
 }) {
   const [prompt, setPrompt] = useState("");
-  const { busy, error, rewrite } = useSelectionRewrite(editor, onAiEdit);
+  const { busy, error, reason, note, rewrite } = useSelectionRewrite(editor, onAiEdit);
 
   const submitPrompt = () => {
     const instruction = prompt.trim();
     if (!instruction) return;
     setPrompt("");
-    void rewrite(instruction);
+    // Only a request in the user's own words needs reading before it is routed.
+    void rewrite(instruction, { kind: "free-prompt" });
   };
 
   return (
@@ -48,7 +49,9 @@ export function SelectionAiMenu({
     >
       {busy ? (
         <div className="ai-bubble-busy">
-          <span className="spinner" aria-hidden /> Rewriting…
+          {/* Which assistant is working is the whole point of running two:
+              a black box nobody can name is a black box nobody can report. */}
+          <span className="spinner" aria-hidden /> {reason ?? "Reading your request"}…
         </div>
       ) : (
         <>
@@ -58,7 +61,7 @@ export function SelectionAiMenu({
               <button
                 key={qa.label}
                 className="ai-bubble-btn"
-                onClick={() => void rewrite(qa.instruction)}
+                onClick={() => void rewrite(qa.instruction, { kind: "selection-quick" })}
               >
                 {qa.label}
               </button>
@@ -86,6 +89,9 @@ export function SelectionAiMenu({
             </button>
           </div>
           {error && <div className="ai-bubble-error">{error}</div>}
+          {/* A dropped step is not a failure: the other assistant's work is in
+              the document and under review. Said plainly, once. */}
+          {!error && note && <div className="ai-bubble-note">{note}</div>}
         </>
       )}
     </BubbleMenu>

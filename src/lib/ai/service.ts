@@ -10,6 +10,12 @@ import {
   planDocument as planBrief,
   restyleDocument as chooseDress,
 } from "@/application/authoring/plan-document";
+import { routeRequest } from "@/application/authoring/route-request";
+import {
+  runAssignment,
+  type AssignmentResult,
+} from "@/application/authoring/run-assignment";
+import type { Surface } from "@/domain/authoring/agents/routing";
 import {
   askAboutDocument as answerFrom,
   type DocumentAnswer,
@@ -111,6 +117,21 @@ export async function rewriteSelectionBlocks(
   instruction: string,
 ): Promise<DocumentNode[]> {
   return rewriteBlocks(await authoringDeps(), blocks, instruction);
+}
+
+/**
+ * Surface 3a, with the two assistants (PLAN.md STEP U13) — the passage goes to
+ * the writer, to the layout designer, or to both in that order, and the caller
+ * is told which so the user can be told too.
+ */
+export async function editPassage(
+  surface: Surface,
+  blocks: JSONContent[],
+  instruction: string,
+): Promise<AssignmentResult> {
+  const deps = await authoringDeps();
+  const assignment = await routeRequest(deps, surface, instruction);
+  return runAssignment(deps, assignment, blocks, instruction);
 }
 
 /** Surface 3b — inline selection rewrite; plain text in, plain text out. */

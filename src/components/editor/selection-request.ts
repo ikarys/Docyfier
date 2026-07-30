@@ -1,6 +1,7 @@
 import type { EditorState } from "@tiptap/pm/state";
 import type { JSONContent } from "@tiptap/core";
 import type { SelectionInput } from "@/app/ai-actions";
+import type { Surface } from "@/domain/authoring/agents/routing";
 import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 
 /**
@@ -21,6 +22,7 @@ export interface SelectionRequest {
 export function selectionRequest(
   state: EditorState,
   instruction: string,
+  surface: Surface,
 ): SelectionRequest {
   const { from, to, $from, $to } = state.selection;
 
@@ -42,6 +44,6 @@ export function selectionRequest(
 
   return {
     range: { from: start, to: end },
-    input: { mode: "blocks", blocks: toPlainJSON(blocks), instruction },
+    input: { mode: "blocks", blocks: toPlainJSON(blocks), instruction, surface },
   };
 }

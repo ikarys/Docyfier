@@ -2806,6 +2806,13 @@ body {
   color: var(--danger);
   max-width: 20rem;
 }
+/* A step the orchestrator dropped: information, not an error — the answer it
+   sits under is valid and already under review. */
+.ai-bubble-note {
+  font-size: 0.75rem;
+  color: var(--muted);
+  max-width: 20rem;
+}
 .ai-bubble-format {
   flex-wrap: wrap;
   padding-bottom: 0.35rem;
@@ -2899,6 +2906,12 @@ body {
 .gen-error-bar {
   border-color: var(--danger);
   max-width: min(38rem, 92vw);
+}
+/* The same bar carrying a note rather than a failure: an assistant that stood
+   down while the other one delivered is not a red border. */
+.gen-error-bar[data-note] {
+  border-color: var(--rule);
+  color: var(--muted);
 }
 
 /* Placeholder shown until the first generated block arrives (STEP U4). */

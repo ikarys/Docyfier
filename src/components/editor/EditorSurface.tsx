@@ -77,9 +77,13 @@ export function EditorSurface({
           </span>
         </div>
       </DragHandle>
-      {blockAction.error && (
-        <div className="gen-error-bar no-print" role="alert">
-          <span className="ai-diff-bar-label">{blockAction.error}</span>
+      {(blockAction.error || blockAction.note) && (
+        <div
+          className="gen-error-bar no-print"
+          role={blockAction.error ? "alert" : "status"}
+          data-note={blockAction.error ? undefined : true}
+        >
+          <span className="ai-diff-bar-label">{blockAction.error ?? blockAction.note}</span>
           <button className="btn" onClick={blockAction.dismissError}>
             Dismiss
           </button>

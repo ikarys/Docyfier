@@ -14,12 +14,16 @@ function selecting(content: unknown[], from: number, to: number): EditorState {
   );
 }
 
+/** Which assistant runs is another module's decision; what this one owes is
+ * carrying it through untouched. */
+const QUICK = { kind: "selection-quick" } as const;
+
 describe("a selection inside one text block", () => {
   // "Hello world" starts at 1; "world" is 7..12.
   const state = selecting([paragraph("Hello world")], 7, 12);
 
   it("goes to the model as plain text", () => {
-    expect(selectionRequest(state, "shorten").input).toEqual({
+    expect(selectionRequest(state, "shorten", QUICK).input).toEqual({
       mode: "text",
       text: "world",
       instruction: "shorten",
@@ -27,14 +31,14 @@ describe("a selection inside one text block", () => {
   });
 
   it("comes back into exactly what was selected", () => {
-    expect(selectionRequest(state, "shorten").range).toEqual({ from: 7, to: 12 });
+    expect(selectionRequest(state, "shorten", QUICK).range).toEqual({ from: 7, to: 12 });
   });
 });
 
 describe("a selection crossing blocks", () => {
   // Two paragraphs of 5 characters: "first" is 1..6, "second" is 8..14.
   const state = selecting([paragraph("first"), paragraph("second")], 4, 10);
-  const request = selectionRequest(state, "make it pretty");
+  const request = selectionRequest(state, "make it pretty", QUICK);
 
   it("sends whole blocks, not the fragments the user happened to cover", () => {
     expect(request.input).toMatchObject({
@@ -64,7 +68,7 @@ describe("a selection inside a list", () => {
   };
 
   it("grows to the list itself rather than sending an orphan item", () => {
-    const request = selectionRequest(selecting([list], 3, 10), "tighten");
+    const request = selectionRequest(selecting([list], 3, 10), "tighten", QUICK);
     expect(request.input).toMatchObject({ mode: "blocks", blocks: [list] });
     expect(request.range).toEqual({ from: 0, to: 16 });
   });

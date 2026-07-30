@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { rewriteSelectionAction } from "@/app/ai-actions";
+import { routeSurface, type Surface } from "@/domain/authoring/agents/routing";
 import { selectionRequest } from "./selection-request";
 
 /**
@@ -18,13 +19,20 @@ export function useSelectionRewrite(
 ) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Which assistants are working, while they work. */
+  const [reason, setReason] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
-  const rewrite = async (instruction: string) => {
+  const rewrite = async (instruction: string, surface: Surface) => {
     if (busy) return;
     setBusy(true);
     setError(null);
+    setNote(null);
+    // A quick action says who it is before the request leaves; a free prompt
+    // has to be read first, so the label appears when the answer does.
+    setReason(routeSurface(surface)?.reason ?? null);
 
-    const { input, range } = selectionRequest(editor.state, instruction);
+    const { input, range } = selectionRequest(editor.state, instruction, surface);
 
     // `busy` gates the button, so it has to fall back whatever happens: a
     // request that never returns would otherwise leave the menu spinning with
@@ -36,6 +44,8 @@ export function useSelectionRewrite(
       } else if (res.mode === "text") {
         editor.chain().focus().insertContentAt(range, res.text).run();
       } else {
+        setReason(res.reason);
+        setNote(res.note);
         review(() => {
           editor.chain().focus().insertContentAt(range, res.blocks).run();
         });
@@ -47,5 +57,5 @@ export function useSelectionRewrite(
     }
   };
 
-  return { busy, error, rewrite };
+  return { busy, error, reason, note, rewrite };
 }
