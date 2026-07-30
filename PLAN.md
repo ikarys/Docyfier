@@ -883,6 +883,67 @@ Acceptance:
 
 ---
 
+### STEP U13 — Two assistants: a writer and a layout designer
+
+**Goal:** stop asking one call to be good at two jobs. A **writer** owns the
+words — tone, argument, length, language. A **layout designer** owns the shape —
+which block carries what — and changes no word. An **orchestrator** decides who
+runs, in what order, and says so.
+
+**Why:** every AI surface today sends one prompt that must arbitrate between
+writing well and presenting well, and the arbitration is invisible: when the
+result disappoints there is no way to tell which half failed. Splitting the two
+makes each prompt single-purpose, and — the part that matters — makes a rule
+possible that cannot exist today: *the layout pass changed no word*. That is
+checkable, deterministic and testable, so "it only recoloured it" becomes a
+failed call rather than an impression.
+
+This reverses one line of STEP U11's out-of-scope: multi-step editing is now the
+point. What stays out is an agent that loops or calls tools.
+
+Instructions:
+
+1. **An `Agent` contract, and two of them.** `src/domain/authoring/agents/`:
+   `contract.ts` (id, label, the system prompt it contributes, its temperature,
+   what it may emit), `writer.ts`, `designer.ts`, `catalog.ts` — the registry
+   shape the export targets, composers and recipes already use. A third agent is
+   a file and a line.
+2. **Layout fidelity is a domain rule.** `src/domain/authoring/layout-fidelity.ts`:
+   the text of the designer's answer, whitespace normalised, equals the text it
+   was given. A drift triggers the existing retry; a second drift refuses the
+   answer rather than storing a rewrite the user never asked for. Without this
+   rule the two agents collapse back into one within three prompts.
+3. **Routing is deterministic where the surface already says it.** A block action
+   carries its `family` (`rewrite` → writer, `turn-into` → designer); "Style for
+   me" and "make it pretty" are the designer; a selection quick action is the
+   writer. Only the panel's free prompt is ambiguous — *"shorten it and make it
+   scannable"* is both — and only there does the orchestrator spend one short
+   model call. Routing yields an ordered assignment plus the reason for it.
+4. **The reason is shown.** "Rewriting, then laying out" is what the user reads
+   while it runs. An orchestrator whose decision is invisible is a black box
+   nobody can report a bug against.
+5. **One pipeline, unchanged.** Every step still goes through `authoringDeps`
+   (`src/lib/ai/service.ts`), `validateDocJson` and `beautify`, and a chain lands
+   under one review bar: Reject undoes the whole assignment, not the last step.
+6. **One provider for both.** Per-agent models are a later step; what this one
+   proves is whether separating the prompts is enough.
+
+**Out of scope:** a provider per agent, an agent that loops or calls tools, and
+a layout pass inside generation — generation streams its first block in seconds
+and a second pass would cost that.
+
+Acceptance:
+
+- [ ] Turning a paragraph into a table invents nothing: every figure survives, the wording is the paragraph's, and the only new words are the labels a table needs
+- [ ] A layout answer that reworded is retried, and refused rather than applied if it drifts again
+- [ ] "Add a conclusion" runs the writer alone, "make it scannable" the designer alone, "shorten it and make it pretty" both, in that order
+- [ ] The user sees which assistant is running and why, before the answer lands
+- [ ] Rejecting a two-step answer restores the document deep-equal to what it was
+- [ ] Generation still streams its first block with no second pass
+- [ ] No surface talks to a model outside `authoringDeps`
+
+---
+
 ### STEP U12 — Comments, suggestions & history
 
 **Goal:** the record of the work: comment on a passage, propose a change rather
