@@ -930,7 +930,9 @@ Instructions:
 
 **Out of scope:** a provider per agent, an agent that loops or calls tools, and
 a layout pass inside generation — generation streams its first block in seconds
-and a second pass would cost that.
+and a second pass would cost that. A whole-document edit also runs one assistant
+per request: a button already names it, and a free prompt that wants both is
+answered by the writer, on a document the user can then ask to lay out.
 
 Acceptance:
 

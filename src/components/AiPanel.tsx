@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Editor } from "@tiptap/react";
+import type { Surface } from "@/domain/authoring/agents/routing";
 import type { JSONContent } from "@tiptap/core";
 import type { DocumentTheme } from "@/lib/themes";
 import { AiThread } from "./editor/AiThread";
@@ -11,6 +12,8 @@ import { useRestyle } from "./editor/useRestyle";
 const QUICK_ACTIONS: {
   label: string;
   instruction: string;
+  /** Which assistant this button asks for — no model reads a button. */
+  surface: Surface;
   /** Also ask the model to dress the document — restructuring it without ever
    * revisiting its accent or its typeface is half the job. */
   restyles?: true;
@@ -19,11 +22,24 @@ const QUICK_ACTIONS: {
     label: "✦ Make it pretty",
     instruction:
       "Restructure and reformat this document so it looks professional and modern: clear heading hierarchy, tables where data is tabular, callouts for key points and risks, lists where appropriate. Preserve the meaning and all information.",
+    surface: { kind: "styling" },
     restyles: true,
   },
-  { label: "Shorten", instruction: "Shorten the document while keeping all key information." },
-  { label: "More formal", instruction: "Rewrite the document in a more formal, professional tone." },
-  { label: "Add conclusion", instruction: "Add a concise conclusion section at the end of the document." },
+  {
+    label: "Shorten",
+    instruction: "Shorten the document while keeping all key information.",
+    surface: { kind: "rewording" },
+  },
+  {
+    label: "More formal",
+    instruction: "Rewrite the document in a more formal, professional tone.",
+    surface: { kind: "rewording" },
+  },
+  {
+    label: "Add conclusion",
+    instruction: "Add a concise conclusion section at the end of the document.",
+    surface: { kind: "rewording" },
+  },
 ];
 
 /**
@@ -57,11 +73,11 @@ export function AiPanel({
     const said = input.trim();
     if (!said) return;
     setInput("");
-    void (mode === "ask" ? question(said) : ask(said));
+    void (mode === "ask" ? question(said) : ask(said, { kind: "free-prompt" }));
   };
 
   const runQuickAction = async (action: (typeof QUICK_ACTIONS)[number]) => {
-    await ask(action.instruction, action.label);
+    await ask(action.instruction, action.surface, action.label);
     if (action.restyles) await restyle.run();
   };
 

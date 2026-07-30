@@ -15,6 +15,7 @@ import {
   runAssignment,
   type AssignmentResult,
 } from "@/application/authoring/run-assignment";
+import { agentById } from "@/domain/authoring/agents/catalog";
 import type { Surface } from "@/domain/authoring/agents/routing";
 import {
   askAboutDocument as answerFrom,
@@ -98,8 +99,14 @@ export async function generateDocument(prompt: string): Promise<WrittenDocument>
 export async function transformDocument(
   doc: JSONContent,
   instruction: string,
+  surface?: Surface,
 ): Promise<TransformOutcome> {
-  return editDocument(await authoringDeps(), doc, instruction);
+  const deps = await authoringDeps();
+  // No surface means a caller from before the split: the single prompt it
+  // always had, rather than an assistant it never asked for.
+  if (!surface) return editDocument(deps, doc, instruction);
+  const assignment = await routeRequest(deps, surface, instruction);
+  return editDocument(deps, doc, instruction, agentById(assignment.steps[0] ?? "writer"));
 }
 
 /**

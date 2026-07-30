@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import type { Surface } from "@/domain/authoring/agents/routing";
 import type { JSONContent } from "@tiptap/core";
 import { askAboutDocumentAction } from "@/app/ai-actions";
 import { digestOf } from "@/domain/authoring/document-digest";
@@ -43,7 +44,7 @@ export function useDocumentAssistant(
     });
   };
 
-  const ask = async (instruction: string, label?: string) => {
+  const ask = async (instruction: string, surface: Surface, label?: string) => {
     if (busy) return;
     setBusy(true);
     setEdits(0);
@@ -54,7 +55,7 @@ export function useDocumentAssistant(
     // request that never returns would otherwise leave the panel spinning with
     // no message and no way to retry short of reloading the page.
     try {
-      const res = await requestTransform(before, instruction, setEdits);
+      const res = await requestTransform(before, instruction, surface, setEdits);
       if (!res.outcome) {
         say({ role: "ai", text: res.error ?? "The AI request failed.", error: true });
         return;

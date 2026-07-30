@@ -16,7 +16,7 @@ function selecting(content: unknown[], from: number, to: number): EditorState {
 
 /** Which assistant runs is another module's decision; what this one owes is
  * carrying it through untouched. */
-const QUICK = { kind: "selection-quick" } as const;
+const QUICK = { kind: "rewording" } as const;
 
 describe("a selection inside one text block", () => {
   // "Hello world" starts at 1; "world" is 7..12.

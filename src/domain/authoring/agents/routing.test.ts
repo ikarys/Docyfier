@@ -12,8 +12,12 @@ describe("routeSurface", () => {
     ]);
   });
 
-  it("sends a selection quick action to the writer alone", () => {
-    expect(routeSurface({ kind: "selection-quick" })?.steps).toEqual(["writer"]);
+  it("sends a rewording button to the writer alone", () => {
+    expect(routeSurface({ kind: "rewording" })?.steps).toEqual(["writer"]);
+  });
+
+  it("sends a styling button to the layout assistant alone", () => {
+    expect(routeSurface({ kind: "styling" })?.steps).toEqual(["designer"]);
   });
 
   /** The one surface where the request itself has to be read: only there is a

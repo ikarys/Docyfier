@@ -128,12 +128,13 @@ export async function fillDocumentAction(
 export async function transformDocumentAction(
   content: JSONContent,
   instruction: string,
+  surface?: Surface,
 ): Promise<TransformResult> {
   await requireAuth();
   const trimmed = instruction.trim();
   if (!trimmed) return { ok: false, error: "Empty instruction" };
   try {
-    return { ok: true, outcome: await transformDocument(content, trimmed) };
+    return { ok: true, outcome: await transformDocument(content, trimmed, surface) };
   } catch (err) {
     return { ok: false, error: message(err) };
   }

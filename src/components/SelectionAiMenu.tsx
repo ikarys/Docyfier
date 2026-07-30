@@ -61,7 +61,7 @@ export function SelectionAiMenu({
               <button
                 key={qa.label}
                 className="ai-bubble-btn"
-                onClick={() => void rewrite(qa.instruction, { kind: "selection-quick" })}
+                onClick={() => void rewrite(qa.instruction, { kind: "rewording" })}
               >
                 {qa.label}
               </button>

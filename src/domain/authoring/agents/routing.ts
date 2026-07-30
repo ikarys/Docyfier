@@ -20,8 +20,13 @@ export interface Assignment {
 
 /** What a surface can say about itself without a model reading anything. */
 export type Surface =
+  /** One of the catalog's per-block actions; its family names the assistant. */
   | { kind: "block-action"; family: BlockAction["family"] }
-  | { kind: "selection-quick" }
+  /** A button that asks for a shape: "Make it pretty". */
+  | { kind: "styling" }
+  /** A button that asks for other words: shorten, formal, add a conclusion. */
+  | { kind: "rewording" }
+  /** The user's own words, which only a model can read. */
   | { kind: "free-prompt" };
 
 const WRITER: Assignment = { steps: ["writer"], reason: "Rewriting the words" };
@@ -38,7 +43,9 @@ export function routeSurface(surface: Surface): Assignment | null {
   switch (surface.kind) {
     case "block-action":
       return surface.family === "turn-into" ? DESIGNER : WRITER;
-    case "selection-quick":
+    case "styling":
+      return DESIGNER;
+    case "rewording":
       return WRITER;
     default:
       return null;

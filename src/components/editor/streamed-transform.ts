@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 import { transformDocumentAction } from "@/app/ai-actions";
+import type { Surface } from "@/domain/authoring/agents/routing";
 import type { DocOp } from "@/domain/authoring/ops";
 import type { DocumentBody } from "@/domain/documents/body";
 import type { TransformOutcome } from "@/lib/ai/service";
@@ -60,16 +61,17 @@ export async function readTransformStream(
 export async function requestTransform(
   content: JSONContent,
   instruction: string,
+  surface: Surface,
   onProgress: (ops: number) => void,
 ): Promise<StreamedTransform> {
   const res = await fetch("/api/transform", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ content, instruction }),
+    body: JSON.stringify({ content, instruction, surface }),
   });
   if (res.ok && res.body) return readTransformStream(res.body, onProgress);
 
-  const blocking = await transformDocumentAction(content, instruction);
+  const blocking = await transformDocumentAction(content, instruction, surface);
   return blocking.ok
     ? { outcome: blocking.outcome, error: null }
     : { outcome: null, error: blocking.error };

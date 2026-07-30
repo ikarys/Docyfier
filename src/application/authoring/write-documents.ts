@@ -1,3 +1,5 @@
+import type { Agent } from "@/domain/authoring/agents/contract";
+import { opBreach } from "@/domain/authoring/agents/layout-ops";
 import type { DocumentBrief } from "@/domain/authoring/brief";
 import { parseOps, type DocOp } from "@/domain/authoring/ops";
 import {
@@ -58,6 +60,20 @@ export function readOps(deps: AuthoringDeps, json: unknown, blockCount: number):
 }
 
 /**
+ * Every op held to the charter of the assistant that produced it (STEP U13).
+ * Thrown from inside the reader, so the existing retry asks again with the
+ * reason rather than applying an edit that broke the split.
+ */
+function inLane(agent: Agent | undefined, ops: DocOp[], blocks: DocumentNode[]): DocOp[] {
+  if (!agent) return ops;
+  for (const op of ops) {
+    const breach = opBreach(agent.id, op, blocks[op.index]);
+    if (breach) throw new Error(breach);
+  }
+  return ops;
+}
+
+/**
  * Surface 2 — whole-document transform (side panel, "make it pretty").
  *
  * The contract asks for ops so untouched sections are never rewritten; a model
@@ -67,20 +83,21 @@ export function transformDocument(
   deps: AuthoringDeps,
   body: DocumentBody,
   instruction: string,
+  agent?: Agent,
 ): Promise<TransformOutcome> {
   const blocks = blocksOf(body);
   return askJson(
     deps,
     {
-      system: transformOpsSystem(deps.style),
+      system: transformOpsSystem(deps.style, agent ? agent.charter(deps.style) : ""),
       prompt: transformOpsPrompt(blocks, instruction),
-      temperature: 0.3,
+      temperature: agent ? agent.temperature : 0.3,
       // An op list is an array: no provider JSON mode describes it.
       shape: "free",
     },
     (json): TransformOutcome =>
       Array.isArray(json) && looksLikeOps(json)
-        ? { kind: "ops", ops: readOps(deps, json, blocks.length) }
+        ? { kind: "ops", ops: inLane(agent, readOps(deps, json, blocks.length), blocks) }
         : { kind: "doc", content: polished(deps, bodyFromJson(deps, json)) },
   );
 }
