@@ -28,6 +28,7 @@ const provider = (id: string, overrides: Partial<{ label: string; apiKey: string
     apiKey: overrides.apiKey ?? "",
     maxOutputTokens: 4096,
     structuredOutput: false,
+reasoningEffort: "default",
   });
 
 export function describeProviderRepository(

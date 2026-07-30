@@ -23,6 +23,8 @@ export interface ModelPart {
   text?: string;
   error?: unknown;
   finishReason?: string;
+  /** What the call cost, on the part that closes it. */
+  totalUsage?: unknown;
 }
 
 /** Turns raw model output into what the editor is allowed to apply. */

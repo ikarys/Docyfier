@@ -19,6 +19,7 @@ export const DEFAULT_PROVIDER: AiProviderRecord = {
   apiKey: "",
   maxOutputTokens: 32768,
   structuredOutput: false,
+reasoningEffort: "default",
 };
 
 export class InMemoryProviderRepository implements AiProviderRepository {

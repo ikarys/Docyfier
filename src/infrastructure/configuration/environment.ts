@@ -19,6 +19,7 @@ const DEFAULTS: AiProviderRecord = {
   apiKey: "",
   maxOutputTokens: 32768,
   structuredOutput: false,
+reasoningEffort: "default",
 };
 
 export function providerFromEnvironment(): AiProviderRecord {

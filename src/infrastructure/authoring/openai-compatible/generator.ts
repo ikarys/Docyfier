@@ -6,7 +6,13 @@ import type {
 } from "@/domain/authoring/text-generator";
 import { ModelUnavailable } from "@/domain/authoring/text-generator";
 import { callOptions, callTimeoutMs, isTimeout, timeoutMessage } from "./deadline";
-import { languageModel, type LoadEndpoint, type ProviderEndpoint } from "./endpoint";
+import { logUsage } from "./usage-log";
+import {
+  languageModel,
+  reasoningOptions,
+  type LoadEndpoint,
+  type ProviderEndpoint,
+} from "./endpoint";
 
 /**
  * The `TextGenerator` adapter over any OpenAI-compatible endpoint.
@@ -69,15 +75,18 @@ export function createOpenAiCompatibleGenerator(
   return {
     async generate(request: GenerationRequest): Promise<GeneratedText> {
       const endpoint = await loadEndpoint();
+      const started = Date.now();
       try {
-        const { text, finishReason } = await generateText({
+        const { text, finishReason, usage } = await generateText({
           model: await languageModel(endpoint),
           system: request.system,
           prompt: request.prompt,
           temperature: request.temperature,
           maxOutputTokens: endpoint.maxOutputTokens,
+          ...reasoningOptions(endpoint),
           ...callOptions(),
         });
+        logUsage("generate", started, usage);
         return { text, truncated: finishReason === "length" };
       } catch (err) {
         if (isTimeout(err)) {
@@ -106,16 +115,19 @@ async function structuredAnswer(
   request: GenerationRequest,
 ): Promise<unknown | null> {
   if (!endpoint.structuredOutput || request.shape !== "document") return null;
+  const started = Date.now();
   try {
-    const { object } = await generateObject({
+    const { object, usage } = await generateObject({
       model: await languageModel(endpoint),
       schema: DOC_ENVELOPE,
       system: request.system,
       prompt: request.prompt,
       temperature: request.temperature,
       maxOutputTokens: endpoint.maxOutputTokens,
+      ...reasoningOptions(endpoint),
       ...callOptions(),
     });
+    logUsage("generateObject", started, usage);
     return object;
   } catch (err) {
     // A deadline is not a reason to try the same endpoint again: falling

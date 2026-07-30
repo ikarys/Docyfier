@@ -9,7 +9,10 @@ import {
   saveAiProvider,
   setActiveAiProvider,
 } from "@/lib/settings";
-import { InvalidProvider } from "@/domain/configuration/ai-provider";
+import {
+  InvalidProvider,
+  type ReasoningEffort,
+} from "@/domain/configuration/ai-provider";
 import type { AiProviderSummary } from "@/lib/settings-types";
 import {
   listModels,
@@ -50,6 +53,7 @@ export async function saveAiProviderAction(
       apiKey: typedKey || (forgetKey ? "" : undefined),
       maxOutputTokens: Number(formData.get("maxOutputTokens")),
       structuredOutput: formData.get("structuredOutput") === "on",
+      reasoningEffort: String(formData.get("reasoningEffort") ?? "default") as ReasoningEffort,
     });
     clearDetectedModels();
     revalidatePath("/settings/ai");

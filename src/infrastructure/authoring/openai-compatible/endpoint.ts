@@ -21,6 +21,31 @@ export interface ModelEndpoint {
 export interface ProviderEndpoint extends ModelEndpoint {
   maxOutputTokens: number;
   structuredOutput: boolean;
+  /** How hard the model may think first; absent or "default" sends nothing. */
+  reasoningEffort?: string;
+}
+
+/**
+ * The name the SDK knows this provider by. It is also the key provider-specific
+ * options travel under, which is why it is declared once rather than typed
+ * twice: a mismatch would silently drop every option.
+ */
+export const PROVIDER_NAME = "docyfier-llm";
+
+/**
+ * The reasoning setting, in the shape a call takes it.
+ *
+ * `reasoning_effort` is what the OpenAI-compatible wire calls it, and a server
+ * that does not implement it ignores the field — so sending it can never make a
+ * working provider stop working. Sending nothing at all is a distinct choice:
+ * it leaves the model to whatever it does by default.
+ */
+export function reasoningOptions(
+  endpoint: ProviderEndpoint,
+): { providerOptions?: Record<string, Record<string, string>> } {
+  const effort = endpoint.reasoningEffort;
+  if (!effort || effort === "default") return {};
+  return { providerOptions: { [PROVIDER_NAME]: { reasoning_effort: effort } } };
 }
 
 /** How the adapter obtains the provider in force at call time. */
@@ -91,7 +116,7 @@ async function unwrapDataEnvelope(
 export async function languageModel(endpoint: ModelEndpoint): Promise<LanguageModel> {
   const { baseUrl, model, apiKey } = endpoint;
   const provider = createOpenAICompatible({
-    name: "docyfier-llm",
+    name: PROVIDER_NAME,
     baseURL: baseUrl,
     apiKey: apiKey || "lm-studio",
     fetch: unwrapDataEnvelope,

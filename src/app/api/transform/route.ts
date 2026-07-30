@@ -10,6 +10,8 @@ import { agentById } from "@/domain/authoring/agents/catalog";
 import { opBreach } from "@/domain/authoring/agents/layout-ops";
 import type { Surface } from "@/domain/authoring/agents/routing";
 import { routeRequest } from "@/application/authoring/route-request";
+import { reasoningOptions } from "@/infrastructure/authoring/openai-compatible/endpoint";
+import { logUsage } from "@/infrastructure/authoring/openai-compatible/usage-log";
 import { isAuthorized } from "@/lib/auth";
 import { ndjsonResponse } from "@/lib/ai/ndjson";
 import { callTimeoutMs, languageModel } from "@/lib/ai/provider";
@@ -64,7 +66,7 @@ export async function POST(req: Request): Promise<Response> {
 
   const authoring = await authoringDeps();
   const blocks = blocksOf(content);
-  const { maxOutputTokens } = await getAiSettings();
+  const endpoint = await getAiSettings();
 
   // One assistant per stream: a button already says which one, and a request
   // that wants both is answered by the writer here — laying the result out is
@@ -80,18 +82,39 @@ export async function POST(req: Request): Promise<Response> {
     system: transformOpsSystem(authoring.style, agent.charter(authoring.style)),
     prompt: transformOpsPrompt(blocks, instruction),
     temperature: agent.temperature,
-    maxOutputTokens,
+    maxOutputTokens: endpoint.maxOutputTokens,
+    ...reasoningOptions(endpoint),
     abortSignal: aborter.signal,
     maxRetries: 1,
   }).fullStream[Symbol.asyncIterator]() as AsyncIterator<ModelPart>;
 
-  const events = withHeartbeat(parts, { every: BEAT_MS, idleLimit: callTimeoutMs() });
+  const events = withHeartbeat(logWhenDone(parts, Date.now()), {
+    every: BEAT_MS,
+    idleLimit: callTimeoutMs(),
+  });
   const lines = transformLines(events, {
     op: (raw) => inLane(agent.id, readOps(authoring, [raw], blocks.length)[0], blocks),
     doc: (text) => polished(authoring, bodyFromJson(authoring, jsonFromAnswer(text))),
   });
 
   return ndjsonResponse(hangUpAfter(lines, aborter));
+}
+
+/**
+ * The same stream, with the cost of the call written down as it closes. A
+ * whole-document edit is the longest wait in the product, so it is the one
+ * worth knowing the shape of: tokens written, tokens thought, seconds spent.
+ */
+function logWhenDone(parts: AsyncIterator<ModelPart>, started: number): AsyncIterator<ModelPart> {
+  return {
+    async next() {
+      const step = await parts.next();
+      if (!step.done && step.value.type === "finish") {
+        logUsage("transform", started, step.value.totalUsage);
+      }
+      return step;
+    },
+  };
 }
 
 /**

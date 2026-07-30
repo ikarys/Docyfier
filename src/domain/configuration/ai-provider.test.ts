@@ -108,9 +108,43 @@ describe("an existing provider", () => {
       model: "qwen",
       maxOutputTokens: 4096,
       structuredOutput: false,
+      reasoningEffort: "default",
       hasApiKey: true,
       keyUnreadable: false,
     });
     expect(AiProvider.create({ ...valid, apiKey: "" }).toSummary().hasApiKey).toBe(false);
   });
 });
+
+describe("reasoning effort", () => {
+  /** The setting that decides whether a model answers in four seconds or in
+   * four minutes: a reasoning model left at its default deliberates over a
+   * request to move a paragraph into a table. */
+  it("defaults to whatever the model does on its own", () => {
+    expect(AiProvider.create(valid).reasoningEffort).toBe("default");
+  });
+
+  it("keeps an effort the user chose", () => {
+    expect(AiProvider.create({ ...valid, reasoningEffort: "low" }).reasoningEffort).toBe("low");
+  });
+
+  it("refuses an effort no provider would understand", () => {
+    expect(() => AiProvider.create({ ...valid, reasoningEffort: "some" as never })).toThrow(
+      InvalidProvider,
+    );
+  });
+
+  it("falls back rather than failing to load a hand-edited file", () => {
+    const restored = AiProvider.restore(
+      { id: "p1", reasoningEffort: "enormous" as never },
+      { ...valid, reasoningEffort: "medium" },
+    );
+
+    expect(restored.reasoningEffort).toBe("medium");
+  });
+
+  it("survives a file written before the setting existed", () => {
+    expect(AiProvider.restore({ id: "p1" }, valid).reasoningEffort).toBe("default");
+  });
+});
+

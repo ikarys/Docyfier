@@ -1,0 +1,67 @@
+/**
+ * What a model call actually cost, in tokens and in seconds.
+ *
+ * Written because the two are not the same thing and only one of them is
+ * visible: an answer of 1 100 tokens that took 80 seconds spent most of that
+ * time reasoning, and nothing in the answer says so. Without this line, "the AI
+ * is slow" cannot be told apart from "the model thinks before it writes", and
+ * the fix for one is not the fix for the other.
+ *
+ * Off unless `DOCYFIER_LOG_USAGE` is set: this is a number for whoever is
+ * tuning prompts or comparing providers, not for a running instance's logs.
+ */
+
+export interface CallUsage {
+  inputTokens?: number;
+  outputTokens?: number;
+  /** Tokens spent thinking, when the provider declares them. */
+  reasoningTokens?: number;
+}
+
+export function usageLoggingEnabled(): boolean {
+  return Boolean(process.env.DOCYFIER_LOG_USAGE);
+}
+
+/** Read the usage off whatever shape the SDK or the provider handed back. */
+export function readUsage(value: unknown): CallUsage {
+  const usage = (value ?? {}) as Record<string, unknown>;
+  const details = (usage.completionTokensDetails ?? {}) as Record<string, unknown>;
+  const count = (...candidates: unknown[]): number | undefined => {
+    const found = candidates.find((candidate) => typeof candidate === "number");
+    return typeof found === "number" ? found : undefined;
+  };
+  return {
+    inputTokens: count(usage.inputTokens, usage.promptTokens),
+    outputTokens: count(usage.outputTokens, usage.completionTokens),
+    reasoningTokens: count(usage.reasoningTokens, details.reasoningTokens),
+  };
+}
+
+export function usageLine(label: string, ms: number, usage: CallUsage): string {
+  const seconds = ms / 1000;
+  const parts = [`[ai] ${label} ${seconds.toFixed(1)}s`];
+
+  if (usage.inputTokens !== undefined) parts.push(`in ${usage.inputTokens}`);
+  if (usage.outputTokens !== undefined) {
+    parts.push(`out ${usage.outputTokens}`);
+    // Guard the division rather than the caller: a cached answer really can
+    // come back in the same millisecond it was asked for.
+    if (seconds > 0) parts.push(`${Math.round(usage.outputTokens / seconds)} tok/s`);
+  }
+  if (usage.reasoningTokens !== undefined) {
+    parts.push(`reasoning ${usage.reasoningTokens}`);
+    const written = usage.outputTokens ?? 0;
+    const total = written + usage.reasoningTokens;
+    if (total > 0) parts.push(`${Math.round((usage.reasoningTokens / total) * 100)}% thinking`);
+  }
+  if (usage.inputTokens === undefined && usage.outputTokens === undefined) {
+    parts.push("no usage reported");
+  }
+  return parts.join(" · ");
+}
+
+/** Print the line, when the environment asked for it. */
+export function logUsage(label: string, startedAt: number, usage: unknown): void {
+  if (!usageLoggingEnabled()) return;
+  console.info(usageLine(label, Date.now() - startedAt, readUsage(usage)));
+}

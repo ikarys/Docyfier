@@ -13,7 +13,7 @@
 /** Rejected input, when a user is entering a provider and can be told why. */
 export class InvalidProvider extends Error {
   constructor(
-    readonly field: "baseUrl" | "maxOutputTokens",
+    readonly field: "baseUrl" | "maxOutputTokens" | "reasoningEffort",
     message: string,
   ) {
     super(message);
@@ -33,6 +33,22 @@ export class UnreadableProviderKey extends Error {
   }
 }
 
+/**
+ * How much the model may deliberate before it writes.
+ *
+ * "default" sends nothing and leaves the model to its own habit — which is the
+ * behaviour every provider had before this existed. The rest are the values the
+ * OpenAI-compatible wire understands; a server that ignores the field answers
+ * exactly as it did before, so choosing one can never break a working provider.
+ */
+export const REASONING_EFFORTS = ["default", "minimal", "low", "medium", "high"] as const;
+
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
+function isReasoningEffort(value: unknown): value is ReasoningEffort {
+  return REASONING_EFFORTS.includes(value as ReasoningEffort);
+}
+
 /** The persisted shape — what a settings repository reads and writes. */
 export interface AiProviderRecord {
   id: string;
@@ -43,6 +59,9 @@ export interface AiProviderRecord {
   apiKey: string;
   maxOutputTokens: number;
   structuredOutput: boolean;
+  /** How hard the model should think before answering; see `ReasoningEffort`.
+   * Optional: a settings file written before this existed is still a record. */
+  reasoningEffort?: ReasoningEffort;
 }
 
 /** What the browser is allowed to see: whether a key exists, never the key. */
@@ -102,6 +121,7 @@ export class AiProvider {
     readonly apiKey: string,
     readonly maxOutputTokens: number,
     readonly structuredOutput: boolean,
+    readonly reasoningEffort: ReasoningEffort = "default",
     /** True when a key is stored that could not be read back. */
     readonly keyUnreadable = false,
   ) {}
@@ -118,6 +138,13 @@ export class AiProvider {
         `Max output tokens must be a whole number of at least ${MIN_OUTPUT_TOKENS}.`,
       );
     }
+    const reasoningEffort = input.reasoningEffort ?? "default";
+    if (!isReasoningEffort(reasoningEffort)) {
+      throw new InvalidProvider(
+        "reasoningEffort",
+        `Reasoning effort must be one of ${REASONING_EFFORTS.join(", ")}.`,
+      );
+    }
     return new AiProvider(
       input.id,
       input.label.trim() || hostOf(baseUrl),
@@ -126,6 +153,7 @@ export class AiProvider {
       input.apiKey,
       input.maxOutputTokens,
       input.structuredOutput,
+      reasoningEffort,
     );
   }
 
@@ -168,6 +196,9 @@ export class AiProvider {
         ? stored.maxOutputTokens
         : fallback.maxOutputTokens,
       stored.structuredOutput ?? fallback.structuredOutput,
+      isReasoningEffort(stored.reasoningEffort)
+        ? stored.reasoningEffort
+        : (fallback.reasoningEffort ?? "default"),
       stored.apiKey === null,
     );
   }
@@ -182,6 +213,7 @@ export class AiProvider {
       apiKey,
       this.maxOutputTokens,
       this.structuredOutput,
+      this.reasoningEffort,
     );
   }
 
@@ -195,6 +227,7 @@ export class AiProvider {
       this.apiKey,
       this.maxOutputTokens,
       this.structuredOutput,
+      this.reasoningEffort,
     );
   }
 
@@ -207,6 +240,7 @@ export class AiProvider {
       apiKey: this.apiKey,
       maxOutputTokens: this.maxOutputTokens,
       structuredOutput: this.structuredOutput,
+      reasoningEffort: this.reasoningEffort,
     };
   }
 

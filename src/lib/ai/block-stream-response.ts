@@ -4,6 +4,8 @@ import { beautify } from "@/domain/authoring/beautify";
 import { parseModelJson } from "@/domain/authoring/model-answer";
 import type { StyleParameters } from "@/domain/authoring/style-parameters";
 import { validateDocJson } from "@/infrastructure/editor/schema";
+import { reasoningOptions } from "@/infrastructure/authoring/openai-compatible/endpoint";
+import { logUsage } from "@/infrastructure/authoring/openai-compatible/usage-log";
 import { line, providerMessage as message } from "./ndjson";
 import { callOptions, isTimeout, languageModel, timeoutMessage } from "./provider";
 import { BlockScanner } from "./stream-blocks";
@@ -56,7 +58,7 @@ interface Opened {
  */
 async function open(request: BlockStream): Promise<Opened> {
   try {
-    const { maxOutputTokens } = await getAiSettings();
+    const endpoint = await getAiSettings();
     // `fullStream`, not `textStream`: the SDK reports provider failures as an
     // `error` part rather than by throwing, so a rate-limited or misconfigured
     // server would otherwise look like a perfectly successful empty answer.
@@ -65,7 +67,8 @@ async function open(request: BlockStream): Promise<Opened> {
       system: request.system,
       prompt: request.prompt,
       temperature: request.temperature,
-      maxOutputTokens,
+      maxOutputTokens: endpoint.maxOutputTokens,
+      ...reasoningOptions(endpoint),
       ...callOptions(),
     }).fullStream[Symbol.asyncIterator]();
 
@@ -90,6 +93,7 @@ function emptyParts(): AsyncIterator<Part> {
 
 /** The blocks, as NDJSON, or a 502 explaining why the stream never opened. */
 export async function blockStreamResponse(request: BlockStream): Promise<Response> {
+  const started = Date.now();
   const { parts, firstText, failure } = await open(request);
 
   if (firstText === null) {
@@ -138,8 +142,13 @@ export async function blockStreamResponse(request: BlockStream): Promise<Respons
           } else if (next.value.type === "error") {
             stopped = message(next.value.error);
             break;
-          } else if (next.value.type === "finish" && next.value.finishReason === "length") {
-            stopped = "The answer was cut short — raise Max output tokens in Settings.";
+          } else if (next.value.type === "finish") {
+            // What the wait was spent on: thinking is not in the answer, and on
+            // some models it is most of the seconds the user counted.
+            logUsage("stream", started, next.value.totalUsage);
+            if (next.value.finishReason === "length") {
+              stopped = "The answer was cut short — raise Max output tokens in Settings.";
+            }
           }
         }
 
