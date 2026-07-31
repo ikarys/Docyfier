@@ -82,4 +82,50 @@ describe("what a model writes instead", () => {
       content: [{ type: "text", text: "- un pas un item" }],
     });
   });
+
+  /**
+   * The failure a real model produced on its first day (PLAN.md STEP U14).
+   *
+   * `glm-5.2` opened a `::: coverLine` per cover line and closed none of them,
+   * which is a mistake the reader is meant to forgive. Forgiving it by reading
+   * to the end of the chunk is what turned a whole memo into one cover: an
+   * inline body swallowed every sibling directive, every heading and every
+   * paragraph after it as text, and the document came back as a single block.
+   *
+   * A directive that never closes ends where the next one begins.
+   */
+  it("does not let an unclosed directive swallow the rest of the document", () => {
+    const answer = [
+      "::: docCover",
+      "# CRM Vendor Selection",
+      '::: coverLine {"variant":"subtitle"}',
+      "Recommendation to approve HubSpot.",
+      '::: coverLine {"variant":"meta"}',
+      "Prepared for Leadership",
+      ":::",
+      ":::",
+      "",
+      '::: callout {"variant":"tip"}',
+      "Recommend approving HubSpot.",
+      ":::",
+      "",
+      "## Options considered",
+      "",
+      "A paragraph that must survive.",
+    ].join("\n");
+
+    const blocks = read(answer);
+
+    expect(blocks.map((block) => block.type)).toEqual([
+      "docCover",
+      "callout",
+      "heading",
+      "paragraph",
+    ]);
+    expect((blocks[0].content ?? []).map((child) => child.type)).toEqual([
+      "heading",
+      "coverLine",
+      "coverLine",
+    ]);
+  });
 });

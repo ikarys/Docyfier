@@ -37,28 +37,75 @@ function attrsOf(written: string | undefined): Record<string, unknown> | null {
   }
 }
 
-function bodyLines(lines: string[]): string[] {
-  const closed = lines.at(-1)?.trim() === FENCE;
-  return lines.slice(1, closed ? -1 : undefined);
+interface Cut {
+  readonly body: string[];
+  /** The lines after it, which are blocks in their own right. */
+  readonly rest: string[];
+}
+
+/**
+ * A directive cut from what it opens, and from what merely follows it.
+ *
+ * The closer is found by counting depth, never by taking the last line.
+ * Models forget a `:::` — a real one closed none of three cover lines — and
+ * forgiving that by reading to the end of the chunk cost a whole memo: the
+ * cover swallowed every sibling directive, heading and paragraph as text, and
+ * the document came back as one block. A directive that never closes ends
+ * where the next one begins.
+ *
+ * An inline body stops sooner still, at the first line that opens anything at
+ * all: text is the only thing it can hold, so a directive line inside one is
+ * proof the closer is missing rather than content.
+ */
+function cutDirective(lines: string[], inline: boolean): Cut {
+  let depth = 1;
+  for (let at = 1; at < lines.length; at++) {
+    const line = lines[at];
+    const opened = OPENING.exec(line);
+    if (opened) {
+      if (inline) return { body: lines.slice(1, at), rest: lines.slice(at) };
+      // One that can only hold text is stepped over whole, closed or not.
+      // Letting an unclosed one keep a level of depth is what made the block
+      // around it run to the end of the answer.
+      if (directiveBody(opened[1]) === "inline") at = endOfInline(lines, at);
+      else depth++;
+      continue;
+    }
+    if (line.trim() === FENCE && --depth === 0) {
+      return { body: lines.slice(1, at), rest: lines.slice(at + 1) };
+    }
+  }
+  return { body: lines.slice(1), rest: [] };
+}
+
+/** The last line an inline directive owns: its closer, or the line before the
+ * next thing that opens — since text is all it could have held. */
+function endOfInline(lines: string[], from: number): number {
+  for (let at = from + 1; at < lines.length; at++) {
+    if (OPENING.test(lines[at])) return at - 1;
+    if (lines[at].trim() === FENCE) return at;
+  }
+  return lines.length - 1;
 }
 
 function directiveFrom(lines: string[]): DocumentNode[] {
   const opening = OPENING.exec(lines[0]);
   if (!opening) return [];
   const [, name, written] = opening;
-  const body = bodyLines(lines);
   const kind = directiveBody(name);
+  const { body, rest } = cutDirective(lines, kind === "inline");
+  const after = rest.length ? modelMarkdownToBlocks(rest.join("\n")) : [];
 
   // A directive no vocabulary declares still holds content someone wrote.
-  if (kind === null) return modelMarkdownToBlocks(body.join("\n"));
-  if (kind === "raw") return rawFrom(body.join("\n"));
+  if (kind === null) return [...modelMarkdownToBlocks(body.join("\n")), ...after];
+  if (kind === "raw") return [...rawFrom(body.join("\n")), ...after];
 
   const attrs = attrsOf(written);
   const node: DocumentNode = { type: name, ...(attrs ? { attrs } : {}) };
-  if (kind === "none") return [node];
+  if (kind === "none") return [node, ...after];
   const content =
     kind === "inline" ? parseInline(body.join("\n")) : modelMarkdownToBlocks(body.join("\n"));
-  return [withContent(node, content)];
+  return [withContent(node, content), ...after];
 }
 
 function rawFrom(written: string): DocumentNode[] {
