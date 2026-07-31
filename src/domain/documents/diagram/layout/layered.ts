@@ -1,4 +1,5 @@
 import type { DiagramAttrs, DiagramEdge, DiagramNode } from "../diagram";
+import { bandsFor } from "./bands";
 import { labelAnchor, routeBackward, routeForward } from "./edges";
 import {
   GAP_ACROSS,
@@ -11,7 +12,6 @@ import {
   type Placement,
   type PlacedBox,
   type PlacedEdge,
-  type PlacedGroup,
   type Point,
 } from "./geometry";
 import { orderRanks, rankNodes, splitBackEdges } from "./ranking";
@@ -26,7 +26,7 @@ import { orderRanks, rankNodes, splitBackEdges } from "./ranking";
  */
 export function layered(attrs: DiagramAttrs): Placement {
   const { forward, back } = splitBackEdges(attrs.nodes, attrs.edges);
-  const ranks = orderRanks(rankNodes(attrs.nodes, forward), attrs.nodes, forward);
+  const ranks = orderRanks(rankNodes(attrs.nodes, forward), attrs.nodes, forward, attrs.groups);
   const size = uniformBoxSize(attrs.nodes);
   const byId = new Map(attrs.nodes.map((n) => [n.id, n]));
 
@@ -59,36 +59,6 @@ function placeRanks(
       return boxFrom(byId.get(id) as DiagramNode, at, size);
     }),
   );
-}
-
-/**
- * A band behind the members of a group.
- *
- * `ranking.ts` keeps a group's members adjacent inside a rank, so the band is
- * their bounding box. A group spread across many ranks may cover a node that is
- * not its own; that reads as a zone rather than a mistake, and it is the price
- * of not turning this into a constrained layout problem.
- */
-function bandsFor(attrs: DiagramAttrs, placed: Map<string, PlacedBox>): PlacedGroup[] {
-  return attrs.groups.flatMap((group) => {
-    const members = attrs.nodes
-      .filter((n) => n.group === group.id)
-      .map((n) => placed.get(n.id))
-      .filter((b): b is PlacedBox => b !== undefined);
-    if (members.length === 0) return [];
-    const x = Math.min(...members.map((b) => b.x)) - GROUP_PAD;
-    const y = Math.min(...members.map((b) => b.y)) - GROUP_PAD;
-    return [
-      {
-        id: group.id,
-        label: group.label,
-        x,
-        y,
-        width: Math.max(...members.map((b) => b.x + b.width)) + GROUP_PAD - x,
-        height: Math.max(...members.map((b) => b.y + b.height)) + GROUP_PAD - y,
-      },
-    ];
-  });
 }
 
 function routeAll(

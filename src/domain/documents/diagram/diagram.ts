@@ -53,6 +53,15 @@ export interface DiagramEdge {
 export interface DiagramGroup {
   id: string;
   label: string;
+  /**
+   * The group this one sits inside; absent at the top level.
+   *
+   * An architecture is nested far more often than it is flat — a subscription
+   * holds a cluster, which holds an instance, which holds namespaces — and a
+   * drawing that can only say "beside" comes back flatter than the thing it was
+   * read from. `group-tree.ts` is where the tree those parents make is read.
+   */
+  parent?: string;
 }
 
 export interface DiagramAttrs {
@@ -70,3 +79,9 @@ export const MAX_EDGES = 40;
 export const MAX_LABEL = 80;
 export const MAX_NOTE = 160;
 export const ACCENT_SLOTS = 4;
+
+/**
+ * How far groups may nest. Every level costs the drawing a band of padding on
+ * all four sides, so past this the innermost boxes are a stripe.
+ */
+export const MAX_GROUP_DEPTH = 4;

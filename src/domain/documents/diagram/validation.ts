@@ -17,6 +17,7 @@ import {
   type EdgeHead,
   type EdgeStyle,
 } from "./diagram";
+import { groupTreeError } from "./group-tree";
 
 /**
  * Describe why `value` is not a drawable diagram, or null when it is.
@@ -107,9 +108,13 @@ function groupsError(groups: unknown): string | null {
     }
     if (typeof label !== "string") return `diagram group "${id}" needs a string "label"`;
     if (seen.has(id)) return `diagram group id "${id}" is used twice`;
+    const { parent } = g as Partial<DiagramGroup>;
+    if (parent !== undefined && typeof parent !== "string") {
+      return `diagram group "${id}" needs a string "parent"`;
+    }
     seen.add(id);
   }
-  return null;
+  return groupTreeError(groups as DiagramGroup[]);
 }
 
 function membershipError(nodes: DiagramNode[], groups: DiagramGroup[]): string | null {

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { MAX_EDGES, MAX_LABEL, MAX_NODES, MAX_NOTE, type DiagramAttrs } from "./diagram";
+import {
+  MAX_EDGES,
+  MAX_GROUP_DEPTH,
+  MAX_LABEL,
+  MAX_NODES,
+  MAX_NOTE,
+  type DiagramAttrs,
+} from "./diagram";
 import { diagramError, isDiagramAttrs } from "./validation";
 
 const valid: DiagramAttrs = {
@@ -135,6 +142,44 @@ describe("diagramError", () => {
     const nodes = [{ id: "a", label: "Demande", group: "backend" }, valid.nodes[1]];
     const groups = [{ id: "backend", label: "Backend" }];
     expect(diagramError({ ...valid, nodes, groups })).toBeNull();
+  });
+
+  /**
+   * A nested group is what an architecture drawing usually is. What must never
+   * reach the layout is a tree that is not one: a band drawn inside itself has
+   * no bounding box, and the walk looking for one would not end.
+   */
+  it("accepts a group inside another", () => {
+    const groups = [
+      { id: "sub", label: "Subscription" },
+      { id: "aks", label: "AKS cluster", parent: "sub" },
+    ];
+    const nodes = [{ id: "a", label: "Demande", group: "aks" }, valid.nodes[1]];
+    expect(diagramError({ ...valid, nodes, groups })).toBeNull();
+  });
+
+  it("rejects a parent that was never declared", () => {
+    const groups = [{ id: "aks", label: "AKS cluster", parent: "sub" }];
+    expect(diagramError({ ...valid, groups })).toBe(
+      'diagram group "aks" sits inside group "sub", which is not declared',
+    );
+  });
+
+  it("rejects a group that contains itself", () => {
+    const groups = [
+      { id: "a", label: "A", parent: "b" },
+      { id: "b", label: "B", parent: "a" },
+    ];
+    expect(diagramError({ ...valid, groups })).toMatch(/contains itself/);
+  });
+
+  it("rejects groups nested deeper than a drawing can show", () => {
+    const groups = Array.from({ length: MAX_GROUP_DEPTH + 2 }, (_unused, i) => ({
+      id: `g${i}`,
+      label: `G${i}`,
+      ...(i === 0 ? {} : { parent: `g${i - 1}` }),
+    }));
+    expect(diagramError({ ...valid, groups })).toMatch(/nested more than/);
   });
 
   it("rejects a malformed group", () => {

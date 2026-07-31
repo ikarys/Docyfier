@@ -1,4 +1,5 @@
-import type { DiagramEdge, DiagramNode } from "../diagram";
+import type { DiagramEdge, DiagramGroup, DiagramNode } from "../diagram";
+import { groupOrder } from "../group-tree";
 
 /**
  * Which rank each node belongs to, and in what order they sit inside it.
@@ -80,11 +81,17 @@ export function orderRanks(
   ranks: string[][],
   nodes: DiagramNode[],
   forward: DiagramEdge[],
+  groups: DiagramGroup[] = [],
 ): string[][] {
   const groupOf = new Map(nodes.map((n) => [n.id, n.group ?? ""]));
-  const groupOrder = new Map<string, number>();
-  for (const n of nodes) {
-    if (!groupOrder.has(n.group ?? "")) groupOrder.set(n.group ?? "", groupOrder.size);
+  // Depth first over the tree, so a group's members sit beside the members of
+  // the groups inside it rather than beside a stranger from another branch. A
+  // group only the nodes mention still gets a place: ordering is a tidiness
+  // rule, and it may not stop working because a declaration is missing.
+  const order = groupOrder(groups);
+  for (const node of nodes) {
+    const id = node.group ?? "";
+    if (!order.has(id)) order.set(id, order.size);
   }
 
   const ordered = ranks.map((rank) => [...rank]);
@@ -93,7 +100,7 @@ export function orderRanks(
     ordered[r] = stableSortBy(ordered[r], (id, i) => medianOfParents(id, forward, above) ?? i);
   }
   return ordered.map((rank) =>
-    stableSortBy(rank, (id) => groupOrder.get(groupOf.get(id) ?? "") ?? 0),
+    stableSortBy(rank, (id) => order.get(groupOf.get(id) ?? "") ?? -1),
   );
 }
 
