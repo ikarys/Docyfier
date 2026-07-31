@@ -159,8 +159,9 @@ one nobody uses. A change that costs an AI surface its latency budget is not
 done, whatever it adds.
 
 What the editor still cannot do is written down as **STEP U12** in PLAN.md:
-comments, suggestions and version history. Next: **STEP U12**, the rest of
-**STEP U14**, then the rest of STEP 10 and STEP 6 (multi-tenant). PDF stays
+comments, suggestions and version history. Next: the rest of **STEP U14** —
+speed is P0 and comments on a document nobody edits are worth nothing — then
+**STEP U12**, the rest of STEP 10 and STEP 6 (multi-tenant). PDF stays
 print-based on purpose; a headless-Chromium renderer is the only open item of
 STEP 3 and was judged not worth its weight.
 
