@@ -2,24 +2,22 @@
 
 import { useCallback, useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { rewriteSelectionAction } from "@/app/ai-actions";
 import type { BlockAction } from "@/domain/authoring/block-actions/contract";
+import { insertStreamedPassage } from "./insert-streamed-passage";
 import type { AiReview } from "./useAiReview";
 
 /**
  * An AI action on one block (PLAN.md STEP U11): the block goes out, its
- * replacement comes back, and exactly the range it occupied is replaced — so
+ * replacement streams back, and exactly the range it occupied is replaced — so
  * every other block of the document is left byte-identical.
  *
- * It is the selection surface underneath, given a selection of one block: same
- * use case, same validation, same formatting pass.
+ * It is the passage surface underneath, given a passage of one block: same
+ * route, same validation, same formatting pass, same charter check.
  */
 export interface BlockActionRunner {
   /** The action running, by id; null when idle. */
   running: string | null;
   error: string | null;
-  /** A step the orchestrator dropped — said, never treated as a failure. */
-  note: string | null;
   dismissError(): void;
   run(action: BlockAction, at: { pos: number; size: number }): Promise<void>;
 }
@@ -27,7 +25,6 @@ export interface BlockActionRunner {
 export function useBlockAction(editor: Editor, review: AiReview): BlockActionRunner {
   const [running, setRunning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [note, setNote] = useState<string | null>(null);
 
   const run = useCallback(
     async (action: BlockAction, at: { pos: number; size: number }) => {
@@ -36,31 +33,21 @@ export function useBlockAction(editor: Editor, review: AiReview): BlockActionRun
       if (!node) return;
       setRunning(action.id);
       setError(null);
-      setNote(null);
 
       try {
-        const answer = await rewriteSelectionAction({
-          mode: "blocks",
-          blocks: [node.toJSON()],
-          instruction: action.instruction,
-          // The catalog already says which assistant this action belongs to:
-          // "turn into" is layout, the rest is writing.
-          surface: { kind: "block-action", family: action.family },
-        });
-        if (!answer.ok) {
-          setError(answer.error);
-          return;
-        }
-        if (answer.mode !== "blocks" || answer.blocks.length === 0) {
-          setError("The AI had nothing to put in this block's place.");
-          return;
-        }
-        setNote(answer.note);
-        review.run(() => {
-          editor
-            .chain()
-            .insertContentAt({ from: at.pos, to: at.pos + at.size }, answer.blocks)
-            .run();
+        await review.runStreamed(async () => {
+          const answer = await insertStreamedPassage(
+            editor,
+            {
+              blocks: [node.toJSON()],
+              instruction: action.instruction,
+              // The catalog already says which assistant this action belongs
+              // to: "turn into" is layout, the rest is writing.
+              surface: { kind: "block-action", family: action.family },
+            },
+            { from: at.pos, to: at.pos + at.size },
+          );
+          if (answer.error) setError(answer.error);
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "The AI request failed.");
@@ -71,10 +58,7 @@ export function useBlockAction(editor: Editor, review: AiReview): BlockActionRun
     [editor, review, running],
   );
 
-  const dismissError = () => {
-    setError(null);
-    setNote(null);
-  };
+  const dismissError = () => setError(null);
 
-  return { running, error, note, dismissError, run };
+  return { running, error, dismissError, run };
 }

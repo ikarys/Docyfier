@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { FormattingRow } from "./editor/FormattingRow";
+import type { AiReview } from "./editor/useAiReview";
 import { useSelectionRewrite } from "./editor/useSelectionRewrite";
 
 const QUICK_ACTIONS: { label: string; instruction: string }[] = [
@@ -21,14 +22,14 @@ const QUICK_ACTIONS: { label: string; instruction: string }[] = [
  */
 export function SelectionAiMenu({
   editor,
-  onAiEdit,
+  review,
 }: {
   editor: Editor;
   /** Runs a whole-block replacement under the document's AI review bar. */
-  onAiEdit: (apply: () => void) => void;
+  review: AiReview;
 }) {
   const [prompt, setPrompt] = useState("");
-  const { busy, error, reason, note, rewrite } = useSelectionRewrite(editor, onAiEdit);
+  const { busy, error, reason, rewrite } = useSelectionRewrite(editor, review);
 
   const submitPrompt = () => {
     const instruction = prompt.trim();
@@ -91,7 +92,6 @@ export function SelectionAiMenu({
           {error && <div className="ai-bubble-error">{error}</div>}
           {/* A dropped step is not a failure: the other assistant's work is in
               the document and under review. Said plainly, once. */}
-          {!error && note && <div className="ai-bubble-note">{note}</div>}
         </>
       )}
     </BubbleMenu>

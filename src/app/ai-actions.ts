@@ -19,7 +19,6 @@ import {
   type DocumentAnswer,
   type TransformOutcome,
 } from "@/lib/ai/service";
-import type { AssignmentResult } from "@/application/authoring/run-assignment";
 import type { Surface } from "@/domain/authoring/agents/routing";
 
 /** Server actions for the three AI surfaces (PLAN.md STEP 2). */
@@ -64,11 +63,8 @@ export type SelectionResult =
       ok: true;
       mode: "blocks";
       blocks: JSONContent[];
-      /** Which assistants worked, in the words the user is shown. */
+      /** Which assistant worked, in the words the user is shown. */
       reason: string;
-      /** A step dropped because it broke its charter — worth saying, not worth
-       * failing the answer the other assistant already produced. */
-      note: string | null;
     }
   | { ok: false; error: string };
 
@@ -81,14 +77,6 @@ function message(err: unknown): string {
  * gave is written for the model; what belongs on screen is which assistant gave
  * up, so the result reads as deliberate rather than as half a feature.
  */
-function noteOf(result: AssignmentResult): string | null {
-  const dropped = result.refused[0];
-  if (!dropped) return null;
-  return dropped.agent === "designer"
-    ? "The layout assistant kept rewriting the text, so its pass was dropped — the wording is the one you see."
-    : "One assistant could not answer; what you see is the rest of the work.";
-}
-
 /**
  * Surface 1, step 1 — the document the generation will stream into.
  *
@@ -228,7 +216,6 @@ export async function rewriteSelectionAction(
       mode: "blocks",
       blocks: result.blocks as JSONContent[],
       reason: result.reason,
-      note: noteOf(result),
     };
   } catch (err) {
     return { ok: false, error: message(err) };

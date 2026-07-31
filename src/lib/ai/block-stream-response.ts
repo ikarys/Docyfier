@@ -3,6 +3,7 @@ import { streamText, type TextStreamPart, type ToolSet } from "ai";
 import { beautify } from "@/domain/authoring/beautify";
 import { parseModelJson } from "@/domain/authoring/model-answer";
 import type { StyleParameters } from "@/domain/authoring/style-parameters";
+import type { DocumentNode } from "@/domain/documents/body";
 import type { ThinkingEffort } from "@/domain/authoring/text-generator";
 import { validateDocJson } from "@/infrastructure/editor/schema";
 import { reasoningOptions } from "@/infrastructure/authoring/openai-compatible/endpoint";
@@ -34,6 +35,15 @@ export interface BlockStream {
   readonly style: StyleParameters;
   /** An NDJSON line to send before the first block — the document's dress. */
   readonly prelude?: Record<string, unknown>;
+  /**
+   * What the finished answer was not allowed to be, or "" when it is fine.
+   *
+   * A rule that compares the answer to what was asked cannot run block by
+   * block, so it runs once at the end. There is no retry left at that point:
+   * the verdict is reported as the stream's error, and the caller — which is
+   * the only thing that knows what it inserted — takes the answer back.
+   */
+  verdict?(blocks: DocumentNode[]): string;
 }
 
 /**
@@ -117,12 +127,15 @@ export async function blockStreamResponse(request: BlockStream): Promise<Respons
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const scanner = new BlockScanner();
+      const written: DocumentNode[] = [];
       let blocks = 0;
       let skipped = 0;
 
       const emit = (raw: string) => {
         try {
-          controller.enqueue(encoder.encode(line({ block: prepare(raw, request.style) })));
+          const block = prepare(raw, request.style);
+          controller.enqueue(encoder.encode(line({ block })));
+          written.push(block as DocumentNode);
           blocks++;
         } catch (err) {
           // A block the schema rejects is dropped rather than aborting the
@@ -155,9 +168,11 @@ export async function blockStreamResponse(request: BlockStream): Promise<Respons
           }
         }
 
+        const breach = stopped ? "" : (request.verdict?.(written) ?? "");
+        const failed = stopped ?? (breach || null);
         controller.enqueue(
           encoder.encode(
-            stopped ? line({ error: stopped, blocks }) : line({ done: true, blocks, skipped }),
+            failed ? line({ error: failed, blocks }) : line({ done: true, blocks, skipped }),
           ),
         );
       } catch (err) {

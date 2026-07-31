@@ -1,12 +1,7 @@
 import { agentById } from "@/domain/authoring/agents/catalog";
 import type { Agent, AgentId } from "@/domain/authoring/agents/contract";
 import type { Assignment } from "@/domain/authoring/agents/routing";
-import {
-  driftMessage,
-  isFaithfulLayout,
-  layoutBlocksIntroduced,
-  layoutDrift,
-} from "@/domain/authoring/layout-fidelity";
+import { charterBreach } from "@/domain/authoring/agents/charter-breach";
 import { agentSystem, selectionBlocksPrompt } from "@/domain/authoring/prompts";
 import { ModelUnavailable } from "@/domain/authoring/text-generator";
 import type { DocumentNode } from "@/domain/documents/body";
@@ -34,18 +29,6 @@ export interface AssignmentResult {
   readonly refused: { agent: AgentId; because: string }[];
 }
 
-/** What this agent is forbidden to have done, or "" when it stayed in its lane. */
-function breachOf(agent: Agent, before: DocumentNode[], after: DocumentNode[]): string {
-  if (agent.id === "designer") {
-    const drift = layoutDrift(before, after);
-    return isFaithfulLayout(drift) ? "" : `you changed the text: ${driftMessage(drift)}`;
-  }
-  const introduced = layoutBlocksIntroduced(before, after);
-  return introduced.length === 0
-    ? ""
-    : `you introduced ${introduced.join(", ")}: presenting the content is the layout assistant's job`;
-}
-
 /**
  * One assistant over one passage, held to its charter.
  *
@@ -71,8 +54,7 @@ async function runAgent(
     },
     (json) => {
       const next = polished(deps, bodyFromJson(deps, json)).content ?? [];
-      if (next.length === 0) throw new Error("you replaced the passage with nothing");
-      const breach = breachOf(agent, blocks, next);
+      const breach = charterBreach(agent, blocks, next);
       if (breach) throw new Error(breach);
       return next;
     },

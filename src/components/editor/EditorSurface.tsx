@@ -53,7 +53,7 @@ export function EditorSurface({
     <article className="doc-sheet">
       {generating && <GenerationSkeleton />}
       <EditorContent editor={editor} />
-      <SelectionAiMenu editor={editor} onAiEdit={review.run} />
+      <SelectionAiMenu editor={editor} review={review} />
       <DragHandle
         editor={editor}
         className="drag-handle no-print"
@@ -77,13 +77,9 @@ export function EditorSurface({
           </span>
         </div>
       </DragHandle>
-      {(blockAction.error || blockAction.note) && (
-        <div
-          className="gen-error-bar no-print"
-          role={blockAction.error ? "alert" : "status"}
-          data-note={blockAction.error ? undefined : true}
-        >
-          <span className="ai-diff-bar-label">{blockAction.error ?? blockAction.note}</span>
+      {blockAction.error && (
+        <div className="gen-error-bar no-print" role="alert">
+          <span className="ai-diff-bar-label">{blockAction.error}</span>
           <button className="btn" onClick={blockAction.dismissError}>
             Dismiss
           </button>

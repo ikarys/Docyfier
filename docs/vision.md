@@ -14,6 +14,7 @@ on document creation. Dedicated to professional documents in particular.
 * P0 — Help format with modern, good-looking layouts: tables, columns, charts, diagrams, headers, colors, and so on.
 * P2 — Let users configure style: whether to use emoji, colors, automatically bolding certain keywords, etc.
 * P0 — Allow quick touch-ups and edits to adapt whatever was generated.
+* P0 — Answer fast enough to stay in the writer's hands. A rewrite that takes twenty seconds is not a slow feature, it is a feature nobody uses: the user goes back to writing it themselves. Speed is part of the product, not an optimization to schedule afterwards.
 * P1 — Export to different formats as needed (slides, docx, markdown, Confluence, etc.).
 * P1 — Import existing documents to rework or reformat them.
 * P2 — Offer and allow the creation of templates for different document types (reports, presentations, articles, etc.) to speed up content creation.

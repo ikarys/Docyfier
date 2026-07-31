@@ -8,7 +8,8 @@ original P\* where justified; the "Was → Now" column tracks every change.
 The UX & rendering upgrade STEPS **U1–U7** ([Part C](#part-c--ux--rendering-upgrade-steps-u1u14))
 slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 → U5 → U6 → U7.
 The editing STEPS **U8–U14** continue Part C and run **before STEP 6**:
-U8 → U9 → U10 → U11 → U13 → U14 → U12.
+U8 → U9 → U10 → U11 → U13 → U14 → U12. **U14 comes before U12**: speed is a
+P0 need (#6b), and comments on a document nobody edits are worth nothing.
 
 ## Part A — Prioritized needs
 
@@ -20,6 +21,7 @@ U8 → U9 → U10 → U11 → U13 → U14 → U12.
 | 4 | Modern, polished formatting: tables, columns, headers, colors, callouts | P0 | P0 | Core differentiator |
 | 5 | Charts & diagrams blocks | P0 (implicit in #4) | **P1** | Split out: a large sub-project; MVP ships text/table/layout formatting first. Charts landed in [STEP U6](#step-u6--data-viz-blocks--rich-cover), diagrams in [STEP 10](#step-10--integrations--maturity). **Done** |
 | 6 | Quick retouches / fast edits of generated content | P0 | P0 | Core value; trust requires easy correction |
+| 6b | AI answers fast enough to stay in the writer's hands | — | **P0** | Added by the maintainer after measuring: a rewrite that takes twenty seconds is not a slow feature, it is one nobody uses. Every AI surface owes a latency budget, and a change that misses it is not done. [STEP U14](#step-u14--the-cost-of-one-ai-call) |
 | 7 | Export Markdown + PDF | P1 | **P0** | Without export, documents are trapped in the tool; PDF is the #1 professional sharing format |
 | 8 | Export docx, slides, Confluence | P1 | P1 | Post-MVP; docx/slides fidelity is genuinely hard |
 | 9 | Import existing documents to rework/reformat | P1 | P1 | First post-MVP step: "reformat my ugly doc" is a killer demo |
@@ -955,6 +957,11 @@ Acceptance:
 "Shorten this paragraph" answers in seconds, not in twenty; "make it pretty"
 answers in tens of seconds, not in minutes.
 
+This is a **P0 product need** (#6b), not a round of optimization. A writer who
+waits twenty seconds for a rewrite writes it themselves, and never asks again —
+the feature is not slow, it is unused. Every surface below carries a latency
+budget, and a change that misses its budget is not done, whatever it adds.
+
 **Why:** measured on a real document (26 794 characters of body JSON, 6 095 of
 visible text), one editing surface was paying four separate taxes that have
 nothing to do with the work asked for:
@@ -966,11 +973,12 @@ nothing to do with the work asked for:
 | Two assistants chained inside one click | two waits for one action | **Done** |
 | Reasoning effort never stated, so a reasoning model deliberates over a one-line rewrite | most of the seconds, on GLM-class models | **Done** |
 | ProseMirror JSON as the model's wire format | **×4.4** the visible text, in **both** directions | Open |
-| A passage edit that streams nothing | the user sees the first byte when they see the last | Open |
+| A passage edit that streams nothing | the user sees the first byte when they see the last | **Done** |
 
 The first four shipped together: a prose-only assistant's system prompt went
 from 3 030 to 1 101 tokens, and a free prompt costs one call instead of three.
-What is left is the two structural ones.
+Streaming the passage followed. What is left is the format — the only one that
+shortens the wait itself rather than what the user does with it.
 
 Storage is **not** on this list and never was: `JSON.parse` on a 78 KB document
 takes 0.15 ms. The document stays ProseMirror JSON on disk — it is the editor's
@@ -989,14 +997,19 @@ Instructions:
    the ones that trigger the retry, which doubles the wait — become rare.
    Do **not** invent a private syntax: `:::` is a convention models have read
    millions of times, and a bespoke one reopens the problem markdown solves.
-2. **The passage streams.** A selection edit lands block by block through
-   `blockStreamResponse`, as generation and the caret already do. This is the
-   one item with a real cost to weigh: the streaming path has neither the
-   `askJson` retry nor STEP U13's charter check, which compares the passage
-   before and after and cannot run until the last block. Either the check runs
-   at the end of the stream and a breach rolls the whole insertion back, or the
-   surface keeps two shapes for one thing — which is what this codebase refuses
-   elsewhere. Decide that before writing the route.
+2. **The passage streams.** ✅ `/api/passage` through `blockStreamResponse`, as
+   generation and the caret already do, with the blocking action as its fallback
+   — the caret's handover, not a second shape for the same edit.
+
+   The trade was decided rather than dodged: the streamed path has no `askJson`
+   retry, and STEP U13's charter check compares the whole answer to the passage
+   so it cannot run block by block. It runs as the stream's **verdict**
+   (`BlockStream.verdict`, `domain/authoring/agents/charter-breach.ts`), and a
+   breach — like any late failure — makes the editor put the passage back whole
+   (`insert-streamed-passage.ts`). Losing the retry is the price paid: an answer
+   the schema rejects is dropped block by block, as it already was at the caret.
+   Position bookkeeping is `components/editor/streamed-passage.ts`, a module a
+   test drives without an editor.
 3. **Measure before and after, per surface.** `DOCYFIER_LOG_USAGE=1` already
    prints tokens in, tokens out, tokens thought, tokens the provider had already
    seen, and seconds. A change to a prompt without that line is a guess.

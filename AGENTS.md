@@ -137,12 +137,26 @@ guide splits the same way. A `GenerationRequest` also carries an `effort`, and
 two identical calls in flight into one — a decorator over the port, not a cache:
 nothing outlives the answer, because the document it was about has moved on.
 
+A passage edit streams too, through `/api/passage` and `blockStreamResponse`,
+with the blocking action as its fallback — the caret's handover, not a second
+shape. Two consequences to respect: STEP U13's charter check runs as the
+stream's `verdict` because it compares the whole answer to the passage, and any
+late failure puts the passage back whole rather than leaving half an edit
+(`components/editor/insert-streamed-passage.ts`, with the position arithmetic in
+`streamed-passage.ts` so a test can drive it without an editor).
+
 Two rules that came out of measuring, and that a change must not undo: the
 document body stays ProseMirror JSON **on disk** (`JSON.parse` on 78 KB is
 0.15 ms — storage was never the problem), and it is the **model-facing** format
 that costs, at ×4.4 the visible text in both directions. Replacing it with
-markdown plus `:::` directives is the open half of U14, together with streaming
-a passage edit. Do not add a second code path for a surface that already has one.
+markdown plus `:::` directives is what is left of U14, and the only lever that
+shortens the wait itself rather than what the user does with it. Do not add a
+second code path for a surface that already has one.
+
+**Speed is a P0 need** (`docs/vision.md`, PLAN.md #6b), not an optimization to
+schedule later: a rewrite that takes twenty seconds is not a slow feature, it is
+one nobody uses. A change that costs an AI surface its latency budget is not
+done, whatever it adds.
 
 What the editor still cannot do is written down as **STEP U12** in PLAN.md:
 comments, suggestions and version history. Next: **STEP U12**, the rest of
