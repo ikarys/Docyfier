@@ -125,8 +125,9 @@ STEP U13 is in: two assistants, a **writer** that owns the words and a
 answers is read off the surface the user touched
 (`agents/routing.ts`) — never asked of a model, and never two in one click.
 
-Half of **STEP U14** is in, and it is the one to read before touching a prompt:
-what an AI call costs is mostly plumbing, and the plumbing is now measured.
+**STEP U14** is in bar its wall-clock proof, and it is the one to read before
+touching a prompt: what an AI call costs is mostly plumbing, and the plumbing is
+now measured.
 An agent declares the **scope** of block vocabulary it is shown
 (`domain/authoring/prompts/scope.ts`), and `formatContract(scope)` assembles the
 contract from `prompts/blocks/{prose,layout,document}.ts` — so the writer, whose
@@ -145,13 +146,40 @@ late failure puts the passage back whole rather than leaving half an edit
 (`components/editor/insert-streamed-passage.ts`, with the position arithmetic in
 `streamed-passage.ts` so a test can drive it without an editor).
 
-Two rules that came out of measuring, and that a change must not undo: the
-document body stays ProseMirror JSON **on disk** (`JSON.parse` on 78 KB is
-0.15 ms — storage was never the problem), and it is the **model-facing** format
-that costs, at ×4.4 the visible text in both directions. Replacing it with
-markdown plus `:::` directives is what is left of U14, and the only lever that
-shortens the wait itself rather than what the user does with it. Do not add a
-second code path for a surface that already has one.
+The **model-facing format is no longer JSON**, and that was U14's only lever on
+the wait itself. A document reaches a model as markdown plus `::: name {attrs}`
+directives (`infrastructure/rendering/model-markdown/`) and comes back the same
+way: ×4.94 the visible text down to ×1.74, 35% of the characters, paid in the
+prompt and again in the answer. It is **not** `rendering/markdown/` next door —
+that one renders for a human and drops what a reader would not miss; this one
+may drop nothing, and `round-trip.test.ts` reads the node and mark lists off the
+schema so a block added to the editor and forgotten there fails.
+
+Four rules carry it. The policy is one line — **markdown, then a directive, then
+JSON** — and every writer returns `null` rather than approximate, so "nothing is
+lost" is kept by refusing, not by guessing; `::: json` is the exact last resort
+and none of the seven templates needs it. The splitter has **one home**
+(`split-blocks.ts`), because a stream that split differently from a finished
+text would insert a broken block into a document the user is already looking at.
+Which format the model speaks reaches the use cases as two ports, `BodyReader`
+and `BodyWriter` — not one use case knows markdown, and `lib/ai/service.ts` is
+where they are bound. And an **op keeps its JSON envelope** — it is a handful of
+numbers saying *where* — while its `"blocks"` is a string in the document
+format, which is the expensive half.
+
+Two things a change must not undo. The document body stays ProseMirror JSON **on
+disk** (`JSON.parse` on 78 KB is 0.15 ms — storage was never the problem). And
+do not add a second code path for a surface that already has one: the provider's
+JSON mode, `AnswerShape`, `BlockScanner`, `wrapInDoc` and `boldFromMarkdown` were
+all deleted with the format that made them dead.
+
+Measured and worth knowing before you plan another prompt change: **the contract
+is not the lever**. Stating the same vocabulary in markdown rather than JSON took
+it from 9 136 characters to 8 454 — seven per cent — because what fills a format
+contract is when to reach for a chart and what a diagram may declare, not the
+punctuation around it. The saving is in the document, which travels both ways.
+What is left of U14 is wall clock against a real provider, per surface,
+`DOCYFIER_LOG_USAGE=1`: character counts say what is sent, never what it costs.
 
 **Speed is a P0 need** (`docs/vision.md`, PLAN.md #6b), not an optimization to
 schedule later: a rewrite that takes twenty seconds is not a slow feature, it is
@@ -159,9 +187,10 @@ one nobody uses. A change that costs an AI surface its latency budget is not
 done, whatever it adds.
 
 What the editor still cannot do is written down as **STEP U12** in PLAN.md:
-comments, suggestions and version history. Next: the rest of **STEP U14** —
-speed is P0 and comments on a document nobody edits are worth nothing — then
-**STEP U12**, the rest of STEP 10 and STEP 6 (multi-tenant). PDF stays
+comments, suggestions and version history. Next: time **STEP U14** against the
+reference provider and close it — speed is P0 and comments on a document nobody
+edits are worth nothing — then **STEP U12**, the rest of STEP 10 and STEP 6
+(multi-tenant). PDF stays
 print-based on purpose; a headless-Chromium renderer is the only open item of
 STEP 3 and was judged not worth its weight.
 

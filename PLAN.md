@@ -972,13 +972,18 @@ nothing to do with the work asked for:
 | A model call to decide which assistant answers, before any work | one round trip, with its own thinking | **Done** |
 | Two assistants chained inside one click | two waits for one action | **Done** |
 | Reasoning effort never stated, so a reasoning model deliberates over a one-line rewrite | most of the seconds, on GLM-class models | **Done** |
-| ProseMirror JSON as the model's wire format | **×4.4** the visible text, in **both** directions | Open |
+| ProseMirror JSON as the model's wire format | **×4.94** the visible text, in **both** directions | **Done** |
 | A passage edit that streams nothing | the user sees the first byte when they see the last | **Done** |
 
 The first four shipped together: a prose-only assistant's system prompt went
 from 3 030 to 1 101 tokens, and a free prompt costs one call instead of three.
-Streaming the passage followed. What is left is the format — the only one that
-shortens the wait itself rather than what the user does with it.
+Streaming the passage followed. The format landed last, and it was the only one
+that shortens the wait itself rather than what the user does with it: measured
+across the seven templates, the same documents travel in **35%** of the
+characters, in the prompt and again in the answer.
+
+What is left of this STEP is not code but proof: the budgets below are wall
+clock against a real provider, and nothing here has been timed against one yet.
 
 Storage is **not** on this list and never was: `JSON.parse` on a 78 KB document
 takes 0.15 ms. The document stays ProseMirror JSON on disk — it is the editor's
@@ -986,17 +991,33 @@ own shape, and changing it would buy nothing.
 
 Instructions:
 
-1. **A model-facing format that is not JSON.** Markdown for what markdown
+1. **A model-facing format that is not JSON.** ✅ Markdown for what markdown
    already covers, plus `:::` directive blocks for what it does not
-   (`statRow`, `cardGrid`, `chart`, `diagram`, …). An emitter and a parser under
-   `src/infrastructure/rendering/` — the markdown emitter is most of one half
-   already — with a round-trip test per block type: every block in the schema
-   survives body → text → body deep-equal. Two wins, and the second is bigger
-   than the first: **×4.4 down to about ×1.2** on tokens, and a syntax the model
-   already knows, so the format contract shrinks again *and* invalid answers —
-   the ones that trigger the retry, which doubles the wait — become rare.
-   Do **not** invent a private syntax: `:::` is a convention models have read
-   millions of times, and a bespoke one reopens the problem markdown solves.
+   (`statRow`, `cardGrid`, `chart`, `diagram`, …), in
+   `src/infrastructure/rendering/model-markdown/`. Not the export renderer next
+   door: that one drops what a human reader would not miss, and this one may
+   drop nothing. The round-trip test reads the node and mark lists **off the
+   schema**, so a block added to the editor and forgotten there fails.
+
+   Three rules hold it up. The policy is one line — `markdown, then a
+   directive, then JSON` — where a block markdown cannot write becomes
+   `::: name {attrs}` and only what neither can say becomes `::: json`, which is
+   exact and needed by none of the seven templates. Every writer returns `null`
+   rather than approximate, so "nothing is lost" is kept by refusing, not by
+   guessing. And the block splitter has **one home**: a stream that split
+   differently from a finished text would insert a broken block into a document
+   the user is already looking at.
+
+   Which format the model speaks reaches the use cases as two ports,
+   `BodyReader` and `BodyWriter` — not one of them had to learn markdown.
+
+   *Measured, against what this instruction predicted.* The payload: **×4.94 →
+   ×1.74** the visible text, 35% of the characters. The contract: **9 136 →
+   8 454** characters, seven per cent — not the second win claimed here, because
+   what fills a contract is when to reach for a chart and what a diagram may
+   declare, not the punctuation around it. `format-contract.test.ts` now pins
+   the budget rather than the promise. Whether invalid answers became rarer is
+   for the provider run to say.
 2. **The passage streams.** ✅ `/api/passage` through `blockStreamResponse`, as
    generation and the caret already do, with the blocking action as its fallback
    — the caret's handover, not a second shape for the same edit.
@@ -1012,7 +1033,12 @@ Instructions:
    test drives without an editor.
 3. **Measure before and after, per surface.** `DOCYFIER_LOG_USAGE=1` already
    prints tokens in, tokens out, tokens thought, tokens the provider had already
-   seen, and seconds. A change to a prompt without that line is a guess.
+   seen, and seconds. A change to a prompt without that line is a guess — and
+   the character counts above are not that line. They say what is sent; only a
+   provider says what it costs and how long it takes.
+
+   This is the open half of the STEP: one run per surface against the reference
+   provider, before and after, against the budgets below.
 
 **Out of scope:** changing how documents are stored; a per-agent provider (still
 STEP U13's out-of-scope); response caching — an answer that outlives the request
@@ -1021,11 +1047,13 @@ is stale, because the document it was about has moved on. Sharing a call that is
 
 Acceptance:
 
-- [ ] Every block type round-trips body → model format → body, deep-equal
+- [x] Every block type round-trips body → model format → body, deep-equal
 - [ ] A passage edit on a paragraph answers in under 5 s on the reference provider
 - [ ] "Make it pretty" on the 78 KB reference document answers in under 60 s
 - [ ] The usage log shows the reused-prefix percentage on a provider that caches
-- [ ] No surface keeps two code paths for the same edit
+- [x] No surface keeps two code paths for the same edit — the provider's JSON
+      mode, `BlockScanner`, `wrapInDoc` and `boldFromMarkdown` went with the
+      format that made them dead
 
 ---
 
