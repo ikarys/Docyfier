@@ -29,8 +29,11 @@ async function answer(
 ): Promise<string> {
   const { text, truncated } = await deps.generator.generate(request);
   if (truncated) {
+    // Not "the document is too large": the ceiling is on the *answer*, and a
+    // reasoning model can reach it having written nothing at all. Blaming the
+    // input sends the reader to shrink something that was never the problem.
     throw new AnswerTruncated(
-      "The document is too large for a whole-document edit — select the section to change and use the selection menu instead.",
+      "The answer was cut off at the output ceiling: the model ran out of budget before it finished. Raise it in Settings → AI providers; if that changes nothing, the model is spending that budget reasoning rather than writing — edit one section at a time with the selection menu.",
     );
   }
   return text;

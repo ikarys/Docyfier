@@ -125,13 +125,27 @@ describe("generateDocument", () => {
     ).rejects.toThrow(/invalid answer/);
   });
 
+  /**
+   * What it says matters as much as that it refuses. Blaming the document sent
+   * the maintainer to shrink one that was fine, then to raise a budget the
+   * model was spending on reasoning rather than on writing. The message names
+   * what happened — the answer stopped at the ceiling — and what to try.
+   */
   it("refuses an answer cut short instead of retrying it", async () => {
     const generator = new ScriptedGenerator([{ text: "{", truncated: true }]);
 
     await expect(
       generateDocument(authoringDeps(generator), "Write a note", defaultBrief()),
-    ).rejects.toThrow(/too large/);
+    ).rejects.toThrow(/cut off/);
     expect(generator.requests).toHaveLength(1);
+  });
+
+  it("does not blame the document for an answer that never finished", async () => {
+    const generator = new ScriptedGenerator([{ text: "{", truncated: true }]);
+
+    await expect(
+      generateDocument(authoringDeps(generator), "Write a note", defaultBrief()),
+    ).rejects.not.toThrow(/document is too large/);
   });
 
   it("keeps the model's own output when the formatting pass misfires", async () => {
