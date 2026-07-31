@@ -13,7 +13,10 @@ export function BlockActionMenu({
   running,
   onPick,
 }: {
-  /** The action running, by id; the whole menu waits while one is. */
+  /**
+   * The action running, by id; the whole menu waits while one is. What that
+   * action is is said by the busy bar, not here — picking one closes the menu.
+   */
   running: string | null;
   onPick: (action: BlockAction) => void;
 }) {
@@ -36,7 +39,6 @@ export function BlockActionMenu({
               onClick={() => onPick(action)}
             >
               {action.label}
-              {running === action.id && <span aria-hidden> …</span>}
             </button>
           ))}
         </div>

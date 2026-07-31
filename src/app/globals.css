@@ -2910,6 +2910,7 @@ body {
 }
 
 .ai-diff-bar,
+.ai-busy-bar,
 .gen-error-bar {
   position: fixed;
   bottom: 1.4rem;

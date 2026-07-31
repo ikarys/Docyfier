@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { EditorContent, type Editor } from "@tiptap/react";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
+import { findBlockAction } from "@/domain/authoring/block-actions/catalog";
 import { SelectionAiMenu } from "../SelectionAiMenu";
 import { BlockActionMenu } from "./BlockActionMenu";
 import { useBlockAction } from "./useBlockAction";
@@ -77,6 +78,19 @@ export function EditorSurface({
           </span>
         </div>
       </DragHandle>
+      {/*
+        Outside the menu on purpose: choosing an item closes the popover, so an
+        indicator drawn inside it is unmounted the instant it would matter. The
+        wait is the model thinking, which shows nothing in the document either.
+      */}
+      {blockAction.running && (
+        <div className="ai-busy-bar no-print" role="status">
+          <span className="spinner" aria-hidden />
+          <span className="ai-diff-bar-label">
+            {findBlockAction(blockAction.running)?.label ?? "Working"}…
+          </span>
+        </div>
+      )}
       {blockAction.error && (
         <div className="gen-error-bar no-print" role="alert">
           <span className="ai-diff-bar-label">{blockAction.error}</span>
