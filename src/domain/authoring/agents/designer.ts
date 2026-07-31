@@ -17,7 +17,6 @@ export const designer: Agent = {
   temperature: 0.1,
   scope: "layout",
   // Choosing the box for content that already exists is a lookup, not a plan.
-  effort: "low",
   charter(style: StyleParameters): string {
     return `You are the LAYOUT DESIGNER. You own the shape, never the words.
 

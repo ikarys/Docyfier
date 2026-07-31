@@ -6,6 +6,7 @@ import {
   caretSystem,
 } from "@/domain/authoring/prompts";
 import type { DocumentNode } from "@/domain/documents/body";
+import { effortFor } from "@/domain/authoring/thinking";
 import { askDocument } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
@@ -35,7 +36,7 @@ export async function writeAtCaret(
     system: caretSystem(deps.style),
     prompt: caretPrompt(context.digest, context.here, instruction),
     temperature: 0.6,
-    effort: "low",
+    effort: effortFor("block"),
   });
   return body.content ?? [];
 }
@@ -58,7 +59,7 @@ export async function continueWriting(
     temperature: 0.6,
     // Offered as ghost text while the writer keeps typing: an answer that
     // arrives after the next word is an answer nobody will read.
-    effort: "low",
+    effort: effortFor("block"),
     shape: "free",
   });
   return newWords(fragmentFromAnswer(answer.text), context.here);

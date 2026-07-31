@@ -1,4 +1,5 @@
 import { agentById } from "@/domain/authoring/agents/catalog";
+import { effortFor } from "@/domain/authoring/thinking";
 import { charterBreach } from "@/domain/authoring/agents/charter-breach";
 import { routeSurface, type Surface } from "@/domain/authoring/agents/routing";
 import { agentSystem, selectionBlocksPrompt } from "@/domain/authoring/prompts";
@@ -45,7 +46,7 @@ export async function POST(req: Request): Promise<Response> {
     system: agentSystem(agent, style),
     prompt: selectionBlocksPrompt(passage, instruction),
     temperature: agent.temperature,
-    effort: agent.effort,
+    effort: effortFor("passage"),
     style,
     // Said before the first block, so the user reads who is working while they work.
     prelude: { reason: assignment.reason },

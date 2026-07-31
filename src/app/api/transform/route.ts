@@ -9,6 +9,7 @@ import { blocksOf, type DocumentBody, type DocumentNode } from "@/domain/documen
 import { agentById } from "@/domain/authoring/agents/catalog";
 import { opBreach } from "@/domain/authoring/agents/layout-ops";
 import { routeSurface, type Surface } from "@/domain/authoring/agents/routing";
+import { effortFor } from "@/domain/authoring/thinking";
 import { reasoningOptions } from "@/infrastructure/authoring/openai-compatible/endpoint";
 import { logUsage, type AnswerSize } from "@/infrastructure/authoring/openai-compatible/usage-log";
 import { isAuthorized } from "@/lib/auth";
@@ -82,7 +83,7 @@ export async function POST(req: Request): Promise<Response> {
     prompt: transformOpsPrompt(blocks, instruction),
     temperature: agent.temperature,
     maxOutputTokens: endpoint.maxOutputTokens,
-    ...reasoningOptions(endpoint, agent.effort),
+    ...reasoningOptions(endpoint, effortFor("document")),
     abortSignal: aborter.signal,
     maxRetries: 1,
   }).fullStream[Symbol.asyncIterator]() as AsyncIterator<ModelPart>;

@@ -19,7 +19,6 @@ export const writer: Agent = {
   // applied to the vocabulary, so there is nothing to disobey.
   scope: "prose",
   // Rewording a passage someone already wrote: there is nothing here to plan.
-  effort: "low",
   charter(style: StyleParameters): string {
     return `You are the WRITER. You own the words: what is said, in what order, in what tone, at what length.
 

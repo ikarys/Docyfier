@@ -9,6 +9,7 @@ import {
 } from "@/domain/authoring/prompts";
 import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
 import { blocksOf, type DocumentBody, type DocumentNode } from "@/domain/documents/body";
+import { effortFor } from "@/domain/authoring/thinking";
 import { askDocument, askJson, bodyFromJson, polished } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
@@ -92,7 +93,7 @@ export function transformDocument(
       system: transformOpsSystem(deps.style, agent),
       prompt: transformOpsPrompt(blocks, instruction),
       temperature: agent ? agent.temperature : 0.3,
-      effort: agent?.effort,
+      effort: effortFor("document"),
       // An op list is an array: no provider JSON mode describes it.
       shape: "free",
     },

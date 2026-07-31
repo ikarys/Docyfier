@@ -9,6 +9,7 @@ import {
   selectionTextPrompt,
 } from "@/domain/authoring/prompts";
 import type { DocumentNode } from "@/domain/documents/body";
+import { effortFor } from "@/domain/authoring/thinking";
 import { askDocument } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
@@ -24,7 +25,7 @@ export async function rewriteSelectionBlocks(
     system: selectionBlocksSystem(deps.style),
     prompt: selectionBlocksPrompt(blocks, instruction),
     temperature: 0.3,
-    effort: "low",
+    effort: effortFor("passage"),
   });
   return body.content ?? [];
 }
@@ -44,7 +45,7 @@ export async function rewriteSelectionText(
     prompt: selectionTextPrompt(text, instruction),
     temperature: 0.3,
     // Swapping one fragment mid-sentence: there is nothing here to deliberate.
-    effort: "low",
+    effort: effortFor("passage"),
     shape: "free",
   });
   return fragmentFromAnswer(answer.text);

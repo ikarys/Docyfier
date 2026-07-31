@@ -1,6 +1,7 @@
 import { themeFromArt } from "@/application/documents/theme-from-art";
 import { writerSystem } from "@/domain/authoring/prompts";
 import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
+import { effortFor } from "@/domain/authoring/thinking";
 import { blockStreamResponse } from "@/lib/ai/block-stream-response";
 import { planDocument } from "@/lib/ai/service";
 import { getStyleParameters } from "@/lib/settings";
@@ -37,6 +38,7 @@ export async function POST(req: Request): Promise<Response> {
     system: writerSystem(recipe, brief, style),
     prompt,
     temperature: 0.7,
+    effort: effortFor("document"),
     style,
     ...(theme ? { prelude: { theme } } : {}),
   });

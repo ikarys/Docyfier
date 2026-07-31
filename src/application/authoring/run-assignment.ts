@@ -5,6 +5,7 @@ import { charterBreach } from "@/domain/authoring/agents/charter-breach";
 import { agentSystem, selectionBlocksPrompt } from "@/domain/authoring/prompts";
 import { ModelUnavailable } from "@/domain/authoring/text-generator";
 import type { DocumentNode } from "@/domain/documents/body";
+import { effortFor } from "@/domain/authoring/thinking";
 import { askJson, bodyFromJson, polished } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
@@ -49,7 +50,7 @@ async function runAgent(
       system: agentSystem(agent, deps.style),
       prompt: selectionBlocksPrompt(blocks, instruction),
       temperature: agent.temperature,
-      effort: agent.effort,
+      effort: effortFor("passage"),
       shape: "document",
     },
     (json) => {
