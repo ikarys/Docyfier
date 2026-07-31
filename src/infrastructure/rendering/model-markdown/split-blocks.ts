@@ -8,70 +8,98 @@ import { FENCE } from "./directives";
  * blank line by construction (see `emit-lists.ts`) and a blockquote marks every
  * line of its own, so those two need no rule here.
  *
- * The same scanner reads a finished answer and, later, one arriving token by
- * token, which is why it is a line-at-a-time state machine rather than a regex.
+ * One state machine, two ways in: `splitBlocks` for an answer that has arrived,
+ * a `BlockSplitter` for one still being written. The streamed reading is the
+ * reason it is a line-at-a-time scanner rather than a regex, and the reason the
+ * rule has a single home — a stream that split differently from a finished text
+ * would be a bug nobody could see until a document was already half inserted.
  */
 
 const CODE_FENCE = /^(`{3,})/;
 const MATH_FENCE = "$$";
 const DIRECTIVE_OPEN = new RegExp(`^${FENCE} \\S`);
 
-interface Depth {
-  code: number;
-  math: boolean;
-  directives: number;
-}
+export class BlockSplitter {
+  /** The line still being written, up to the next newline. */
+  private pending = "";
+  private current: string[] = [];
+  private code = 0;
+  private math = false;
+  private directives = 0;
 
-function emptyDepth(): Depth {
-  return { code: 0, math: false, directives: 0 };
-}
+  /** The blocks the chunk completed. Whatever it started waits for the rest. */
+  push(chunk: string): string[] {
+    const lines = (this.pending + chunk).split("\n");
+    this.pending = lines.pop() ?? "";
+    const blocks: string[] = [];
+    for (const line of lines) this.take(line, blocks);
+    return blocks;
+  }
 
-/** Whether the line leaves the scanner inside something a blank line cannot cut. */
-function advance(line: string, depth: Depth): void {
-  if (depth.code) {
-    const closing = CODE_FENCE.exec(line);
-    if (closing && closing[1].length >= depth.code && line.trim() === closing[1]) depth.code = 0;
-    return;
+  /** What is left when the model stops writing, closed where it stands. */
+  end(): string[] {
+    const blocks: string[] = [];
+    if (this.pending) {
+      this.take(this.pending, blocks);
+      this.pending = "";
+    }
+    const last = this.close();
+    if (last) blocks.push(last);
+    return blocks;
   }
-  if (depth.math) {
-    if (line.trim() === MATH_FENCE) depth.math = false;
-    return;
-  }
-  const opening = CODE_FENCE.exec(line);
-  if (opening) {
-    depth.code = opening[1].length;
-    return;
-  }
-  if (line.trim() === MATH_FENCE) {
-    depth.math = true;
-    return;
-  }
-  if (DIRECTIVE_OPEN.test(line)) depth.directives++;
-  else if (line.trim() === FENCE && depth.directives > 0) depth.directives--;
-}
 
-const inside = (depth: Depth): boolean => depth.code > 0 || depth.math || depth.directives > 0;
+  private get inside(): boolean {
+    return this.code > 0 || this.math || this.directives > 0;
+  }
+
+  private take(line: string, blocks: string[]): void {
+    if (!line.trim() && !this.inside) {
+      const block = this.close();
+      if (block) blocks.push(block);
+      return;
+    }
+    const wasInside = this.inside;
+    this.advance(line);
+    this.current.push(line);
+    // A fence that just closed cannot be continued: the block is whole, and
+    // waiting for the blank line after it would be a wait for nothing.
+    if (!wasInside || this.inside) return;
+    const block = this.close();
+    if (block) blocks.push(block);
+  }
+
+  private close(): string | null {
+    const block = this.current.join("\n").trim();
+    this.current = [];
+    return block || null;
+  }
+
+  private advance(line: string): void {
+    if (this.code) {
+      const closing = CODE_FENCE.exec(line);
+      if (closing && closing[1].length >= this.code && line.trim() === closing[1]) this.code = 0;
+      return;
+    }
+    if (this.math) {
+      if (line.trim() === MATH_FENCE) this.math = false;
+      return;
+    }
+    const opening = CODE_FENCE.exec(line);
+    if (opening) {
+      this.code = opening[1].length;
+      return;
+    }
+    if (line.trim() === MATH_FENCE) {
+      this.math = true;
+      return;
+    }
+    if (DIRECTIVE_OPEN.test(line)) this.directives++;
+    else if (line.trim() === FENCE && this.directives > 0) this.directives--;
+  }
+}
 
 /** The text as its top-level blocks, each still in the format it arrived in. */
 export function splitBlocks(text: string): string[] {
-  const depth = emptyDepth();
-  const blocks: string[] = [];
-  let current: string[] = [];
-
-  const close = () => {
-    const block = current.join("\n").trim();
-    if (block) blocks.push(block);
-    current = [];
-  };
-
-  for (const line of text.split("\n")) {
-    if (!line.trim() && !inside(depth)) {
-      close();
-      continue;
-    }
-    advance(line, depth);
-    current.push(line);
-  }
-  close();
-  return blocks;
+  const splitter = new BlockSplitter();
+  return [...splitter.push(text), ...splitter.end()];
 }
