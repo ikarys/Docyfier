@@ -10,6 +10,28 @@ document creation: turn raw text into modern, polished, well-structured document
 - [PLAN.md](PLAN.md) — prioritized needs and roadmap in STEPS. **Check the current
   STEP before any work**; do not build ahead of it.
 
+## Seeing it, and judging it
+
+Two tools already exist. Reaching for a third is how a browser driver gets
+written twice.
+
+- **To look at a change** — did it render, did the layout survive, what does the
+  toolbar say: the `run-docyfier` skill (`.claude/skills/run-docyfier/`). Dev
+  server, a headless browser, a screenshot of a real document. It also records
+  the traps: Next moves to another port without failing when 3000 is taken, and
+  `/doc/u2-demo` is the document with every block in it.
+- **To judge a change** — was the answer good, did the export keep the tables,
+  is the page sound: **`../docyfier-lab`**, a bench built for exactly that. It
+  drives a running instance from outside and reports structure, style rules,
+  timings, screenshots and a local model's opinion; twelve suites, a
+  `DocyfierApp` page object, session handling and Playwright are already there.
+
+**Never add Playwright to this package, and never write a second browser driver
+under `src/` or `test/`.** The lab owns that, deliberately: it never imports
+Docyfier, so what it exercises is the product rather than the code. A rendering
+rule the bench should defend goes into a lab suite, not into a script written
+here — the page view is the worked example (`src/suites/design.bench.ts`).
+
 ## Project status
 
 **WYSIWYG editor + AI assistance implemented** (see [README.md](README.md)):
@@ -201,6 +223,8 @@ STEP 3 and was judged not worth its weight.
 - No code until a STEP is explicitly started by the maintainer.
 - Non-trivial tasks (multi-file, design choices): plan first, get approval, then execute.
 - Keep diffs small and focused; one concern per commit.
+- A change to what the editor renders is not done until someone has looked at
+  it: typecheck, lint and the whole suite pass on a page nobody can read.
 
 ## Code quality standards
 
