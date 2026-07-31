@@ -37,4 +37,7 @@ yarn-error.log*
 .vscode/*
 !.vscode/extensions.json
 .idea
-.claude
+# A project skill is the repo's verified path for running this app, so it is
+# shared; local settings are not. Same shape as .vscode above.
+.claude/*
+!.claude/skills/
