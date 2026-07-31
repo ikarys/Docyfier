@@ -104,6 +104,60 @@ export function orderRanks(
   );
 }
 
+/**
+ * Boxes to a row, before a drawing stops fitting the text column it sits in.
+ * Four of the widest box and their gaps come to just under a printed page.
+ */
+export const MAX_PER_ROW = 4;
+
+/**
+ * Break a rank nobody ordered into rows, one group to a row.
+ *
+ * An architecture states what contains what and often draws no arrow at all.
+ * Ranking then has nothing to say — every box lands on rank 0 — and the result
+ * is a strip as wide as the node count, illegible in a text column.
+ *
+ * A row never mixes two groups. A band is drawn around the box its members
+ * occupy, so a row holding one member of each of three nested groups makes all
+ * three bands cover each other, and the drawing says the system is something
+ * it is not.
+ *
+ * A rank an edge touches is left whole: it was placed for a reason, and moving
+ * one of its boxes down a row would put a source below what it points at.
+ */
+export function wrapWideRanks(
+  ranks: string[][],
+  edges: DiagramEdge[],
+  nodes: DiagramNode[] = [],
+): string[][] {
+  const tied = new Set(edges.flatMap((e) => [e.from, e.to]));
+  const groupOf = new Map(nodes.map((n) => [n.id, n.group ?? ""]));
+  return ranks.flatMap((rank) => {
+    if (rank.length <= MAX_PER_ROW || rank.some((id) => tied.has(id))) return [rank];
+    return runsByGroup(rank, groupOf).flatMap(evenRows);
+  });
+}
+
+/** Consecutive ids sharing a group. Ordering already put them side by side. */
+function runsByGroup(rank: string[], groupOf: Map<string, string>): string[][] {
+  const runs: string[][] = [];
+  for (const id of rank) {
+    const last = runs[runs.length - 1];
+    if (last && groupOf.get(last[0]) === groupOf.get(id)) last.push(id);
+    else runs.push([id]);
+  }
+  return runs;
+}
+
+/** As few rows as fit the ceiling, all of them the same length but the last. */
+function evenRows(run: string[]): string[][] {
+  const rows = Math.ceil(run.length / MAX_PER_ROW);
+  const per = Math.ceil(run.length / rows);
+  return Array.from({ length: rows }, (_, r) => run.slice(r * per, (r + 1) * per)).filter(
+    (row) => row.length > 0,
+  );
+}
+
 function medianOfParents(
   id: string,
   forward: DiagramEdge[],

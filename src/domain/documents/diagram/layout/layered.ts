@@ -1,5 +1,5 @@
 import type { DiagramAttrs, DiagramEdge, DiagramNode } from "../diagram";
-import { bandsFor } from "./bands";
+import { bandsFor, headroomBefore } from "./bands";
 import { labelAnchor, routeBackward, routeForward } from "./edges";
 import {
   GAP_ACROSS,
@@ -14,7 +14,7 @@ import {
   type PlacedEdge,
   type Point,
 } from "./geometry";
-import { orderRanks, rankNodes, splitBackEdges } from "./ranking";
+import { orderRanks, rankNodes, splitBackEdges, wrapWideRanks } from "./ranking";
 
 /**
  * Rows of boxes with the flow running between them — flows and architectures.
@@ -26,11 +26,24 @@ import { orderRanks, rankNodes, splitBackEdges } from "./ranking";
  */
 export function layered(attrs: DiagramAttrs): Placement {
   const { forward, back } = splitBackEdges(attrs.nodes, attrs.edges);
-  const ranks = orderRanks(rankNodes(attrs.nodes, forward), attrs.nodes, forward, attrs.groups);
+  // Wrapped after ordering, never before: ordering is what puts a group's
+  // members next to each other, and a row cut across that order would scatter
+  // them over two rows with a band drawn around the gap.
+  const ranks = wrapWideRanks(
+    orderRanks(rankNodes(attrs.nodes, forward), attrs.nodes, forward, attrs.groups),
+    forward,
+    attrs.nodes,
+  );
   const size = uniformBoxSize(attrs.nodes);
   const byId = new Map(attrs.nodes.map((n) => [n.id, n]));
 
-  const boxes = placeRanks(ranks, byId, size, attrs.direction);
+  const boxes = placeRanks(
+    ranks,
+    byId,
+    size,
+    attrs.direction,
+    headroomBefore(ranks, attrs.nodes, attrs.groups),
+  );
   const placed = new Map(boxes.map((b) => [b.id, b]));
   return frame({
     boxes,
@@ -45,17 +58,22 @@ function placeRanks(
   byId: Map<string, DiagramNode>,
   size: BoxSize,
   direction: "down" | "right",
+  headroom: number[],
 ): PlacedBox[] {
   const along = (direction === "down" ? size.width : size.height) + GAP_ALONG;
   const across = (direction === "down" ? size.height : size.width) + GAP_ACROSS;
   const widest = Math.max(...ranks.map((r) => r.length));
+  // Ranks are evenly spaced except where a band opens: that gap also carries
+  // the names of the bands starting there, which are drawn above their top edge.
+  let depth = 0;
+  const starts = ranks.map((_, r) => (depth += r === 0 ? headroom[r] : across + headroom[r]));
   return ranks.flatMap((rank, r) =>
     rank.map((id, i) => {
       const offset = ((widest - rank.length) * along) / 2;
       const at: Point =
         direction === "down"
-          ? { x: offset + i * along, y: r * across }
-          : { x: r * across, y: offset + i * along };
+          ? { x: offset + i * along, y: starts[r] }
+          : { x: starts[r], y: offset + i * along };
       return boxFrom(byId.get(id) as DiagramNode, at, size);
     }),
   );

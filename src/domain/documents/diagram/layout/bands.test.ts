@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DiagramAttrs } from "../diagram";
 import { placeNodes } from "./place";
-import type { PlacedGroup } from "./geometry";
+import { GROUP_HEADER, type PlacedGroup } from "./geometry";
 
 /**
  * What a band has to enclose (PLAN.md STEP 10).
@@ -89,6 +89,48 @@ describe("a band around a band", () => {
       expect(group.y).toBeGreaterThanOrEqual(0);
       expect(group.x + group.width).toBeLessThanOrEqual(placed.width);
       expect(group.y + group.height).toBeLessThanOrEqual(placed.height);
+    }
+  });
+});
+
+/**
+ * A band's name is written in the strip just above it. Nothing else may be
+ * drawn there: the wrapped architecture put a row of the parent's own boxes
+ * directly over the child band, and "AKS cluster astro_shared_dev" came out
+ * struck through by a box that had nothing to do with it.
+ */
+describe("the strip a band writes its name in", () => {
+  const wrapped: DiagramAttrs = {
+    ...base,
+    groups: [
+      { id: "sub", label: "subscription astro_shared_dev (westeurope)" },
+      { id: "aks", label: "AKS cluster astro_shared_dev", parent: "sub" },
+      { id: "bao", label: "OpenBao instance", parent: "aks" },
+    ],
+    nodes: [
+      { id: "kv", label: "Platform KV", group: "sub" },
+      { id: "mi", label: "Managed Identity", group: "sub" },
+      { id: "st", label: "Backup ST", group: "sub" },
+      { id: "snap", label: "raft snapshots", group: "sub" },
+      { id: "aksn", label: "AKS cluster", group: "aks" },
+      { id: "root", label: "Root namespace", group: "bao" },
+      { id: "dev", label: 'ns "dev/"', group: "bao" },
+      { id: "uat", label: 'ns "uat/"', group: "bao" },
+    ],
+  };
+
+  it("is left clear of every box", () => {
+    const placed = placeNodes(wrapped);
+    for (const band of placed.groups) {
+      const top = band.y - GROUP_HEADER;
+      const overlapping = placed.boxes.filter(
+        (box) =>
+          box.y < band.y &&
+          box.y + box.height > top &&
+          box.x < band.x + band.width &&
+          box.x + box.width > band.x,
+      );
+      expect(`${band.id}: ${overlapping.map((box) => box.id).join(", ")}`).toBe(`${band.id}: `);
     }
   });
 });

@@ -1,5 +1,5 @@
-import type { DiagramAttrs, DiagramGroup } from "../diagram";
-import { outermostFirst } from "../group-tree";
+import type { DiagramAttrs, DiagramGroup, DiagramNode } from "../diagram";
+import { groupPath, outermostFirst } from "../group-tree";
 import { GROUP_HEADER, GROUP_PAD, type PlacedBox, type PlacedGroup } from "./geometry";
 
 /**
@@ -62,6 +62,30 @@ export function bandsFor(attrs: DiagramAttrs, placed: Map<string, PlacedBox>): P
         height: extent.bottom - extent.y,
       },
     ];
+  });
+}
+
+/**
+ * How much air to leave above each rank, so the bands starting there can write
+ * their names without striking through the boxes on the rank before.
+ *
+ * A band's name is drawn in the strip just above its top edge, and its top edge
+ * follows its first member. Ranks are otherwise evenly spaced, so a rank that
+ * opens three nested bands needs three strips more than one that opens none.
+ */
+export function headroomBefore(
+  ranks: string[][],
+  nodes: DiagramNode[],
+  groups: DiagramGroup[],
+): number[] {
+  const groupOf = new Map(nodes.map((node) => [node.id, node.group ?? ""]));
+  const open = new Set<string>();
+  return ranks.map((rank) => {
+    const starting = rank
+      .flatMap((id) => groupPath(groups, groupOf.get(id) ?? ""))
+      .filter((id) => !open.has(id));
+    for (const id of starting) open.add(id);
+    return new Set(starting).size * GROUP_HEADER;
   });
 }
 
