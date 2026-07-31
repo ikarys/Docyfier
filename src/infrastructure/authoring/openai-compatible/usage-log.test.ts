@@ -69,7 +69,10 @@ describe("usageLine", () => {
    * to "was the wait the format, or the thinking?".
    */
   it("counts the answer that arrived, so undeclared thinking shows as the gap", () => {
-    const line = usageLine("transform", 100_000, { outputTokens: 47_409 }, 21_200);
+    const line = usageLine("transform", 100_000, { outputTokens: 47_409 }, {
+      chars: 21_200,
+      thinking: 0,
+    });
 
     expect(line).toContain("answer 21200 chars");
     expect(line).toContain("~5300 tok");
@@ -77,12 +80,35 @@ describe("usageLine", () => {
   });
 
   it("calls the gap nothing when the answer accounts for the whole output", () => {
-    const line = usageLine("caret", 1_000, { outputTokens: 100 }, 4_000);
+    const line = usageLine("caret", 1_000, { outputTokens: 100 }, { chars: 4_000, thinking: 0 });
 
     expect(line).not.toContain("unwritten");
   });
 
   it("says nothing about the answer when it was not counted", () => {
     expect(usageLine("caret", 1_000, { outputTokens: 10 })).not.toContain("answer");
+  });
+
+  /**
+   * A model that spends its whole output budget deliberating and writes nothing
+   * is the worst wait the product can produce, and it is invisible: the answer
+   * is empty and the provider declares no reasoning. Counting the thinking the
+   * SDK streamed is what tells that apart from a provider that hung up.
+   */
+  it("counts the thinking the model streamed, whatever the provider declares", () => {
+    const line = usageLine("transform", 455_000, { outputTokens: 32_769 }, {
+      chars: 0,
+      thinking: 128_000,
+    });
+
+    expect(line).toContain("answer 0 chars");
+    expect(line).toContain("thinking 128000 chars");
+    expect(line).toContain("~32000 tok");
+  });
+
+  it("says nothing about thinking when the model streamed none", () => {
+    const line = usageLine("caret", 1_000, { outputTokens: 10 }, { chars: 40, thinking: 0 });
+
+    expect(line).not.toContain("thinking");
   });
 });

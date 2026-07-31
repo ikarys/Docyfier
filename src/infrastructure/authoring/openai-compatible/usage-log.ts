@@ -48,15 +48,29 @@ export function readUsage(value: unknown): CallUsage {
 /** Roughly how many tokens a run of model-written text was, for a gap nobody declared. */
 const CHARS_PER_TOKEN = 4;
 
+/** What this process actually read off the stream, as opposed to what it was billed. */
+export interface AnswerSize {
+  /** Characters of answer — the text the surface will use. */
+  chars: number;
+  /** Characters of reasoning the model streamed on its way there. */
+  thinking: number;
+}
+
 /**
  * What the answer cost against what arrived. A provider that bills 47 000
  * output tokens and hands back 5 000 tokens of text spent the difference
  * thinking, whatever it says in `usage` — and that difference decides whether
  * the wait is worth attacking through the format or through the effort.
  */
-function answerParts(usage: CallUsage, wroteChars: number): string[] {
-  const written = Math.round(wroteChars / CHARS_PER_TOKEN);
-  const parts = [`answer ${wroteChars} chars`, `~${written} tok`];
+function answerParts(usage: CallUsage, answer: AnswerSize): string[] {
+  const written = Math.round(answer.chars / CHARS_PER_TOKEN);
+  const parts = [`answer ${answer.chars} chars`, `~${written} tok`];
+  if (answer.thinking > 0) {
+    parts.push(
+      `thinking ${answer.thinking} chars`,
+      `~${Math.round(answer.thinking / CHARS_PER_TOKEN)} tok`,
+    );
+  }
   const billed = usage.outputTokens ?? 0;
   if (billed > written) parts.push(`${billed - written} unwritten`);
   return parts;
@@ -66,8 +80,8 @@ export function usageLine(
   label: string,
   ms: number,
   usage: CallUsage,
-  /** Characters of model text this process actually read off the stream. */
-  wroteChars?: number,
+  /** What this process read off the stream; absent on a call that did not stream. */
+  answer?: AnswerSize,
 ): string {
   const seconds = ms / 1000;
   const parts = [`[ai] ${label} ${seconds.toFixed(1)}s`];
@@ -90,7 +104,7 @@ export function usageLine(
     const total = written + usage.reasoningTokens;
     if (total > 0) parts.push(`${Math.round((usage.reasoningTokens / total) * 100)}% thinking`);
   }
-  if (wroteChars !== undefined) parts.push(...answerParts(usage, wroteChars));
+  if (answer) parts.push(...answerParts(usage, answer));
   if (usage.inputTokens === undefined && usage.outputTokens === undefined) {
     parts.push("no usage reported");
   }
@@ -102,8 +116,8 @@ export function logUsage(
   label: string,
   startedAt: number,
   usage: unknown,
-  wroteChars?: number,
+  answer?: AnswerSize,
 ): void {
   if (!usageLoggingEnabled()) return;
-  console.info(usageLine(label, Date.now() - startedAt, readUsage(usage), wroteChars));
+  console.info(usageLine(label, Date.now() - startedAt, readUsage(usage), answer));
 }

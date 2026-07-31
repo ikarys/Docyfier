@@ -1,16 +1,13 @@
 import "server-only";
-import { streamText, type TextStreamPart, type ToolSet } from "ai";
-import { beautify } from "@/domain/authoring/beautify";
-import { parseModelJson } from "@/domain/authoring/model-answer";
+import { streamText } from "ai";
 import type { StyleParameters } from "@/domain/authoring/style-parameters";
 import type { DocumentNode } from "@/domain/documents/body";
 import type { ThinkingEffort } from "@/domain/authoring/text-generator";
-import { validateDocJson } from "@/infrastructure/editor/schema";
 import { reasoningOptions } from "@/infrastructure/authoring/openai-compatible/endpoint";
 import { logUsage } from "@/infrastructure/authoring/openai-compatible/usage-log";
 import { line, providerMessage as message } from "./ndjson";
+import { emptyRead, readAnswer, type Part } from "./read-block-stream";
 import { callOptions, isTimeout, languageModel, timeoutMessage } from "./provider";
-import { BlockScanner } from "./stream-blocks";
 import { getAiSettings } from "@/lib/settings";
 
 /**
@@ -46,23 +43,13 @@ export interface BlockStream {
   verdict?(blocks: DocumentNode[]): string;
 }
 
-/**
- * One block through the same pipeline as the non-streaming path: schema
- * validation, then the deterministic formatter. Both rules `beautify` applies
- * are block-local, so a single-block document is a faithful wrapper.
- */
-function prepare(raw: string, style: StyleParameters): unknown {
-  const doc = validateDocJson({ type: "doc", content: [parseModelJson(raw)] });
-  const polished = beautify(doc, style);
-  return (validateDocJson(polished).content ?? [])[0];
-}
-
-type Part = TextStreamPart<ToolSet>;
-
 interface Opened {
   parts: AsyncIterator<Part>;
   firstText: string | null;
   failure: unknown;
+  /** Characters the model thought before it wrote anything, or before it gave up. */
+  thinking: number;
+  usage: unknown;
 }
 
 /**
@@ -85,18 +72,24 @@ async function open(request: BlockStream): Promise<Opened> {
       ...callOptions(),
     }).fullStream[Symbol.asyncIterator]();
 
+    let thinking = 0;
+    let usage: unknown = null;
     for (;;) {
       const next = await parts.next();
-      if (next.done) return { parts, firstText: null, failure: null };
+      if (next.done) return { parts, firstText: null, failure: null, thinking, usage };
       if (next.value.type === "text-delta") {
-        return { parts, firstText: next.value.text, failure: null };
+        return { parts, firstText: next.value.text, failure: null, thinking, usage };
       }
+      // A model can deliberate its whole output budget away and write nothing.
+      // Counted here as well as in the read, because that answer never gets one.
+      if (next.value.type === "reasoning-delta") thinking += next.value.text.length;
+      if (next.value.type === "finish") usage = next.value.totalUsage;
       if (next.value.type === "error") {
-        return { parts, firstText: null, failure: next.value.error };
+        return { parts, firstText: null, failure: next.value.error, thinking, usage };
       }
     }
   } catch (err) {
-    return { parts: emptyParts(), firstText: null, failure: err };
+    return { parts: emptyParts(), firstText: null, failure: err, thinking: 0, usage: null };
   }
 }
 
@@ -104,79 +97,16 @@ function emptyParts(): AsyncIterator<Part> {
   return { next: async () => ({ done: true, value: undefined as never }) };
 }
 
-/** Everything one answer turned out to be, filled in as it is read. */
-interface Read {
-  /** Why the answer ended badly, or null when it ended. */
-  stopped: string | null;
-  written: DocumentNode[];
-  blocks: number;
-  skipped: number;
-  /** Characters of model text read, so the wait can be told apart from the answer. */
-  chars: number;
-  usage: unknown;
-}
-
-function emptyRead(): Read {
-  return { stopped: null, written: [], blocks: 0, skipped: 0, chars: 0, usage: null };
-}
-
-/**
- * Read the answer to its end, handing each accepted block over as it closes.
- *
- * Filling a `Read` the caller owns rather than returning one: a stream that
- * throws halfway still spent whatever it spent, and the log is the only place
- * that says so.
- */
-async function readAnswer(
-  source: { parts: AsyncIterator<Part>; firstText: string },
-  request: BlockStream,
-  send: (block: unknown) => void,
-  read: Read,
-): Promise<void> {
-  const scanner = new BlockScanner();
-
-  const emit = (raw: string) => {
-    try {
-      const block = prepare(raw, request.style);
-      send(block);
-      read.written.push(block as DocumentNode);
-      read.blocks++;
-    } catch (err) {
-      // A block the schema rejects is dropped rather than aborting the answer;
-      // the count is reported in the terminal line.
-      console.error("[ai] streamed block rejected:", message(err));
-      read.skipped++;
-    }
-  };
-
-  read.chars += source.firstText.length;
-  for (const raw of scanner.push(source.firstText)) emit(raw);
-
-  while (!scanner.finished) {
-    const next = await source.parts.next();
-    if (next.done) break;
-    if (next.value.type === "text-delta") {
-      read.chars += next.value.text.length;
-      for (const raw of scanner.push(next.value.text)) emit(raw);
-    } else if (next.value.type === "error") {
-      read.stopped = message(next.value.error);
-      break;
-    } else if (next.value.type === "finish") {
-      read.usage = next.value.totalUsage;
-      if (next.value.finishReason === "length") {
-        read.stopped = "The answer was cut short — raise Max output tokens in Settings.";
-      }
-    }
-  }
-}
-
 /** The blocks, as NDJSON, or a 502 explaining why the stream never opened. */
 export async function blockStreamResponse(request: BlockStream): Promise<Response> {
   const started = Date.now();
-  const { parts, firstText, failure } = await open(request);
+  const { parts, firstText, failure, thinking, usage } = await open(request);
 
   if (firstText === null) {
     console.error("[ai] streaming answer failed:", failure);
+    // An answer that never started still took the seconds it took, and on a
+    // reasoning model those seconds are the whole finding.
+    logUsage("stream", started, usage, { chars: 0, thinking });
     return Response.json(
       {
         error: isTimeout(failure)
@@ -193,11 +123,13 @@ export async function blockStreamResponse(request: BlockStream): Promise<Respons
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const read = emptyRead();
+      read.answer.thinking = thinking;
+      read.usage = usage;
       const send = (block: unknown) => controller.enqueue(encoder.encode(line({ block })));
 
       try {
         if (request.prelude) controller.enqueue(encoder.encode(line(request.prelude)));
-        await readAnswer({ parts, firstText }, request, send, read);
+        await readAnswer({ parts, firstText }, request.style, send, read);
 
         const breach = read.stopped ? "" : (request.verdict?.(read.written) ?? "");
         const failed = read.stopped ?? (breach || null);
@@ -214,7 +146,7 @@ export async function blockStreamResponse(request: BlockStream): Promise<Respons
         // Here rather than on the `finish` part: a scanner that has seen the
         // closing bracket stops reading, so on every answer that arrived whole
         // the part carrying the usage is never reached.
-        logUsage("stream", started, read.usage, read.chars);
+        logUsage("stream", started, read.usage, read.answer);
       }
       controller.close();
     },

@@ -10,7 +10,7 @@ import { agentById } from "@/domain/authoring/agents/catalog";
 import { opBreach } from "@/domain/authoring/agents/layout-ops";
 import { routeSurface, type Surface } from "@/domain/authoring/agents/routing";
 import { reasoningOptions } from "@/infrastructure/authoring/openai-compatible/endpoint";
-import { logUsage } from "@/infrastructure/authoring/openai-compatible/usage-log";
+import { logUsage, type AnswerSize } from "@/infrastructure/authoring/openai-compatible/usage-log";
 import { isAuthorized } from "@/lib/auth";
 import { ndjsonResponse } from "@/lib/ai/ndjson";
 import { callTimeoutMs, languageModel } from "@/lib/ai/provider";
@@ -109,13 +109,17 @@ export async function POST(req: Request): Promise<Response> {
  * between what it charged and what reached us is the thinking it did not name.
  */
 function logWhenDone(parts: AsyncIterator<ModelPart>, started: number): AsyncIterator<ModelPart> {
-  let chars = 0;
+  const answer: AnswerSize = { chars: 0, thinking: 0 };
   return {
     async next() {
       const step = await parts.next();
       if (step.done) return step;
-      if (step.value.type === "text-delta") chars += step.value.text?.length ?? 0;
-      if (step.value.type === "finish") logUsage("transform", started, step.value.totalUsage, chars);
+      const size = step.value.text?.length ?? 0;
+      if (step.value.type === "text-delta") answer.chars += size;
+      if (step.value.type === "reasoning-delta") answer.thinking += size;
+      if (step.value.type === "finish") {
+        logUsage("transform", started, step.value.totalUsage, answer);
+      }
       return step;
     },
   };
