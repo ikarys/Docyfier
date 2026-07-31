@@ -1,6 +1,7 @@
 import type { JSONContent } from "@tiptap/core";
 import { rewriteSelectionAction } from "@/app/ai-actions";
 import type { Surface } from "@/domain/authoring/agents/routing";
+import { toPlainJSON } from "@/infrastructure/documents/editor-body";
 import { ndjsonLines } from "./generation-handover";
 
 /**
@@ -25,10 +26,26 @@ export interface PassageRequest {
   surface: Surface;
 }
 
+/**
+ * The passage as a server function will accept it.
+ *
+ * ProseMirror computes every `attrs` with `Object.create(null)` and `toJSON()`
+ * hands those very objects back, so a passage taken straight from the document
+ * reaches the blocking action as a temporary client reference: the first
+ * server-side `attrs.language` — which is the first thing a code block is asked
+ * for — fails with "Cannot access language on the server". It happens here
+ * rather than in each caller, because a caller that forgets loses the surface
+ * only on the fallback path, which is the one nobody exercises until it matters.
+ */
+export function plainPassage(request: PassageRequest): PassageRequest {
+  return { ...request, blocks: toPlainJSON(request.blocks) };
+}
+
 export async function requestPassageBlocks(
-  request: PassageRequest,
+  input: PassageRequest,
   onBlock: (block: JSONContent) => void,
 ): Promise<PassageAnswer> {
+  const request = plainPassage(input);
   const res = await fetch("/api/passage", {
     method: "POST",
     headers: { "content-type": "application/json" },
