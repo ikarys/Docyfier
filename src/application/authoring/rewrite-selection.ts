@@ -9,7 +9,7 @@ import {
   selectionTextPrompt,
 } from "@/domain/authoring/prompts";
 import type { DocumentNode } from "@/domain/documents/body";
-import { effortFor } from "@/domain/authoring/thinking";
+import { effortFor, tokensFor } from "@/domain/authoring/thinking";
 import { askDocument } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
@@ -26,6 +26,7 @@ export async function rewriteSelectionBlocks(
     prompt: selectionBlocksPrompt(deps.writer.write(blocks), instruction),
     temperature: 0.3,
     effort: effortFor("passage"),
+    maxTokens: tokensFor("passage"),
   });
   return body.content ?? [];
 }
@@ -46,6 +47,7 @@ export async function rewriteSelectionText(
     temperature: 0.3,
     // Swapping one fragment mid-sentence: there is nothing here to deliberate.
     effort: effortFor("passage"),
+    maxTokens: tokensFor("passage"),
   });
   return fragmentFromAnswer(answer.text);
 }

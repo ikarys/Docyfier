@@ -1,5 +1,5 @@
 import { caretPrompt, caretSystem } from "@/domain/authoring/prompts";
-import { effortFor } from "@/domain/authoring/thinking";
+import { effortFor, tokensFor } from "@/domain/authoring/thinking";
 import { blockStreamResponse } from "@/lib/ai/block-stream-response";
 import { getStyleParameters } from "@/lib/settings";
 import { isAuthorized } from "@/lib/auth";
@@ -37,6 +37,7 @@ export async function POST(req: Request): Promise<Response> {
     temperature: 0.6,
     // The user is watching this one land at their cursor.
     effort: effortFor("block"),
+    maxTokens: tokensFor("block"),
     style,
   });
 }

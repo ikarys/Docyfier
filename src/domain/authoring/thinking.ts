@@ -23,3 +23,26 @@ export type Stake =
 export function effortFor(stake: Stake): ThinkingEffort {
   return stake === "document" ? "medium" : "low";
 }
+
+/**
+ * How many tokens a call may spend, which is the other half of what it is worth.
+ *
+ * A reasoning model calibrates how long it deliberates on the budget it is
+ * handed, and the instance's budget is sized for a whole document. Sent with a
+ * request to redraw one block it buys minutes of thinking for an answer that
+ * cannot exceed a few hundred tokens — measured on a ten-box drawing that took
+ * ten minutes. `reasoning_effort` asks the model to be brief and is ignored by
+ * some providers; a budget is not a request.
+ *
+ * `budget` is the instance's own ceiling and always wins: it is the number
+ * somebody chose, and this is a guess made per call.
+ */
+const ROOM: Record<Stake, number> = {
+  block: 2048,
+  passage: 4096,
+  document: 32768,
+};
+
+export function tokensFor(stake: Stake, budget = Number.POSITIVE_INFINITY): number {
+  return Math.min(ROOM[stake], budget);
+}

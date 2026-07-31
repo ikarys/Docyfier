@@ -10,7 +10,7 @@ import {
 } from "@/domain/authoring/prompts";
 import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
 import { blocksOf, type DocumentBody, type DocumentNode } from "@/domain/documents/body";
-import { effortFor } from "@/domain/authoring/thinking";
+import { effortFor, tokensFor } from "@/domain/authoring/thinking";
 import { askDocument, askOnce, bodyFromAnswer, blocksFromAnswer, polished } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
@@ -113,6 +113,7 @@ export function transformDocument(
       prompt: transformOpsPrompt(blocks.map((block) => deps.writer.write([block])), instruction),
       temperature: agent ? agent.temperature : 0.3,
       effort: effortFor("document"),
+    maxTokens: tokensFor("document"),
     },
     (text): TransformOutcome => {
       const ops = opsFrom(deps, text, blocks.length);

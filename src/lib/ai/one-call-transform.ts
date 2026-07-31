@@ -8,7 +8,7 @@ import type { Agent } from "@/domain/authoring/agents/contract";
 import { opBreach } from "@/domain/authoring/agents/layout-ops";
 import { coveredBlocks, type DocOp } from "@/domain/authoring/ops";
 import type { DocumentNode } from "@/domain/documents/body";
-import { effortFor } from "@/domain/authoring/thinking";
+import { effortFor, tokensFor } from "@/domain/authoring/thinking";
 import { reasoningOptions } from "@/infrastructure/authoring/openai-compatible/endpoint";
 import { logUsage, type AnswerSize } from "@/infrastructure/authoring/openai-compatible/usage-log";
 import { callTimeoutMs, languageModel } from "./provider";
@@ -96,7 +96,7 @@ export async function modelOpLines(
     system: transformOpsSystem(deps.style, agent),
     prompt: transformOpsPrompt(blocks.map((block) => deps.writer.write([block])), instruction),
     temperature: agent.temperature,
-    maxOutputTokens: endpoint.maxOutputTokens,
+    maxOutputTokens: tokensFor("document", endpoint.maxOutputTokens),
     ...reasoningOptions(endpoint, effortFor("document")),
     abortSignal: aborter.signal,
     maxRetries: 1,

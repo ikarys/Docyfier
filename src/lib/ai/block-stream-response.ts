@@ -28,6 +28,8 @@ export interface BlockStream {
   readonly temperature: number;
   /** How much thinking this surface is worth; absent leaves the model to itself. */
   readonly effort?: ThinkingEffort;
+  /** The most this answer may cost, capped again by what the provider allows. */
+  readonly maxTokens?: number;
   /** The instance's writing style: the same pass the blocking path applies. */
   readonly style: StyleParameters;
   /** An NDJSON line to send before the first block — the document's dress. */
@@ -67,7 +69,7 @@ async function open(request: BlockStream): Promise<Opened> {
       system: request.system,
       prompt: request.prompt,
       temperature: request.temperature,
-      maxOutputTokens: endpoint.maxOutputTokens,
+      maxOutputTokens: Math.min(endpoint.maxOutputTokens, request.maxTokens ?? Infinity),
       ...reasoningOptions(endpoint, request.effort),
       ...callOptions(),
     }).fullStream[Symbol.asyncIterator]();

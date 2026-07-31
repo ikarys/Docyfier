@@ -62,7 +62,7 @@ export function createOpenAiCompatibleGenerator(
           system: request.system,
           prompt: request.prompt,
           temperature: request.temperature,
-          maxOutputTokens: endpoint.maxOutputTokens,
+          maxOutputTokens: Math.min(endpoint.maxOutputTokens, request.maxTokens ?? Infinity),
           ...reasoningOptions(endpoint, request.effort),
           ...callOptions(),
         });

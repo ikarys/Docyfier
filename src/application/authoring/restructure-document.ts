@@ -9,7 +9,7 @@ import {
   layoutPlanSystem,
   selectionBlocksPrompt,
 } from "@/domain/authoring/prompts";
-import { effortFor } from "@/domain/authoring/thinking";
+import { effortFor, tokensFor } from "@/domain/authoring/thinking";
 import type { DocumentNode } from "@/domain/documents/body";
 import { askJson, askOnce, blocksFromAnswer } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
@@ -43,6 +43,7 @@ async function plan(
       prompt: layoutPlanPrompt(outlineOf(blocks), instruction),
       temperature: designer.temperature,
       effort: effortFor("document"),
+    maxTokens: tokensFor("document"),
     },
     (json) => parseLayoutPlan(json, blocks.length),
   );
@@ -70,6 +71,7 @@ async function carryOut(
         ),
         temperature: designer.temperature,
         effort: effortFor("passage"),
+    maxTokens: tokensFor("passage"),
       },
       (text) => blocksFromAnswer(deps, text),
     );

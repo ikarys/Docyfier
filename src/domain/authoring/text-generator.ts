@@ -28,6 +28,12 @@ export interface GenerationRequest {
   temperature: number;
   /** Absent means "whatever this model does by default". */
   effort?: ThinkingEffort;
+  /**
+   * The most this answer may cost, over and above what the provider allows.
+   * A reasoning model deliberates to the budget it is handed, so a call about
+   * one block asks for one block's worth.
+   */
+  maxTokens?: number;
 }
 
 export interface GeneratedText {

@@ -5,7 +5,7 @@ import { charterBreach } from "@/domain/authoring/agents/charter-breach";
 import { agentSystem, selectionBlocksPrompt } from "@/domain/authoring/prompts";
 import { ModelUnavailable } from "@/domain/authoring/text-generator";
 import type { DocumentNode } from "@/domain/documents/body";
-import { effortFor } from "@/domain/authoring/thinking";
+import { effortFor, tokensFor } from "@/domain/authoring/thinking";
 import { askOnce, blocksFromAnswer } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
@@ -51,6 +51,7 @@ async function runAgent(
       prompt: selectionBlocksPrompt(deps.writer.write(blocks), instruction),
       temperature: agent.temperature,
       effort: effortFor("passage"),
+    maxTokens: tokensFor("passage"),
     },
     (text) => {
       const next = blocksFromAnswer(deps, text);
