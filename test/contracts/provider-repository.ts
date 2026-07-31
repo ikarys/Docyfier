@@ -27,7 +27,6 @@ const provider = (id: string, overrides: Partial<{ label: string; apiKey: string
     model: "gpt-4o",
     apiKey: overrides.apiKey ?? "",
     maxOutputTokens: 4096,
-    structuredOutput: false,
 reasoningEffort: "default",
   });
 

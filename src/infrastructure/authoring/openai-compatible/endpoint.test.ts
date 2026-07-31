@@ -73,7 +73,6 @@ describe("how hard the model may think", () => {
   const provider: ProviderEndpoint = {
     ...ENDPOINT,
     maxOutputTokens: 4096,
-    structuredOutput: false,
   };
 
   /** Saying nothing and saying "default" are the same choice: leave the model

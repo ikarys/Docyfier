@@ -18,7 +18,6 @@ export const DEFAULT_PROVIDER: AiProviderRecord = {
   model: "",
   apiKey: "",
   maxOutputTokens: 32768,
-  structuredOutput: false,
 reasoningEffort: "default",
 };
 

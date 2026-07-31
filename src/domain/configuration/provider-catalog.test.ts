@@ -9,7 +9,6 @@ const record = (id: string, port: number) => ({
   model: "",
   apiKey: "",
   maxOutputTokens: 4096,
-  structuredOutput: false,
 });
 
 const provider = (id: string, port: number) => AiProvider.create(record(id, port));

@@ -34,8 +34,6 @@ function storedProviders(saved: SettingsSections): StoredProvider[] {
       apiKey: saved.apiKey,
       maxOutputTokens:
         typeof saved.maxOutputTokens === "number" ? saved.maxOutputTokens : undefined,
-      structuredOutput:
-        typeof saved.structuredOutput === "boolean" ? saved.structuredOutput : undefined,
     },
   ];
 }
@@ -87,7 +85,6 @@ export class FileProviderRepository implements AiProviderRepository {
       model: undefined,
       apiKey: undefined,
       maxOutputTokens: undefined,
-      structuredOutput: undefined,
     });
   }
 }

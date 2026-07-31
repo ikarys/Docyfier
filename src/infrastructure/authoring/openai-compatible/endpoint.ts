@@ -20,7 +20,6 @@ export interface ModelEndpoint {
 /** What one generation call needs on top of the endpoint itself. */
 export interface ProviderEndpoint extends ModelEndpoint {
   maxOutputTokens: number;
-  structuredOutput: boolean;
   /** How hard the model may think first; absent or "default" sends nothing. */
   reasoningEffort?: string;
 }

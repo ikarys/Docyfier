@@ -15,7 +15,6 @@ const BLANK: AiProviderSummary = {
   baseUrl: "http://localhost:1234/v1",
   model: "",
   maxOutputTokens: 32768,
-  structuredOutput: false,
   hasApiKey: false,
   keyUnreadable: false,
 };

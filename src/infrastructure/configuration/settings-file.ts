@@ -24,7 +24,6 @@ export interface SettingsSections {
   model?: unknown;
   apiKey?: unknown;
   maxOutputTokens?: unknown;
-  structuredOutput?: unknown;
 }
 
 function settingsPath(): string {

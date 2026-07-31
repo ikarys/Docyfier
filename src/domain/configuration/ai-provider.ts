@@ -58,7 +58,6 @@ export interface AiProviderRecord {
   model: string;
   apiKey: string;
   maxOutputTokens: number;
-  structuredOutput: boolean;
   /** How hard the model should think before answering; see `ReasoningEffort`.
    * Optional: a settings file written before this existed is still a record. */
   reasoningEffort?: ReasoningEffort;
@@ -120,7 +119,6 @@ export class AiProvider {
     readonly model: string,
     readonly apiKey: string,
     readonly maxOutputTokens: number,
-    readonly structuredOutput: boolean,
     readonly reasoningEffort: ReasoningEffort = "default",
     /** True when a key is stored that could not be read back. */
     readonly keyUnreadable = false,
@@ -152,7 +150,6 @@ export class AiProvider {
       input.model.trim(),
       input.apiKey,
       input.maxOutputTokens,
-      input.structuredOutput,
       reasoningEffort,
     );
   }
@@ -195,7 +192,6 @@ export class AiProvider {
       isPositiveInteger(stored.maxOutputTokens)
         ? stored.maxOutputTokens
         : fallback.maxOutputTokens,
-      stored.structuredOutput ?? fallback.structuredOutput,
       isReasoningEffort(stored.reasoningEffort)
         ? stored.reasoningEffort
         : (fallback.reasoningEffort ?? "default"),
@@ -212,7 +208,6 @@ export class AiProvider {
       this.model,
       apiKey,
       this.maxOutputTokens,
-      this.structuredOutput,
       this.reasoningEffort,
     );
   }
@@ -226,7 +221,6 @@ export class AiProvider {
       this.model,
       this.apiKey,
       this.maxOutputTokens,
-      this.structuredOutput,
       this.reasoningEffort,
     );
   }
@@ -239,7 +233,6 @@ export class AiProvider {
       model: this.model,
       apiKey: this.apiKey,
       maxOutputTokens: this.maxOutputTokens,
-      structuredOutput: this.structuredOutput,
       reasoningEffort: this.reasoningEffort,
     };
   }

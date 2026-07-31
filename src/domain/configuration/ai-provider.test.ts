@@ -8,7 +8,6 @@ const valid = {
   model: "qwen",
   apiKey: "sk-test",
   maxOutputTokens: 4096,
-  structuredOutput: false,
 };
 
 /**
@@ -107,7 +106,6 @@ describe("an existing provider", () => {
       baseUrl: "http://localhost:1234/v1",
       model: "qwen",
       maxOutputTokens: 4096,
-      structuredOutput: false,
       reasoningEffort: "default",
       hasApiKey: true,
       keyUnreadable: false,

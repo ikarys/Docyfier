@@ -29,7 +29,6 @@ const entered = {
   baseUrl: "https://api.example.com/v1",
   model: "gpt-4o",
   maxOutputTokens: 8192,
-  structuredOutput: true,
 };
 
 let deps: AiProviderDeps;

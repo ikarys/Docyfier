@@ -52,7 +52,6 @@ export async function saveAiProviderAction(
       model: String(formData.get("model") ?? ""),
       apiKey: typedKey || (forgetKey ? "" : undefined),
       maxOutputTokens: Number(formData.get("maxOutputTokens")),
-      structuredOutput: formData.get("structuredOutput") === "on",
       reasoningEffort: String(formData.get("reasoningEffort") ?? "default") as ReasoningEffort,
     });
     clearDetectedModels();

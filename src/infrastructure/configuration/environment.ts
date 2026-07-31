@@ -18,7 +18,6 @@ const DEFAULTS: AiProviderRecord = {
   model: "",
   apiKey: "",
   maxOutputTokens: 32768,
-  structuredOutput: false,
 reasoningEffort: "default",
 };
 
@@ -34,7 +33,5 @@ export function providerFromEnvironment(): AiProviderRecord {
       Number.isInteger(maxTokens) && maxTokens > 0
         ? maxTokens
         : DEFAULTS.maxOutputTokens,
-    structuredOutput:
-      process.env.DOCYFIER_LLM_STRUCTURED === "1" || DEFAULTS.structuredOutput,
   };
 }
