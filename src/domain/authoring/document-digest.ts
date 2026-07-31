@@ -44,6 +44,20 @@ function diagramLine(node: DocumentNode): string {
   return labels.length > 0 ? `[diagram: ${labels.join(" · ")}]` : "[diagram]";
 }
 
+/**
+ * The same reading, block by block and numbered — what a layout plan is decided
+ * from.
+ *
+ * The digest answers "what is this document about" and stops at two dozen
+ * lines; a plan has to see every block, because it names the ones it wants to
+ * restructure by index. Both read a block the same way, which is why the rule
+ * lives here once: it costs a fifth of the document's JSON and is the only form
+ * a model can scan without rebuilding it in its head.
+ */
+export function outlineOf(blocks: DocumentNode[]): string {
+  return blocks.map((block, at) => `${at}: ${lineOf(block).slice(0, MAX_LINE)}`).join("\n");
+}
+
 export function digestOf(body: DocumentBody): string {
   return (body.content ?? [])
     .map(lineOf)

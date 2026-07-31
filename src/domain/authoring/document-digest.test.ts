@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { digestOf } from "./document-digest";
+import { digestOf, outlineOf } from "./document-digest";
 
 const text = (value: string) => [{ type: "text", text: value }];
 const heading = (level: number, value: string) => ({
@@ -61,5 +61,25 @@ describe("digestOf", () => {
   it("says nothing about an empty document", () => {
     expect(digestOf({ type: "doc", content: [] })).toBe("");
     expect(digestOf({ type: "doc" })).toBe("");
+  });
+});
+
+describe("outlineOf", () => {
+  it("numbers every block, so a plan can address one", () => {
+    const outline = outlineOf([heading(1, "Vendors"), paragraph("A costs 120k.")]);
+
+    expect(outline).toBe("0: # Vendors\n1: A costs 120k.");
+  });
+
+  /** The digest is what a document is about and stops at two dozen lines. A
+   * plan has to see the block it is going to name, however far down it sits. */
+  it("keeps every block, however long the document", () => {
+    const long = Array.from({ length: 40 }, (_, i) => paragraph(`Block ${i}`));
+
+    expect(outlineOf(long).split("\n")).toHaveLength(40);
+  });
+
+  it("names a block that carries no text of its own", () => {
+    expect(outlineOf([{ type: "chart" }])).toBe("0: [chart]");
   });
 });

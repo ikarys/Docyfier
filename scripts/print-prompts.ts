@@ -1,6 +1,7 @@
 import { AGENTS } from "@/domain/authoring/agents/catalog";
 import { agentSystem } from "@/domain/authoring/prompts/agents";
 import { transformOpsSystem } from "@/domain/authoring/prompts/transform";
+import { layoutPlanSystem } from "@/domain/authoring/prompts/layout-plan";
 import { StyleParameters } from "@/domain/authoring/style-parameters";
 
 /**
@@ -49,6 +50,11 @@ for (const agent of AGENTS) {
     transformOpsSystem(style, agent),
   );
 }
+
+section(
+  "LAYOUT PLANNER — as sent, deciding what a document should become",
+  layoutPlanSystem(style),
+);
 
 console.log(
   `\nStyle used: language=${style.imposesLanguage ? "imposed" : "follows the request"}, emoji=${

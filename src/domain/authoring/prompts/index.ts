@@ -15,6 +15,7 @@ export { agentSystem } from "./agents";
 export { planPrompt, planSystem, restylePrompt } from "./plan";
 export { writerSystem } from "./write";
 export { transformOpsSystem, transformOpsPrompt } from "./transform";
+export { layoutPlanSystem, layoutPlanPrompt } from "./layout-plan";
 export {
   SELECTION_TEXT_SYSTEM,
   selectionBlocksPrompt,

@@ -22,8 +22,19 @@ export const LAYOUT_BLOCKS = `- {"type":"callout","attrs":{"variant":"note"|"tip
  * told about them. It has to recognise one in the passage it was handed and
  * give it back untouched; it never has to build one.
  */
-export const LAYOUT_BLOCK_NAMES =
-  "callout, cardGrid, columnList, statRow, timeline, stepList, chart, diagram, pyramid";
+export const LAYOUT_BLOCK_NAME_LIST = [
+  "callout",
+  "cardGrid",
+  "columnList",
+  "statRow",
+  "timeline",
+  "stepList",
+  "chart",
+  "diagram",
+  "pyramid",
+] as const;
+
+export const LAYOUT_BLOCK_NAMES = LAYOUT_BLOCK_NAME_LIST.join(", ");
 
 /** Only the blocks above take an icon, so only they carry the list of names. */
 export const ICON_RULE = `Icons: "callout", "card", "step" and "stat" accept an OPTIONAL "icon" attribute. Allowed names, and NOTHING else: ${ICON_NAMES.join(", ")}. An unknown name renders no icon, so never invent one.`;
