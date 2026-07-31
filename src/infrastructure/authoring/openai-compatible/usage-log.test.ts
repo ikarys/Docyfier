@@ -61,4 +61,28 @@ describe("usageLine", () => {
   it("does not divide by a duration of zero", () => {
     expect(usageLine("caret", 0, { outputTokens: 5 })).not.toContain("Infinity");
   });
+
+  /**
+   * A provider that declares no reasoning tokens is not a provider that did no
+   * reasoning. Counting the characters that reached us is the only claim we can
+   * make ourselves, and the gap against what was billed as output is the answer
+   * to "was the wait the format, or the thinking?".
+   */
+  it("counts the answer that arrived, so undeclared thinking shows as the gap", () => {
+    const line = usageLine("transform", 100_000, { outputTokens: 47_409 }, 21_200);
+
+    expect(line).toContain("answer 21200 chars");
+    expect(line).toContain("~5300 tok");
+    expect(line).toContain("42109 unwritten");
+  });
+
+  it("calls the gap nothing when the answer accounts for the whole output", () => {
+    const line = usageLine("caret", 1_000, { outputTokens: 100 }, 4_000);
+
+    expect(line).not.toContain("unwritten");
+  });
+
+  it("says nothing about the answer when it was not counted", () => {
+    expect(usageLine("caret", 1_000, { outputTokens: 10 })).not.toContain("answer");
+  });
 });

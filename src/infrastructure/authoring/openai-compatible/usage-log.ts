@@ -45,7 +45,30 @@ export function readUsage(value: unknown): CallUsage {
   };
 }
 
-export function usageLine(label: string, ms: number, usage: CallUsage): string {
+/** Roughly how many tokens a run of model-written text was, for a gap nobody declared. */
+const CHARS_PER_TOKEN = 4;
+
+/**
+ * What the answer cost against what arrived. A provider that bills 47 000
+ * output tokens and hands back 5 000 tokens of text spent the difference
+ * thinking, whatever it says in `usage` — and that difference decides whether
+ * the wait is worth attacking through the format or through the effort.
+ */
+function answerParts(usage: CallUsage, wroteChars: number): string[] {
+  const written = Math.round(wroteChars / CHARS_PER_TOKEN);
+  const parts = [`answer ${wroteChars} chars`, `~${written} tok`];
+  const billed = usage.outputTokens ?? 0;
+  if (billed > written) parts.push(`${billed - written} unwritten`);
+  return parts;
+}
+
+export function usageLine(
+  label: string,
+  ms: number,
+  usage: CallUsage,
+  /** Characters of model text this process actually read off the stream. */
+  wroteChars?: number,
+): string {
   const seconds = ms / 1000;
   const parts = [`[ai] ${label} ${seconds.toFixed(1)}s`];
 
@@ -67,6 +90,7 @@ export function usageLine(label: string, ms: number, usage: CallUsage): string {
     const total = written + usage.reasoningTokens;
     if (total > 0) parts.push(`${Math.round((usage.reasoningTokens / total) * 100)}% thinking`);
   }
+  if (wroteChars !== undefined) parts.push(...answerParts(usage, wroteChars));
   if (usage.inputTokens === undefined && usage.outputTokens === undefined) {
     parts.push("no usage reported");
   }
@@ -74,7 +98,12 @@ export function usageLine(label: string, ms: number, usage: CallUsage): string {
 }
 
 /** Print the line, when the environment asked for it. */
-export function logUsage(label: string, startedAt: number, usage: unknown): void {
+export function logUsage(
+  label: string,
+  startedAt: number,
+  usage: unknown,
+  wroteChars?: number,
+): void {
   if (!usageLoggingEnabled()) return;
-  console.info(usageLine(label, Date.now() - startedAt, readUsage(usage)));
+  console.info(usageLine(label, Date.now() - startedAt, readUsage(usage), wroteChars));
 }

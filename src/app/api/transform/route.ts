@@ -103,14 +103,19 @@ export async function POST(req: Request): Promise<Response> {
  * The same stream, with the cost of the call written down as it closes. A
  * whole-document edit is the longest wait in the product, so it is the one
  * worth knowing the shape of: tokens written, tokens thought, seconds spent.
+ *
+ * The characters are counted here rather than taken from the provider, because
+ * a provider that declares no reasoning still bills it as output. The gap
+ * between what it charged and what reached us is the thinking it did not name.
  */
 function logWhenDone(parts: AsyncIterator<ModelPart>, started: number): AsyncIterator<ModelPart> {
+  let chars = 0;
   return {
     async next() {
       const step = await parts.next();
-      if (!step.done && step.value.type === "finish") {
-        logUsage("transform", started, step.value.totalUsage);
-      }
+      if (step.done) return step;
+      if (step.value.type === "text-delta") chars += step.value.text?.length ?? 0;
+      if (step.value.type === "finish") logUsage("transform", started, step.value.totalUsage, chars);
       return step;
     },
   };

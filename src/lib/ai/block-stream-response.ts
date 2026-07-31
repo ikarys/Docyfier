@@ -104,6 +104,72 @@ function emptyParts(): AsyncIterator<Part> {
   return { next: async () => ({ done: true, value: undefined as never }) };
 }
 
+/** Everything one answer turned out to be, filled in as it is read. */
+interface Read {
+  /** Why the answer ended badly, or null when it ended. */
+  stopped: string | null;
+  written: DocumentNode[];
+  blocks: number;
+  skipped: number;
+  /** Characters of model text read, so the wait can be told apart from the answer. */
+  chars: number;
+  usage: unknown;
+}
+
+function emptyRead(): Read {
+  return { stopped: null, written: [], blocks: 0, skipped: 0, chars: 0, usage: null };
+}
+
+/**
+ * Read the answer to its end, handing each accepted block over as it closes.
+ *
+ * Filling a `Read` the caller owns rather than returning one: a stream that
+ * throws halfway still spent whatever it spent, and the log is the only place
+ * that says so.
+ */
+async function readAnswer(
+  source: { parts: AsyncIterator<Part>; firstText: string },
+  request: BlockStream,
+  send: (block: unknown) => void,
+  read: Read,
+): Promise<void> {
+  const scanner = new BlockScanner();
+
+  const emit = (raw: string) => {
+    try {
+      const block = prepare(raw, request.style);
+      send(block);
+      read.written.push(block as DocumentNode);
+      read.blocks++;
+    } catch (err) {
+      // A block the schema rejects is dropped rather than aborting the answer;
+      // the count is reported in the terminal line.
+      console.error("[ai] streamed block rejected:", message(err));
+      read.skipped++;
+    }
+  };
+
+  read.chars += source.firstText.length;
+  for (const raw of scanner.push(source.firstText)) emit(raw);
+
+  while (!scanner.finished) {
+    const next = await source.parts.next();
+    if (next.done) break;
+    if (next.value.type === "text-delta") {
+      read.chars += next.value.text.length;
+      for (const raw of scanner.push(next.value.text)) emit(raw);
+    } else if (next.value.type === "error") {
+      read.stopped = message(next.value.error);
+      break;
+    } else if (next.value.type === "finish") {
+      read.usage = next.value.totalUsage;
+      if (next.value.finishReason === "length") {
+        read.stopped = "The answer was cut short — raise Max output tokens in Settings.";
+      }
+    }
+  }
+}
+
 /** The blocks, as NDJSON, or a 502 explaining why the stream never opened. */
 export async function blockStreamResponse(request: BlockStream): Promise<Response> {
   const started = Date.now();
@@ -126,50 +192,16 @@ export async function blockStreamResponse(request: BlockStream): Promise<Respons
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const scanner = new BlockScanner();
-      const written: DocumentNode[] = [];
-      let blocks = 0;
-      let skipped = 0;
-
-      const emit = (raw: string) => {
-        try {
-          const block = prepare(raw, request.style);
-          controller.enqueue(encoder.encode(line({ block })));
-          written.push(block as DocumentNode);
-          blocks++;
-        } catch (err) {
-          // A block the schema rejects is dropped rather than aborting the
-          // answer; the count is reported in the terminal line.
-          console.error("[ai] streamed block rejected:", message(err));
-          skipped++;
-        }
-      };
+      const read = emptyRead();
+      const send = (block: unknown) => controller.enqueue(encoder.encode(line({ block })));
 
       try {
-        let stopped: string | null = null;
         if (request.prelude) controller.enqueue(encoder.encode(line(request.prelude)));
-        for (const raw of scanner.push(firstText)) emit(raw);
+        await readAnswer({ parts, firstText }, request, send, read);
 
-        while (!scanner.finished) {
-          const next = await parts.next();
-          if (next.done) break;
-          if (next.value.type === "text-delta") {
-            for (const raw of scanner.push(next.value.text)) emit(raw);
-          } else if (next.value.type === "error") {
-            stopped = message(next.value.error);
-            break;
-          } else if (next.value.type === "finish") {
-            // What the wait was spent on: thinking is not in the answer, and on
-            // some models it is most of the seconds the user counted.
-            logUsage("stream", started, next.value.totalUsage);
-            if (next.value.finishReason === "length") {
-              stopped = "The answer was cut short — raise Max output tokens in Settings.";
-            }
-          }
-        }
-
-        const breach = stopped ? "" : (request.verdict?.(written) ?? "");
-        const failed = stopped ?? (breach || null);
+        const breach = read.stopped ? "" : (request.verdict?.(read.written) ?? "");
+        const failed = read.stopped ?? (breach || null);
+        const { blocks, skipped } = read;
         controller.enqueue(
           encoder.encode(
             failed ? line({ error: failed, blocks }) : line({ done: true, blocks, skipped }),
@@ -177,7 +209,12 @@ export async function blockStreamResponse(request: BlockStream): Promise<Respons
         );
       } catch (err) {
         console.error("[ai] streaming answer interrupted:", err);
-        controller.enqueue(encoder.encode(line({ error: message(err), blocks })));
+        controller.enqueue(encoder.encode(line({ error: message(err), blocks: read.blocks })));
+      } finally {
+        // Here rather than on the `finish` part: a scanner that has seen the
+        // closing bracket stops reading, so on every answer that arrived whole
+        // the part carrying the usage is never reached.
+        logUsage("stream", started, read.usage, read.chars);
       }
       controller.close();
     },
