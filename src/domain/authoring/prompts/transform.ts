@@ -11,8 +11,13 @@ OUTPUT RULES — these REPLACE the "one JSON object" rule above:
 - Output ONE JSON array and nothing else. No markdown fences, no commentary.
 - Each element is one of:
   {"op":"replace","index":N,"blocks":[ ...block nodes... ]} — swap the block at index N for these blocks (one or several)
+  {"op":"replace","index":N,"through":M,"blocks":[ ...block nodes... ]} — swap blocks N to M INCLUSIVE for these blocks
   {"op":"insert_after","index":N,"blocks":[ ...block nodes... ]} — add these blocks right after the block at index N
   {"op":"delete","index":N} — remove the block at index N
+- To gather several blocks into one — three paragraphs into a cardGrid, four
+  rows into a statRow — use ONE replace with "through". Never a replace followed
+  by deletes of the blocks it absorbed: that is read as throwing them away, and
+  is refused.
 - "index" refers to the numbering of the document you were given, ALWAYS the
   original numbering: never renumber for edits you made earlier in the list.
 - "blocks" holds the same block nodes described above — the block rules, the

@@ -1,7 +1,7 @@
 import type { Agent } from "@/domain/authoring/agents/contract";
 import { opBreach } from "@/domain/authoring/agents/layout-ops";
 import type { DocumentBrief } from "@/domain/authoring/brief";
-import { parseOps, type DocOp } from "@/domain/authoring/ops";
+import { coveredBlocks, parseOps, type DocOp } from "@/domain/authoring/ops";
 import {
   transformOpsPrompt,
   transformOpsSystem,
@@ -68,7 +68,7 @@ export function readOps(deps: AuthoringDeps, json: unknown, blockCount: number):
 function inLane(agent: Agent | undefined, ops: DocOp[], blocks: DocumentNode[]): DocOp[] {
   if (!agent) return ops;
   for (const op of ops) {
-    const breach = opBreach(agent.id, op, blocks[op.index]);
+    const breach = opBreach(agent.id, op, coveredBlocks(op, blocks));
     if (breach) throw new Error(breach);
   }
   return ops;

@@ -8,7 +8,7 @@ describe("what an AI edit leaves behind", () => {
   it("applies the blocks the model named and leaves the rest untouched", () => {
     const applied = applyTransform(before, {
       kind: "ops",
-      ops: [{ op: "replace", index: 0, blocks: [paragraph("rewritten")] }],
+      ops: [{ op: "replace", index: 0, through: 0, blocks: [paragraph("rewritten")] }],
     });
 
     expect(applied.next).toEqual({
@@ -31,7 +31,7 @@ describe("what an AI edit leaves behind", () => {
   it("calls an edit that changed nothing what it is", () => {
     const replacedWithItself = applyTransform(before, {
       kind: "ops",
-      ops: [{ op: "replace", index: 0, blocks: [paragraph("first")] }],
+      ops: [{ op: "replace", index: 0, through: 0, blocks: [paragraph("first")] }],
     });
     expect(replacedWithItself.changed).toBe(false);
   });

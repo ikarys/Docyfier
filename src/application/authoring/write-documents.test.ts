@@ -181,7 +181,7 @@ describe("transformDocument", () => {
 
     expect(outcome).toEqual({
       kind: "ops",
-      ops: [{ op: "replace", index: 1, blocks: [paragraph("Deux")] }],
+      ops: [{ op: "replace", index: 1, through: 1, blocks: [paragraph("Deux")] }],
     });
   });
 
@@ -213,7 +213,7 @@ describe("transformDocument", () => {
 
     expect(await transformDocument(deps, body, "strip it")).toEqual({
       kind: "ops",
-      ops: [{ op: "replace", index: 0, blocks: [] }],
+      ops: [{ op: "replace", index: 0, through: 0, blocks: [] }],
     });
   });
 

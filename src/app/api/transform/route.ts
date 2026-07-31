@@ -4,7 +4,7 @@ import { bodyFromJson, polished } from "@/application/authoring/ask-model";
 import { jsonFromAnswer } from "@/domain/authoring/model-answer";
 import { transformOpsPrompt, transformOpsSystem } from "@/domain/authoring/prompts";
 import type { AgentId } from "@/domain/authoring/agents/contract";
-import type { DocOp } from "@/domain/authoring/ops";
+import { coveredBlocks, type DocOp } from "@/domain/authoring/ops";
 import { blocksOf, type DocumentBody, type DocumentNode } from "@/domain/documents/body";
 import { agentById } from "@/domain/authoring/agents/catalog";
 import { opBreach } from "@/domain/authoring/agents/layout-ops";
@@ -38,7 +38,7 @@ import { getAiSettings } from "@/lib/settings";
  * what the assistant got right.
  */
 function inLane(agent: AgentId, op: DocOp, blocks: DocumentNode[]): DocOp {
-  const breach = opBreach(agent, op, blocks[op.index]);
+  const breach = opBreach(agent, op, coveredBlocks(op, blocks));
   if (breach) throw new Error(breach);
   return op;
 }

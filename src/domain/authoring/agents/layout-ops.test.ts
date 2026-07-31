@@ -7,10 +7,10 @@ function paragraph(text: string): DocumentNode {
   return { type: "paragraph", content: [{ type: "text", text }] };
 }
 
-const ORIGINAL = paragraph("Vendor A costs 120k a year. Vendor B costs 90k a year.");
+const ORIGINAL: DocumentNode = paragraph("Vendor A costs 120k a year. Vendor B costs 90k a year.");
 
 function replace(...blocks: DocumentNode[]): DocOp {
-  return { op: "replace", index: 0, blocks };
+  return { op: "replace", index: 0, through: 0, blocks };
 }
 
 describe("opBreach, for the layout assistant", () => {
@@ -35,7 +35,7 @@ describe("opBreach, for the layout assistant", () => {
       ],
     };
 
-    expect(opBreach("designer", replace(table), ORIGINAL)).toBe("");
+    expect(opBreach("designer", replace(table), [ORIGINAL])).toBe("");
   });
 
   it("refuses a replacement that rewrote the block", () => {
@@ -43,7 +43,7 @@ describe("opBreach, for the layout assistant", () => {
       "Vendor A is the safer choice here, and its support record across comparable migrations is excellent.",
     );
 
-    expect(opBreach("designer", replace(rewritten), ORIGINAL)).toMatch(/changed the text/i);
+    expect(opBreach("designer", replace(rewritten), [ORIGINAL])).toMatch(/changed the text/i);
   });
 
   /** A heading or a caption is the layout assistant doing its job; a paragraph
@@ -55,7 +55,7 @@ describe("opBreach, for the layout assistant", () => {
       content: [{ type: "text", text: "Vendor comparison" }],
     };
 
-    expect(opBreach("designer", { op: "insert_after", index: 0, blocks: [heading] }, ORIGINAL)).toBe(
+    expect(opBreach("designer", { op: "insert_after", index: 0, blocks: [heading] }, [ORIGINAL])).toBe(
       "",
     );
   });
@@ -66,28 +66,61 @@ describe("opBreach, for the layout assistant", () => {
     );
 
     expect(
-      opBreach("designer", { op: "insert_after", index: 0, blocks: [added] }, ORIGINAL),
+      opBreach("designer", { op: "insert_after", index: 0, blocks: [added] }, [ORIGINAL]),
     ).toMatch(/wrote/i);
   });
 
   it("refuses a deletion: arranging is not throwing away", () => {
-    expect(opBreach("designer", { op: "delete", index: 0 }, ORIGINAL)).toMatch(/removed/i);
+    expect(opBreach("designer", { op: "delete", index: 0 }, [ORIGINAL])).toMatch(/removed/i);
+  });
+
+  /**
+   * The operation the whole span exists for. Gathering loose paragraphs into
+   * one card grid used to be a replace plus two deletes, and the deletes were
+   * refused — leaving the grid *and* the paragraphs it had absorbed. Judged
+   * across everything it covers, the same merge is plainly faithful.
+   */
+  it("accepts blocks gathered into one box", () => {
+    const grid: DocumentNode = {
+      type: "cardGrid",
+      content: [
+        { type: "card", content: [paragraph("Vendor A costs 120k a year.")] },
+        { type: "card", content: [paragraph("Vendor B costs 90k a year.")] },
+      ],
+    };
+    const loose = [paragraph("Vendor A costs 120k a year."), paragraph("Vendor B costs 90k a year.")];
+
+    expect(opBreach("designer", { op: "replace", index: 0, through: 1, blocks: [grid] }, loose)).toBe(
+      "",
+    );
+  });
+
+  it("refuses a merge that dropped half of what it covered", () => {
+    const kept: DocumentNode = {
+      type: "cardGrid",
+      content: [{ type: "card", content: [paragraph("Vendor A costs 120k a year.")] }],
+    };
+    const loose = [paragraph("Vendor A costs 120k a year."), paragraph("Vendor B costs 90k a year.")];
+
+    expect(
+      opBreach("designer", { op: "replace", index: 0, through: 1, blocks: [kept] }, loose),
+    ).toMatch(/changed the text/i);
   });
 });
 
 describe("opBreach, for the writer", () => {
   it("accepts a rewritten paragraph", () => {
-    expect(opBreach("writer", replace(paragraph("A: 120k. B: 90k.")), ORIGINAL)).toBe("");
+    expect(opBreach("writer", replace(paragraph("A: 120k. B: 90k.")), [ORIGINAL])).toBe("");
   });
 
   it("refuses the writer reaching for a layout block", () => {
     const table: DocumentNode = { type: "table", content: [] };
 
-    expect(opBreach("writer", replace(table), ORIGINAL)).toMatch(/layout assistant/i);
+    expect(opBreach("writer", replace(table), [ORIGINAL])).toMatch(/layout assistant/i);
   });
 
   it("lets the writer delete what it was asked to remove", () => {
-    expect(opBreach("writer", { op: "delete", index: 0 }, ORIGINAL)).toBe("");
+    expect(opBreach("writer", { op: "delete", index: 0 }, [ORIGINAL])).toBe("");
   });
 });
 
@@ -95,7 +128,7 @@ describe("an op nobody can check", () => {
   /** An op addressing a block that is not there is caught by `parseOps`; if one
    * reaches here, judging it against nothing would refuse it for the wrong
    * reason. */
-  it("passes when the original block is missing", () => {
-    expect(opBreach("designer", replace(paragraph("anything")), undefined)).toBe("");
+  it("passes when it covers no block at all", () => {
+    expect(opBreach("designer", replace(paragraph("anything")), [])).toBe("");
   });
 });

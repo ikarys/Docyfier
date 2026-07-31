@@ -12,11 +12,27 @@ import type { DocumentNode } from "@/domain/documents/body";
  */
 
 export type DocOp =
-  | { op: "replace"; index: number; blocks: DocumentNode[] }
+  /**
+   * Swap blocks `index` through `through` — the same block when it reaches no
+   * further — for these ones.
+   *
+   * A span rather than a replace followed by deletes, because consolidating is
+   * what a layout pass is for: three loose paragraphs become one card grid, and
+   * spelled as three operations no rule can tell that apart from throwing two
+   * blocks away. As one operation it can be judged on its own, which is what
+   * every other rule here already assumes.
+   */
+  | { op: "replace"; index: number; through: number; blocks: DocumentNode[] }
   | { op: "insert_after"; index: number; blocks: DocumentNode[] }
   | { op: "delete"; index: number };
 
 const OPS = ["replace", "insert_after", "delete"] as const;
+
+/** The blocks of the original document an operation stands in for. */
+export function coveredBlocks(op: DocOp, blocks: DocumentNode[]): DocumentNode[] {
+  const last = op.op === "replace" ? op.through : op.index;
+  return blocks.slice(op.index, last + 1);
+}
 
 function asBlocks(value: unknown, op: string, index: number): DocumentNode[] {
   if (!Array.isArray(value) || value.length === 0) {
@@ -47,8 +63,27 @@ export function parseOps(json: unknown, blockCount: number): DocOp[] {
     }
     const at = index as number;
     if (op === "delete") return { op, index: at };
-    return { op: op as "replace" | "insert_after", index: at, blocks: asBlocks((raw as { blocks?: unknown }).blocks, op, at) };
+    const blocks = asBlocks((raw as { blocks?: unknown }).blocks, op, at);
+    if (op === "insert_after") return { op, index: at, blocks };
+    return { op: "replace", index: at, through: spanEnd(raw, at, blockCount), blocks };
   });
+}
+
+/**
+ * How far a replace reaches, defaulting to the block it addresses. A span that
+ * ends before it starts, or past the last block, is refused rather than
+ * clamped: it means the model addressed a document other than the one it was
+ * given, and applying part of that is worse than asking again.
+ */
+function spanEnd(raw: unknown, index: number, blockCount: number): number {
+  const { through } = raw as { through?: unknown };
+  if (through === undefined || through === null) return index;
+  if (!Number.isInteger(through) || (through as number) < index || (through as number) >= blockCount) {
+    throw new Error(
+      `Operation at index ${index} has a "through" of ${JSON.stringify(through)}, outside ${index}..${blockCount - 1}`,
+    );
+  }
+  return through as number;
 }
 
 /** Rank deciding which op wins when two target the same index — see applyOps. */
@@ -69,7 +104,7 @@ export function applyOps(doc: DocumentNode, ops: DocOp[]): DocumentNode {
   );
   for (const op of ordered) {
     if (op.op === "delete") content.splice(op.index, 1);
-    else if (op.op === "replace") content.splice(op.index, 1, ...op.blocks);
+    else if (op.op === "replace") content.splice(op.index, op.through - op.index + 1, ...op.blocks);
     else content.splice(op.index + 1, 0, ...op.blocks);
   }
   // ProseMirror rejects an empty doc; a transform that deleted everything gets

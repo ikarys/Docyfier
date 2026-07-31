@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyOps, parseOps, type DocOp } from "./ops";
+import { applyOps, coveredBlocks, parseOps, type DocOp } from "./ops";
 
 const A = { type: "paragraph", content: [{ type: "text", text: "A" }] };
 const B = { type: "paragraph", content: [{ type: "text", text: "B" }] };
@@ -41,15 +41,60 @@ describe("parseOps", () => {
 
   it("returns the payload operations unchanged", () => {
     expect(parseOps([{ op: "replace", index: 0, blocks: [A] }], 1)).toEqual([
-      { op: "replace", index: 0, blocks: [A] },
+      { op: "replace", index: 0, through: 0, blocks: [A] },
     ]);
+  });
+
+  /**
+   * Consolidating is what a layout pass does: three loose paragraphs become one
+   * card grid. Spelled as a replace plus two deletes, no rule can tell that
+   * apart from throwing two blocks away — so a replace says how far it reaches
+   * and the whole merge is one operation.
+   */
+  it("lets a replace reach across several blocks", () => {
+    expect(parseOps([{ op: "replace", index: 0, through: 2, blocks: [A] }], 3)).toEqual([
+      { op: "replace", index: 0, through: 2, blocks: [A] },
+    ]);
+  });
+
+  it("refuses a span that ends before it starts or runs off the document", () => {
+    expect(() => parseOps([{ op: "replace", index: 2, through: 1, blocks: [A] }], 3)).toThrow(
+      /"through"/,
+    );
+    expect(() => parseOps([{ op: "replace", index: 0, through: 3, blocks: [A] }], 3)).toThrow(
+      /"through"/,
+    );
+  });
+
+  it("keeps a span off the operations that cannot carry one", () => {
+    expect(parseOps([{ op: "insert_after", index: 0, through: 1, blocks: [A] }], 2)).toEqual([
+      { op: "insert_after", index: 0, blocks: [A] },
+    ]);
+  });
+});
+
+describe("coveredBlocks", () => {
+  it("hands back every block an operation stands in for", () => {
+    expect(coveredBlocks({ op: "replace", index: 0, through: 1, blocks: [C] }, [A, B, C])).toEqual([
+      A,
+      B,
+    ]);
+  });
+
+  it("hands back the one block of an operation that reaches no further", () => {
+    expect(coveredBlocks({ op: "delete", index: 1 }, [A, B, C])).toEqual([B]);
   });
 });
 
 describe("applyOps", () => {
   it("replaces one block with several", () => {
-    const out = applyOps(doc(A, B), [{ op: "replace", index: 0, blocks: [B, C] }]);
+    const out = applyOps(doc(A, B), [{ op: "replace", index: 0, through: 0, blocks: [B, C] }]);
     expect(out.content).toEqual([B, C, B]);
+  });
+
+  it("swallows the whole span a replace reaches across", () => {
+    const out = applyOps(doc(A, B, C), [{ op: "replace", index: 0, through: 1, blocks: [C] }]);
+    expect(out.content).toEqual([C, C]);
   });
 
   it("inserts after the addressed block", () => {
@@ -60,7 +105,7 @@ describe("applyOps", () => {
   it("resolves every index against the original document, not the running one", () => {
     const ops: DocOp[] = [
       { op: "delete", index: 0 },
-      { op: "replace", index: 2, blocks: [A] },
+      { op: "replace", index: 2, through: 2, blocks: [A] },
     ];
     expect(applyOps(doc(A, B, C), ops).content).toEqual([B, A]);
   });
@@ -68,7 +113,7 @@ describe("applyOps", () => {
   it("parks an insertion beyond the target before a replace disturbs it", () => {
     const ops: DocOp[] = [
       { op: "insert_after", index: 1, blocks: [C] },
-      { op: "replace", index: 1, blocks: [A] },
+      { op: "replace", index: 1, through: 1, blocks: [A] },
     ];
     expect(applyOps(doc(A, B, C), ops).content).toEqual([A, A, C, C]);
   });

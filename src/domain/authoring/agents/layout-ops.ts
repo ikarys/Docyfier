@@ -38,7 +38,7 @@ function text(node: DocumentNode): string {
   return (node.content ?? []).map(text).join(" ");
 }
 
-function designerBreach(op: DocOp, original: DocumentNode): string {
+function designerBreach(op: DocOp, covered: DocumentNode[]): string {
   if (op.op === "delete") {
     return "you removed a block: arranging content is not throwing it away";
   }
@@ -47,13 +47,13 @@ function designerBreach(op: DocOp, original: DocumentNode): string {
       ? ""
       : "you wrote new content: an inserted block may only be a heading or a caption";
   }
-  const drift = layoutDrift([original], op.blocks);
+  const drift = layoutDrift(covered, op.blocks);
   return isFaithfulLayout(drift) ? "" : `you changed the text: ${driftMessage(drift)}`;
 }
 
-function writerBreach(op: DocOp, original: DocumentNode): string {
+function writerBreach(op: DocOp, covered: DocumentNode[]): string {
   if (op.op === "delete") return "";
-  const introduced = layoutBlocksIntroduced([original], op.blocks);
+  const introduced = layoutBlocksIntroduced(covered, op.blocks);
   return introduced.length === 0
     ? ""
     : `you introduced ${introduced.join(", ")}: presenting the content is the layout assistant's job`;
@@ -61,15 +61,13 @@ function writerBreach(op: DocOp, original: DocumentNode): string {
 
 /**
  * What this assistant was not allowed to do with this operation, or `""` when
- * it stayed in its lane. An operation whose target block cannot be found is
- * left alone: `parseOps` already refuses those, and judging one against nothing
- * would reject it for the wrong reason.
+ * it stayed in its lane. `covered` is every block the operation stands in for,
+ * which for a merge is several — judging one against only the first would call
+ * every gathered block a rewrite. An operation covering nothing is left alone:
+ * `parseOps` already refuses those, and judging one against nothing would
+ * reject it for the wrong reason.
  */
-export function opBreach(
-  agent: AgentId,
-  op: DocOp,
-  original: DocumentNode | undefined,
-): string {
-  if (!original) return "";
-  return agent === "designer" ? designerBreach(op, original) : writerBreach(op, original);
+export function opBreach(agent: AgentId, op: DocOp, covered: DocumentNode[]): string {
+  if (covered.length === 0) return "";
+  return agent === "designer" ? designerBreach(op, covered) : writerBreach(op, covered);
 }
