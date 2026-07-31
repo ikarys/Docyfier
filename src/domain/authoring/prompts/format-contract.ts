@@ -1,72 +1,82 @@
-import { ICON_NAMES } from "../icons";
+import { ICON_RULE, LAYOUT_BLOCK_NAMES, LAYOUT_BLOCKS } from "./blocks/layout";
+import { ALIGNMENT_RULE, INLINE_NODES } from "./blocks/inline";
+import { DOCUMENT_BLOCKS } from "./blocks/document";
+import { PROSE_BLOCKS } from "./blocks/prose";
+import { showsDocumentBlocks, showsLayoutBlocks, type ContractScope } from "./scope";
 
 /**
- * The block vocabulary every JSON-producing surface shares.
+ * The block vocabulary a surface is given.
  *
  * It describes what the editor can render — nothing about what a good document
  * looks like, which is the style guide's job, and nothing about a particular
  * kind of document, which is a recipe's. Keeping the three apart is what lets
  * the writer prompt carry a skeleton instead of a catalogue.
+ *
+ * It is assembled per scope rather than shipped whole because it is the largest
+ * thing every model call carries, and most calls were being told about blocks
+ * they are forbidden to produce. See `scope.ts` for why that is a rule and not
+ * only an economy.
  */
-export const FORMAT_CONTRACT = `You write documents for a WYSIWYG editor that stores ProseMirror JSON.
+
+const HEADER = `You write documents for a WYSIWYG editor that stores ProseMirror JSON.
 
 OUTPUT RULES — follow exactly:
 - Output ONE JSON object and nothing else. No markdown fences, no commentary.
 - Root: {"type":"doc","content":[ ...block nodes... ]}.
 
-Block nodes:
-- {"type":"docCover","content":[{"type":"heading","attrs":{"level":1},...} (the title), ...coverLine]} — OPTIONAL magazine-style opening block; when used it must be the FIRST node of the document and the document must not also repeat the title as a level-1 heading. coverLine = {"type":"coverLine","attrs":{"variant":"subtitle"|"chips"|"meta"},"content":[inline]}: "subtitle" = one sentence positioning the document, "chips" = short labels carrying badge marks, "meta" = a single line like "Author · March 2025 · 6 min read". At most one line of each variant, in that order.
-- {"type":"tableOfContents"} — has NO "content"; the entries are computed from the document's headings. Emit at most one, right after the cover or the title, and only for a document with 4+ level-2 headings.
-- {"type":"pageBreak"} — has NO "content"; forces the next block onto a new printed page. Use sparingly, between major parts.
-- {"type":"heading","attrs":{"level":1|2|3},"content":[inline]}
-- {"type":"paragraph","content":[inline]}
-- {"type":"bulletList","content":[{"type":"listItem","content":[blocks]}]}
-- {"type":"orderedList","content":[{"type":"listItem","content":[blocks]}]}
-- {"type":"blockquote","content":[blocks]}
-- {"type":"taskList","content":[{"type":"taskItem","attrs":{"checked":true|false},"content":[blocks]}]} — actions, acceptance criteria, checklists. Use it whenever the items are things to DO, not things to read; a plain bulletList otherwise.
-- {"type":"details","content":[{"type":"detailsSummary","content":[inline]},{"type":"detailsContent","content":[blocks]}]} — a section the reader opens: long appendices, raw logs, an aside that would break the flow. Never hide the point of the document inside one.
-- {"type":"codeBlock","attrs":{"language":"<lang>"},"content":[{"type":"text","text":"..."}]} — plain text only, no marks
-- {"type":"horizontalRule"}
-- {"type":"blockMath","attrs":{"latex":"..."}} — has NO "content"; a display formula in LaTeX. Inline, inside a paragraph: {"type":"inlineMath","attrs":{"latex":"..."}}. Only for real mathematics or units — never to typeset ordinary prose.
-- {"type":"callout","attrs":{"variant":"note"|"tip"|"warn"|"danger"},"content":[blocks]} — colored highlight box for key information
-- {"type":"table","content":[{"type":"tableRow","content":[cells]}]} — cell = {"type":"tableHeader"|"tableCell","content":[{"type":"paragraph","content":[inline]}]}; first row uses tableHeader; every row has the same number of cells.
-- {"type":"cardGrid","attrs":{"cols":2|3|4},"content":[2-4 cards]} — card = {"type":"card","attrs":{"accent":"none"|"blue"|"green"|"yellow"|"red"|"purple"},"content":[blocks]}; start each card with a level-3 heading as its title. "cols" matches the number of cards.
-- {"type":"columnList","content":[2-4 columns]} — column = {"type":"column","content":[blocks]}; side-by-side layout.
-- {"type":"statRow","content":[2-4 stats]} — stat = {"type":"stat","attrs":{"accent":same as card,"trend":"good"|"bad"|"flat","layout":"grid"|"row","icon":"<icon name>"},"content":[{"type":"paragraph",...} (the big value, e.g. "120ms"),{"type":"paragraph",...} (the short label),{"type":"paragraph",...} (OPTIONAL delta pill, e.g. "−73%")]}. Two paragraphs (value, label), or three when showing a change (value, label, delta). "trend" colors the delta pill by MEANING — "good" (green) for an improvement, "bad" (red) for a regression — regardless of whether the number went up or down. "layout" defaults to "grid" (centered tile); "row" lays the same card out horizontally (icon beside the figure, label above it) and reads better with an "icon" set. Use one layout for every stat in a row, never a mix. "icon" is optional and must come from the icon list below.
-- {"type":"timeline","content":[2-8 timelineItem]} — roadmap / chronology. item = {"type":"timelineItem","attrs":{"accent":same as card},"content":[{"type":"paragraph",...} (short date or phase, e.g. "Q1 2025"),{"type":"heading","attrs":{"level":3},...} (milestone title),{"type":"paragraph",...} (description)]}. Order is fixed: date paragraph, then heading, then description block(s).
-- {"type":"stepList","content":[2-6 step]} — numbered process / how-it-works (the number is drawn automatically). step = {"type":"step","attrs":{"accent":same as card},"content":[{"type":"heading","attrs":{"level":3},...} (step title),{"type":"paragraph",...} (what to do)]}. Never write the number yourself.
-- {"type":"chart","attrs":{"kind":"bar"|"line","categories":["Q1","Q2",...],"series":[{"label":"Revenue","values":[12,19,...]}],"title":"..."|null,"caption":"..."|null,"showGrid":true,"showLegend":true}} — has NO "content". 2-24 categories, 1-4 series, and every series MUST have exactly as many values as there are categories, all plain numbers. Use "bar" to compare categories, "line" for a trend over time. ONLY emit a chart from figures that already appear in the user's request or in the document you were given — NEVER invent, extrapolate or round data. When you have no real series of numbers, do not emit a chart.
-- {"type":"diagram","attrs":{"kind":"flow"|"architecture"|"sequence"|"hierarchy"|"timeline","direction":"down"|"right","nodes":[{"id":"a","label":"Request","note":"optional second line","accent":1-4,"group":"g1"}],"edges":[{"from":"a","to":"b","label":"yes"|null,"style":"solid"|"dashed","head":"arrow"|"none"}],"groups":[{"id":"g1","label":"Backend"}],"title":"..."|null,"caption":"..."|null}} — has NO "content". You declare MEANING ONLY: never a coordinate, a width or a position — the editor places every box. 1-24 nodes, at most 40 edges, ids unique, and every "from"/"to" MUST name a declared node. "note", "accent" and "group" are optional; a "group" must appear in "groups" and draws a labelled band (architecture only, in practice). Kinds: "flow" = a process, which MAY loop back; "architecture" = named parts of a system, usually grouped; "sequence" = participants exchanging messages, one edge per message IN ORDER, needs 2+ nodes and 1+ edge; "hierarchy" = a TREE, exactly one root and exactly one parent per other node, no cycles; "timeline" = phases in the order of "nodes" and NO edges at all. ONLY draw relations stated in the user's request or already present in the document — NEVER invent an architecture, a team or a process you were not given.
-- {"type":"pyramid","content":[2-5 pyramidTier]} — hierarchy from narrow apex (first) to wide base (last): priorities, levels, vision→execution. tier = {"type":"pyramidTier","content":[{"type":"paragraph",...} (short label; optional second paragraph for a detail)]}. First tier = top of the pyramid.
+Block nodes:`;
 
-Inline nodes (only inside heading/paragraph and table-cell paragraphs):
-- {"type":"text","text":"...","marks":[mark,...]} — "marks" optional
-- {"type":"hardBreak"}
-
-Marks:
-- {"type":"bold"} | {"type":"italic"} | {"type":"strike"} | {"type":"code"} | {"type":"subscript"} | {"type":"superscript"} — sub/superscript for formulas, units and footnote markers only, never for emphasis
-- {"type":"textStyle","attrs":{"color":"#RRGGBB"}} — text color
-- {"type":"highlight","attrs":{"color":"#RRGGBB"}} — background highlight
-- {"type":"badge","attrs":{"variant":"gray"|"blue"|"green"|"yellow"|"red"|"purple"}} — small colored pill/tag for statuses, priorities, labels ("Done", "P1", "Beta")
-
-Icons: "callout", "card", "step" and "stat" accept an OPTIONAL "icon" attribute. Allowed names, and NOTHING else: ${ICON_NAMES.join(", ")}. An unknown name renders no icon, so never invent one.
-
-Text alignment: "heading" and "paragraph" accept an optional "textAlign":"left"|"center"|"right". Leave it out unless the user asks — body text is left-aligned.
-
-Constraints:
-- NEVER emit an image node. Images exist only when the user has uploaded one;
+const SHARED_CONSTRAINTS = `- NEVER emit an image node. Images exist only when the user has uploaded one;
   any "src" you write would point at a file that does not exist.
 - "text" values are PLAIN TEXT: never markdown syntax (**bold**, *italic*,
   \`code\`, # headings) inside them — express styling with marks only.
 - When the user asks for color, apply textStyle color marks (and/or a
   highlight) to the relevant words — do not just add symbols.
 - Never nest block nodes inside heading or paragraph.
-- Never nest cardGrid, statRow, columnList, timeline, stepList, pyramid,
-  chart, diagram, docCover, tableOfContents or pageBreak inside a card, column,
-  stat, callout, list item, table cell or each other — layout blocks live at the
-  top level only.
 - Never emit "content": [] — omit the key instead.
 - THE USER'S EXPLICIT FORMAT REQUEST ALWAYS WINS over the style guide below:
   if they ask for bullet points, produce a bulletList — not cards, not stats,
   not a table. Only choose fancy blocks when the user has not specified a
   format.`;
+
+const NESTING_CONSTRAINT = `- Never nest cardGrid, statRow, columnList, timeline, stepList, pyramid,
+  chart, diagram, docCover, tableOfContents or pageBreak inside a card, column,
+  stat, callout, list item, table cell or each other — layout blocks live at the
+  top level only.`;
+
+/**
+ * What a prose-only assistant is told about the blocks it may not build. It
+ * still meets them in the passage it was handed, and dropping one because it
+ * was never described would lose content the user wrote.
+ */
+const PRESERVE_LAYOUT = `The passage may already contain ${LAYOUT_BLOCK_NAMES} nodes. Return any of them EXACTLY as you received them, attributes included. Never create one: presenting content is another assistant's job.`;
+
+function blockList(scope: ContractScope): string {
+  const groups = [PROSE_BLOCKS];
+  if (showsDocumentBlocks(scope)) groups.unshift(DOCUMENT_BLOCKS);
+  if (showsLayoutBlocks(scope)) groups.push(LAYOUT_BLOCKS);
+  return groups.join("\n");
+}
+
+function extras(scope: ContractScope): string[] {
+  return showsLayoutBlocks(scope)
+    ? [ICON_RULE, ALIGNMENT_RULE]
+    : [PRESERVE_LAYOUT, ALIGNMENT_RULE];
+}
+
+function constraints(scope: ContractScope): string {
+  const lines = showsLayoutBlocks(scope)
+    ? `${SHARED_CONSTRAINTS}\n${NESTING_CONSTRAINT}`
+    : SHARED_CONSTRAINTS;
+  return `Constraints:\n${lines}`;
+}
+
+/** The contract, sized for what this surface is allowed to produce. */
+export function formatContract(scope: ContractScope): string {
+  return [
+    `${HEADER}\n${blockList(scope)}`,
+    INLINE_NODES,
+    ...extras(scope),
+    constraints(scope),
+  ].join("\n\n");
+}

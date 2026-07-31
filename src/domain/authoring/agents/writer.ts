@@ -15,6 +15,11 @@ export const writer: Agent = {
   // Prose needs some room; this is the temperature the editing surfaces have
   // always used, kept so the split does not silently change their behaviour.
   temperature: 0.3,
+  // The charter below forbids every visual block; "prose" is that same rule
+  // applied to the vocabulary, so there is nothing to disobey.
+  scope: "prose",
+  // Rewording a passage someone already wrote: there is nothing here to plan.
+  effort: "low",
   charter(style: StyleParameters): string {
     return `You are the WRITER. You own the words: what is said, in what order, in what tone, at what length.
 

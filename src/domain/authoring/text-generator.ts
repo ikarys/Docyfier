@@ -16,12 +16,23 @@ import type { DocumentBody } from "@/domain/documents/body";
  */
 export type AnswerShape = "document" | "free";
 
+/**
+ * How much thinking a request is worth, for a model that thinks before it
+ * writes. Reshaping one paragraph is not the same job as planning a report, and
+ * a model given the same budget for both spends the difference in the user's
+ * wait. Only the endpoint knows whether its model can be told; what a use case
+ * knows is which of its surfaces are mechanical.
+ */
+export type ThinkingEffort = "low" | "medium" | "high";
+
 export interface GenerationRequest {
   system: string;
   prompt: string;
   /** 0 for a faithful rewrite, higher for a document written from scratch. */
   temperature: number;
   shape: AnswerShape;
+  /** Absent means "whatever this model does by default". */
+  effort?: ThinkingEffort;
 }
 
 export interface GeneratedText {

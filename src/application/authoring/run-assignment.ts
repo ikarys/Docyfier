@@ -63,9 +63,10 @@ async function runAgent(
   return askJson(
     deps,
     {
-      system: agentSystem(agent.charter(deps.style), deps.style),
+      system: agentSystem(agent, deps.style),
       prompt: selectionBlocksPrompt(blocks, instruction),
       temperature: agent.temperature,
+      effort: agent.effort,
       shape: "document",
     },
     (json) => {

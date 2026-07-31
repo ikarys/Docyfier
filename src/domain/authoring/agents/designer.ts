@@ -15,6 +15,9 @@ export const designer: Agent = {
   does: "arranges what is already there",
   // Arranging is mechanical: the colder the model, the less it embellishes.
   temperature: 0.1,
+  scope: "layout",
+  // Choosing the box for content that already exists is a lookup, not a plan.
+  effort: "low",
   charter(style: StyleParameters): string {
     return `You are the LAYOUT DESIGNER. You own the shape, never the words.
 

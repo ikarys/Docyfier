@@ -10,13 +10,12 @@ import {
   planDocument as planBrief,
   restyleDocument as chooseDress,
 } from "@/application/authoring/plan-document";
-import { routeRequest } from "@/application/authoring/route-request";
 import {
   runAssignment,
   type AssignmentResult,
 } from "@/application/authoring/run-assignment";
 import { agentById } from "@/domain/authoring/agents/catalog";
-import type { Surface } from "@/domain/authoring/agents/routing";
+import { routeSurface, type Surface } from "@/domain/authoring/agents/routing";
 import {
   askAboutDocument as answerFrom,
   type DocumentAnswer,
@@ -37,6 +36,7 @@ import type { DocumentNode } from "@/domain/documents/body";
 import type { DocumentTheme } from "@/domain/documents/theme";
 import { artVocabulary } from "@/lib/ai/art-vocabulary";
 import { createOpenAiCompatibleGenerator } from "@/infrastructure/authoring/openai-compatible/generator";
+import { sharingInFlightCalls } from "@/infrastructure/authoring/in-flight-generator";
 import { activeEndpoint } from "@/lib/ai/provider";
 import { getStyleParameters } from "@/lib/settings/style";
 import { beautify } from "@/domain/authoring/beautify";
@@ -55,6 +55,14 @@ import { validateDocJson } from "@/infrastructure/editor/schema";
 export type { TransformOutcome };
 
 /**
+ * One generator for the process, not one per request: the table of calls
+ * already in flight is only useful if it outlives the request that opened them.
+ * The endpoint is still resolved per call, so switching provider in Settings
+ * takes effect on the next request as it always did.
+ */
+const generator = sharingInFlightCalls(createOpenAiCompatibleGenerator(activeEndpoint));
+
+/**
  * What every AI surface is built from. Exported for the streaming routes, which
  * drive the model themselves and still owe their answers the same validation
  * and the same formatting pass as the blocking calls below.
@@ -62,7 +70,7 @@ export type { TransformOutcome };
 export async function authoringDeps(): Promise<AuthoringDeps> {
   const style = await getStyleParameters();
   return {
-    generator: createOpenAiCompatibleGenerator(activeEndpoint),
+    generator,
     validator: { validate: validateDocJson },
     polisher: { polish: (body) => beautify(body, style) },
     style,
@@ -105,7 +113,7 @@ export async function transformDocument(
   // No surface means a caller from before the split: the single prompt it
   // always had, rather than an assistant it never asked for.
   if (!surface) return editDocument(deps, doc, instruction);
-  const assignment = await routeRequest(deps, surface, instruction);
+  const assignment = routeSurface(surface);
   return editDocument(deps, doc, instruction, agentById(assignment.steps[0] ?? "writer"));
 }
 
@@ -128,8 +136,9 @@ export async function rewriteSelectionBlocks(
 
 /**
  * Surface 3a, with the two assistants (PLAN.md STEP U13) — the passage goes to
- * the writer, to the layout designer, or to both in that order, and the caller
- * is told which so the user can be told too.
+ * the writer or to the layout designer, and the caller is told which so the
+ * user can be told too. Which one is read off the surface, never asked of a
+ * model: the answer was already known and the question cost a round trip.
  */
 export async function editPassage(
   surface: Surface,
@@ -137,8 +146,7 @@ export async function editPassage(
   instruction: string,
 ): Promise<AssignmentResult> {
   const deps = await authoringDeps();
-  const assignment = await routeRequest(deps, surface, instruction);
-  return runAssignment(deps, assignment, blocks, instruction);
+  return runAssignment(deps, routeSurface(surface), blocks, instruction);
 }
 
 /** Surface 3b — inline selection rewrite; plain text in, plain text out. */

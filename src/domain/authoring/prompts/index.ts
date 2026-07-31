@@ -8,10 +8,10 @@
  * contract so parsing and validation stay uniform.
  */
 
-export { FORMAT_CONTRACT } from "./format-contract";
+export { formatContract } from "./format-contract";
 export { styleGuide } from "./style-guide";
+export type { ContractScope } from "./scope";
 export { agentSystem } from "./agents";
-export { ROUTER_SYSTEM, routerPrompt } from "./router";
 export { planPrompt, planSystem, restylePrompt } from "./plan";
 export { writerSystem } from "./write";
 export { transformOpsSystem, transformOpsPrompt } from "./transform";

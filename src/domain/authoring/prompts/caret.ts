@@ -1,5 +1,5 @@
 import type { StyleParameters } from "../style-parameters";
-import { FORMAT_CONTRACT } from "./format-contract";
+import { formatContract } from "./format-contract";
 import { styleGuide } from "./style-guide";
 
 /**
@@ -12,9 +12,9 @@ import { styleGuide } from "./style-guide";
  */
 
 export function caretSystem(style: StyleParameters): string {
-  return `${FORMAT_CONTRACT}
+  return `${formatContract("layout")}
 
-${styleGuide(style)}
+${styleGuide(style, "layout")}
 
 Task: you are writing at one point inside a document that already exists. You receive a digest of it and the text where the cursor sits. Return a doc containing ONLY the new blocks to insert at that point — never the surrounding document, never a repetition of what is already there. Match the language and the register of the digest.`;
 }

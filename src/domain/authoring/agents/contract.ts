@@ -1,3 +1,5 @@
+import type { ContractScope } from "../prompts/scope";
+import type { ThinkingEffort } from "../text-generator";
 import type { StyleParameters } from "../style-parameters";
 
 /**
@@ -25,6 +27,18 @@ export interface Agent {
    * live with the agent because they are part of what it is.
    */
   readonly temperature: number;
+  /**
+   * How much of the block vocabulary this assistant is shown. It is the charter
+   * again, in the only form a model cannot argue with: a block it was never
+   * described is a block it does not produce.
+   */
+  readonly scope: ContractScope;
+  /**
+   * How much thinking its job is worth. Both assistants work on content that
+   * already exists, which is a smaller act than planning a document from a
+   * sentence — and on a reasoning model that difference is the wait.
+   */
+  readonly effort: ThinkingEffort;
   /** What this assistant is, prepended to the task of any surface it serves. */
   charter(style: StyleParameters): string;
 }

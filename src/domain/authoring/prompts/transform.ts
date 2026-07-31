@@ -1,5 +1,6 @@
+import type { Agent } from "../agents/contract";
 import type { StyleParameters } from "../style-parameters";
-import { FORMAT_CONTRACT } from "./format-contract";
+import { formatContract } from "./format-contract";
 import { styleGuide } from "./style-guide";
 
 /** Surface 2 — editing an existing document through a list of operations. */
@@ -22,16 +23,19 @@ OUTPUT RULES — these REPLACE the "one JSON object" rule above:
 - Return [] when the instruction asks for nothing that changes the document.`;
 
 /**
- * `charter` is which assistant is editing (PLAN.md STEP U13). Empty is the
- * single-prompt behaviour every surface had before the split, kept because the
- * generation path still uses it.
+ * `agent` is which assistant is editing (PLAN.md STEP U13), and it carries the
+ * vocabulary it is allowed to work in. No agent is the single-prompt behaviour
+ * every surface had before the split, kept because a caller from before it
+ * still exists — and it sees the whole contract, because it may produce
+ * anything.
  */
-export function transformOpsSystem(style: StyleParameters, charter = ""): string {
-  return `${FORMAT_CONTRACT}
+export function transformOpsSystem(style: StyleParameters, agent?: Agent): string {
+  const scope = agent ? agent.scope : "document";
+  return `${formatContract(scope)}
 
-${styleGuide(style)}
+${styleGuide(style, scope)}
 
-${OPS_CONTRACT}${charter ? `\n\n${charter}` : ""}
+${OPS_CONTRACT}${agent ? `\n\n${agent.charter(style)}` : ""}
 
 Task: you receive the current document as a numbered list of its top-level blocks, plus an instruction. Return the operations that carry out the instruction.
 When the instruction is about design ("make it pretty", "improve the design", "beautify", "modernize"), do not just tweak colors or spacing — actively RESTRUCTURE per the style guide above: replace plain tables of standalone metrics with a statRow, parallel items with a cardGrid, chronological content with a timeline, sequential steps with a stepList. Go section by section and emit a "replace" op wherever a richer fitting block exists; a document that comes out with the same node types it went in has not been made pretty.`;

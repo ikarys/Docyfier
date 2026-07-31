@@ -8,8 +8,7 @@ import type { DocOp } from "@/domain/authoring/ops";
 import { blocksOf, type DocumentBody, type DocumentNode } from "@/domain/documents/body";
 import { agentById } from "@/domain/authoring/agents/catalog";
 import { opBreach } from "@/domain/authoring/agents/layout-ops";
-import type { Surface } from "@/domain/authoring/agents/routing";
-import { routeRequest } from "@/application/authoring/route-request";
+import { routeSurface, type Surface } from "@/domain/authoring/agents/routing";
 import { reasoningOptions } from "@/infrastructure/authoring/openai-compatible/endpoint";
 import { logUsage } from "@/infrastructure/authoring/openai-compatible/usage-log";
 import { isAuthorized } from "@/lib/auth";
@@ -71,7 +70,7 @@ export async function POST(req: Request): Promise<Response> {
   // One assistant per stream: a button already says which one, and a request
   // that wants both is answered by the writer here — laying the result out is
   // the next thing the user asks for, on a document that has settled.
-  const assignment = await routeRequest(authoring, surface ?? { kind: "free-prompt" }, instruction);
+  const assignment = routeSurface(surface ?? { kind: "free-prompt" });
   const agent = agentById(assignment.steps[0] ?? "writer");
   // Ours to cancel: the deadline is silence, not total duration, so the abort
   // comes from the reader below rather than from a timer set here.
@@ -79,11 +78,11 @@ export async function POST(req: Request): Promise<Response> {
 
   const parts = streamText({
     model: await languageModel(),
-    system: transformOpsSystem(authoring.style, agent.charter(authoring.style)),
+    system: transformOpsSystem(authoring.style, agent),
     prompt: transformOpsPrompt(blocks, instruction),
     temperature: agent.temperature,
     maxOutputTokens: endpoint.maxOutputTokens,
-    ...reasoningOptions(endpoint),
+    ...reasoningOptions(endpoint, agent.effort),
     abortSignal: aborter.signal,
     maxRetries: 1,
   }).fullStream[Symbol.asyncIterator]() as AsyncIterator<ModelPart>;

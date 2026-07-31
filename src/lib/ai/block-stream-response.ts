@@ -3,6 +3,7 @@ import { streamText, type TextStreamPart, type ToolSet } from "ai";
 import { beautify } from "@/domain/authoring/beautify";
 import { parseModelJson } from "@/domain/authoring/model-answer";
 import type { StyleParameters } from "@/domain/authoring/style-parameters";
+import type { ThinkingEffort } from "@/domain/authoring/text-generator";
 import { validateDocJson } from "@/infrastructure/editor/schema";
 import { reasoningOptions } from "@/infrastructure/authoring/openai-compatible/endpoint";
 import { logUsage } from "@/infrastructure/authoring/openai-compatible/usage-log";
@@ -27,6 +28,8 @@ export interface BlockStream {
   readonly system: string;
   readonly prompt: string;
   readonly temperature: number;
+  /** How much thinking this surface is worth; absent leaves the model to itself. */
+  readonly effort?: ThinkingEffort;
   /** The instance's writing style: the same pass the blocking path applies. */
   readonly style: StyleParameters;
   /** An NDJSON line to send before the first block — the document's dress. */
@@ -68,7 +71,7 @@ async function open(request: BlockStream): Promise<Opened> {
       prompt: request.prompt,
       temperature: request.temperature,
       maxOutputTokens: endpoint.maxOutputTokens,
-      ...reasoningOptions(endpoint),
+      ...reasoningOptions(endpoint, request.effort),
       ...callOptions(),
     }).fullStream[Symbol.asyncIterator]();
 

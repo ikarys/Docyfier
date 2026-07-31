@@ -1,5 +1,4 @@
 import { AGENTS } from "@/domain/authoring/agents/catalog";
-import { ROUTER_SYSTEM } from "@/domain/authoring/prompts/router";
 import { agentSystem } from "@/domain/authoring/prompts/agents";
 import { transformOpsSystem } from "@/domain/authoring/prompts/transform";
 import { StyleParameters } from "@/domain/authoring/style-parameters";
@@ -36,20 +35,18 @@ function section(title: string, body: string): void {
 
 const style = styleFromArgv(process.argv.slice(2));
 
-section("ORCHESTRATOR — read a free prompt, choose the assistants", ROUTER_SYSTEM);
-
 for (const agent of AGENTS) {
   section(
-    `${agent.label.toUpperCase()} — charter only (temperature ${agent.temperature})`,
+    `${agent.label.toUpperCase()} — charter only (temperature ${agent.temperature}, ${agent.scope} vocabulary)`,
     agent.charter(style),
   );
   section(
     `${agent.label.toUpperCase()} — as sent, editing a passage`,
-    agentSystem(agent.charter(style), style),
+    agentSystem(agent, style),
   );
   section(
     `${agent.label.toUpperCase()} — as sent, editing a whole document`,
-    transformOpsSystem(style, agent.charter(style)),
+    transformOpsSystem(style, agent),
   );
 }
 

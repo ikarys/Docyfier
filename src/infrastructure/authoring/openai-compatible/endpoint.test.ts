@@ -88,4 +88,18 @@ describe("how hard the model may think", () => {
       providerOptions: { [PROVIDER_NAME]: { reasoning_effort: "low" } },
     });
   });
+
+  it("lets a call ask for little thinking when the provider named no effort", () => {
+    expect(reasoningOptions(provider, "low")).toEqual({
+      providerOptions: { [PROVIDER_NAME]: { reasoning_effort: "low" } },
+    });
+  });
+
+  /** The provider's setting is a person's choice; the call's is a guess about
+   * one request. A guess never overrides a choice. */
+  it("keeps the provider's own effort over what a call asked for", () => {
+    expect(reasoningOptions({ ...provider, reasoningEffort: "high" }, "low")).toEqual({
+      providerOptions: { [PROVIDER_NAME]: { reasoning_effort: "high" } },
+    });
+  });
 });

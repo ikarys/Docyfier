@@ -89,9 +89,10 @@ export function transformDocument(
   return askJson(
     deps,
     {
-      system: transformOpsSystem(deps.style, agent ? agent.charter(deps.style) : ""),
+      system: transformOpsSystem(deps.style, agent),
       prompt: transformOpsPrompt(blocks, instruction),
       temperature: agent ? agent.temperature : 0.3,
+      effort: agent?.effort,
       // An op list is an array: no provider JSON mode describes it.
       shape: "free",
     },

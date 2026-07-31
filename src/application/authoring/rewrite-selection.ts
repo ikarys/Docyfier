@@ -24,6 +24,7 @@ export async function rewriteSelectionBlocks(
     system: selectionBlocksSystem(deps.style),
     prompt: selectionBlocksPrompt(blocks, instruction),
     temperature: 0.3,
+    effort: "low",
   });
   return body.content ?? [];
 }
@@ -42,6 +43,8 @@ export async function rewriteSelectionText(
     system: SELECTION_TEXT_SYSTEM,
     prompt: selectionTextPrompt(text, instruction),
     temperature: 0.3,
+    // Swapping one fragment mid-sentence: there is nothing here to deliberate.
+    effort: "low",
     shape: "free",
   });
   return fragmentFromAnswer(answer.text);

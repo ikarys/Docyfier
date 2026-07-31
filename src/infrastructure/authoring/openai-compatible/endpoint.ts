@@ -39,12 +39,20 @@ export const PROVIDER_NAME = "docyfier-llm";
  * that does not implement it ignores the field — so sending it can never make a
  * working provider stop working. Sending nothing at all is a distinct choice:
  * it leaves the model to whatever it does by default.
+ *
+ * `asked` is what one request thinks it is worth: shortening a paragraph does
+ * not deserve the thinking a whole document does, and on a reasoning model that
+ * difference is most of the seconds the user waits. It only applies when the
+ * provider named no effort of its own — a setting somebody chose outranks a
+ * guess made per call.
  */
 export function reasoningOptions(
   endpoint: ProviderEndpoint,
+  asked?: string,
 ): { providerOptions?: Record<string, Record<string, string>> } {
-  const effort = endpoint.reasoningEffort;
-  if (!effort || effort === "default") return {};
+  const chosen = endpoint.reasoningEffort;
+  const effort = chosen && chosen !== "default" ? chosen : asked;
+  if (!effort) return {};
   return { providerOptions: { [PROVIDER_NAME]: { reasoning_effort: effort } } };
 }
 

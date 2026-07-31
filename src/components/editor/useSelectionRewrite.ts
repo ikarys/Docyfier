@@ -28,9 +28,9 @@ export function useSelectionRewrite(
     setBusy(true);
     setError(null);
     setNote(null);
-    // A quick action says who it is before the request leaves; a free prompt
-    // has to be read first, so the label appears when the answer does.
-    setReason(routeSurface(surface)?.reason ?? null);
+    // Every surface says who it is before the request leaves: nothing has to
+    // be read by a model first any more.
+    setReason(routeSurface(surface).reason);
 
     const { input, range } = selectionRequest(editor.state, instruction, surface);
 

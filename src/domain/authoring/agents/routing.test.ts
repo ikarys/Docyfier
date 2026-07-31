@@ -1,63 +1,51 @@
 import { describe, expect, it } from "vitest";
-import { readAssignment, routeSurface, WRITER_ONLY } from "./routing";
+import { routeSurface, type Surface } from "./routing";
 
 describe("routeSurface", () => {
   it("sends a rewrite action to the writer alone", () => {
-    expect(routeSurface({ kind: "block-action", family: "rewrite" })?.steps).toEqual(["writer"]);
+    expect(routeSurface({ kind: "block-action", family: "rewrite" }).steps).toEqual(["writer"]);
   });
 
   it("sends a turn-into action to the layout assistant alone", () => {
-    expect(routeSurface({ kind: "block-action", family: "turn-into" })?.steps).toEqual([
+    expect(routeSurface({ kind: "block-action", family: "turn-into" }).steps).toEqual([
       "designer",
     ]);
   });
 
   it("sends a rewording button to the writer alone", () => {
-    expect(routeSurface({ kind: "rewording" })?.steps).toEqual(["writer"]);
+    expect(routeSurface({ kind: "rewording" }).steps).toEqual(["writer"]);
   });
 
   it("sends a styling button to the layout assistant alone", () => {
-    expect(routeSurface({ kind: "styling" })?.steps).toEqual(["designer"]);
+    expect(routeSurface({ kind: "styling" }).steps).toEqual(["designer"]);
   });
 
-  /** The one surface where the request itself has to be read: only there is a
-   * model call worth its seconds. */
-  it("hands back nothing for a free prompt, which nobody can route by shape", () => {
-    expect(routeSurface({ kind: "free-prompt" })).toBeNull();
+  /**
+   * A free prompt used to be read by a model — a whole round trip spent
+   * deciding who would then do the work. The writer is the safe half of any
+   * request, and the other half is one click away on a passage that has settled.
+   */
+  it("answers a free prompt with the writer, without asking anyone", () => {
+    expect(routeSurface({ kind: "free-prompt" }).steps).toEqual(["writer"]);
+  });
+
+  it("never asks for two assistants, because that is two waits in one click", () => {
+    const surfaces: Surface[] = [
+      { kind: "block-action", family: "rewrite" },
+      { kind: "block-action", family: "turn-into" },
+      { kind: "styling" },
+      { kind: "rewording" },
+      { kind: "free-prompt" },
+    ];
+
+    for (const surface of surfaces) {
+      expect(routeSurface(surface).steps).toHaveLength(1);
+    }
   });
 
   it("explains itself, because the user is told what is running", () => {
-    expect(routeSurface({ kind: "block-action", family: "turn-into" })?.reason).toMatch(
+    expect(routeSurface({ kind: "block-action", family: "turn-into" }).reason).toMatch(
       /arranges/i,
     );
-  });
-});
-
-describe("readAssignment", () => {
-  it("reads the steps a router answered with", () => {
-    const assignment = readAssignment({ steps: ["writer", "designer"], reason: "both" });
-
-    expect(assignment.steps).toEqual(["writer", "designer"]);
-    expect(assignment.reason).toBe("both");
-  });
-
-  it("keeps the order it was given: the words come before their box", () => {
-    expect(readAssignment({ steps: ["designer", "writer"] }).steps).toEqual([
-      "writer",
-      "designer",
-    ]);
-  });
-
-  it("drops a step that names no assistant", () => {
-    expect(readAssignment({ steps: ["writer", "proofreader"] }).steps).toEqual(["writer"]);
-  });
-
-  it("falls back on the writer alone when the answer names nobody", () => {
-    expect(readAssignment({ steps: [] })).toEqual(WRITER_ONLY);
-    expect(readAssignment("nonsense")).toEqual(WRITER_ONLY);
-  });
-
-  it("never runs the same assistant twice", () => {
-    expect(readAssignment({ steps: ["writer", "writer"] }).steps).toEqual(["writer"]);
   });
 });

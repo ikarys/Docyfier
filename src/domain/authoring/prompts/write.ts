@@ -1,7 +1,7 @@
 import type { DocumentBrief } from "../brief";
 import type { DocumentRecipe } from "../recipes/contract";
 import type { StyleParameters } from "../style-parameters";
-import { FORMAT_CONTRACT } from "./format-contract";
+import { formatContract } from "./format-contract";
 import { styleGuide } from "./style-guide";
 
 /**
@@ -39,7 +39,7 @@ export function writerSystem(
   brief: DocumentBrief,
   style: StyleParameters,
 ): string {
-  return `${FORMAT_CONTRACT}
+  return `${formatContract("document")}
 
 ${styleGuide(style)}
 

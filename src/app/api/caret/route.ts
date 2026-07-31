@@ -34,6 +34,8 @@ export async function POST(req: Request): Promise<Response> {
       instruction,
     ),
     temperature: 0.6,
+    // The user is watching this one land at their cursor.
+    effort: "low",
     style,
   });
 }

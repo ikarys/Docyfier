@@ -35,6 +35,7 @@ export async function writeAtCaret(
     system: caretSystem(deps.style),
     prompt: caretPrompt(context.digest, context.here, instruction),
     temperature: 0.6,
+    effort: "low",
   });
   return body.content ?? [];
 }
@@ -55,6 +56,9 @@ export async function continueWriting(
     system: CARET_CONTINUE_SYSTEM,
     prompt: caretContinuePrompt(context.digest, context.here),
     temperature: 0.6,
+    // Offered as ghost text while the writer keeps typing: an answer that
+    // arrives after the next word is an answer nobody will read.
+    effort: "low",
     shape: "free",
   });
   return newWords(fragmentFromAnswer(answer.text), context.here);

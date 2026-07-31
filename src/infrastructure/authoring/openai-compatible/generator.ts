@@ -83,7 +83,7 @@ export function createOpenAiCompatibleGenerator(
           prompt: request.prompt,
           temperature: request.temperature,
           maxOutputTokens: endpoint.maxOutputTokens,
-          ...reasoningOptions(endpoint),
+          ...reasoningOptions(endpoint, request.effort),
           ...callOptions(),
         });
         logUsage("generate", started, usage);
@@ -124,7 +124,7 @@ async function structuredAnswer(
       prompt: request.prompt,
       temperature: request.temperature,
       maxOutputTokens: endpoint.maxOutputTokens,
-      ...reasoningOptions(endpoint),
+      ...reasoningOptions(endpoint, request.effort),
       ...callOptions(),
     });
     logUsage("generateObject", started, usage);
