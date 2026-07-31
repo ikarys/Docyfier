@@ -33,12 +33,21 @@ export interface ProviderEndpoint extends ModelEndpoint {
 export const PROVIDER_NAME = "docyfier-llm";
 
 /**
+ * The key provider-specific options travel under — the camel-cased provider
+ * name, which is the only form the adapter reads without deprecating it.
+ */
+export const PROVIDER_OPTIONS_KEY = "docyfierLlm";
+
+/**
  * The reasoning setting, in the shape a call takes it.
  *
- * `reasoning_effort` is what the OpenAI-compatible wire calls it, and a server
- * that does not implement it ignores the field — so sending it can never make a
- * working provider stop working. Sending nothing at all is a distinct choice:
- * it leaves the model to whatever it does by default.
+ * `reasoningEffort` is the adapter's own field name, and using it is not a
+ * matter of taste: an option the adapter does not recognise is passed through
+ * to the request body verbatim, and the body it builds then writes its own
+ * `reasoning_effort` over the top — so the wire spelling arrives as `undefined`
+ * and the model deliberates as if nothing had been asked. Sending nothing at
+ * all stays a distinct choice: it leaves the model to whatever it does by
+ * default.
  *
  * `asked` is what one request thinks it is worth: shortening a paragraph does
  * not deserve the thinking a whole document does, and on a reasoning model that
@@ -53,7 +62,7 @@ export function reasoningOptions(
   const chosen = endpoint.reasoningEffort;
   const effort = chosen && chosen !== "default" ? chosen : asked;
   if (!effort) return {};
-  return { providerOptions: { [PROVIDER_NAME]: { reasoning_effort: effort } } };
+  return { providerOptions: { [PROVIDER_OPTIONS_KEY]: { reasoningEffort: effort } } };
 }
 
 /** How the adapter obtains the provider in force at call time. */

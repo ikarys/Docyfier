@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearDetectedModels,
   languageModel,
-  PROVIDER_NAME,
+  PROVIDER_OPTIONS_KEY,
   reasoningOptions,
   type ProviderEndpoint,
 } from "./endpoint";
@@ -83,15 +83,15 @@ describe("how hard the model may think", () => {
     expect(reasoningOptions({ ...provider, reasoningEffort: "default" })).toEqual({});
   });
 
-  it("sends the effort under the name the SDK knows this provider by", () => {
+  it("sends the effort under the key and field the SDK actually reads", () => {
     expect(reasoningOptions({ ...provider, reasoningEffort: "low" })).toEqual({
-      providerOptions: { [PROVIDER_NAME]: { reasoning_effort: "low" } },
+      providerOptions: { [PROVIDER_OPTIONS_KEY]: { reasoningEffort: "low" } },
     });
   });
 
   it("lets a call ask for little thinking when the provider named no effort", () => {
     expect(reasoningOptions(provider, "low")).toEqual({
-      providerOptions: { [PROVIDER_NAME]: { reasoning_effort: "low" } },
+      providerOptions: { [PROVIDER_OPTIONS_KEY]: { reasoningEffort: "low" } },
     });
   });
 
@@ -99,7 +99,7 @@ describe("how hard the model may think", () => {
    * one request. A guess never overrides a choice. */
   it("keeps the provider's own effort over what a call asked for", () => {
     expect(reasoningOptions({ ...provider, reasoningEffort: "high" }, "low")).toEqual({
-      providerOptions: { [PROVIDER_NAME]: { reasoning_effort: "high" } },
+      providerOptions: { [PROVIDER_OPTIONS_KEY]: { reasoningEffort: "high" } },
     });
   });
 });
