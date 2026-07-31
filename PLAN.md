@@ -1059,8 +1059,61 @@ Instructions:
    cannot touch it. That is where the remaining budgets below will be won or
    lost, and a change to the format contract is no longer the place to look.
 
-   Still open: the same run for a passage edit and for "make it pretty", which
-   are the two surfaces carrying a budget.
+   **The two budgeted surfaces, same provider, same day.** A paragraph of 19
+   words shortened, and "Make it pretty" on the 48-block reference document:
+
+   ```
+   passage   WALL 15.6s  first byte 15.2s
+             [ai] stream 14.1s · in 1419 · out 112 · 8 tok/s
+                              · answer ~13 tok · thinking ~97 tok
+
+   pretty    WALL 91.0s  →  0 ops, and this instead of an edit:
+             "The AI server went quiet before it finished the edit."
+             [ai] generate 76.4s · in 914  · out 4423   ← the layout plan
+             ... the route gives up at 91 s ...
+             [ai] generate 49.2s · in 3313 · out 2820   ← a span, too late
+   ```
+
+   Both miss, and the second does not merely miss: it produces **nothing**. The
+   inputs are lean everywhere — 1 419, 914, 3 313 tokens — so neither failure is
+   about what the format costs. Three separate defects, and only one of them is
+   a setting.
+
+4. **What the measurement found, and what is left to do about it.**
+
+   1. **A plan deliberates like a document.** The layout plan answers with a
+      short list of intents over an outline, and spent 914 tokens in for 4 423
+      out — almost all of it thinking, and 76 of the 91 seconds. It asks for
+      `effortFor("document")` = `"medium"` because `thinking.ts` reasoned that a
+      plan over sixty blocks is the one call that must decide. The measurement
+      does not contradict the reasoning, it prices it. Try `"low"` for the plan
+      alone and measure what the plan becomes — fewer intents is the risk that
+      argument named, and it is now a thing to observe rather than to predict.
+
+   2. **The plan is silent, and silence is what the deadline watches.** Nothing
+      reaches the stream while the plan is computed, so 76 s of useful work
+      look exactly like a hung provider to the heartbeat, whose `idleLimit` is
+      `callTimeoutMs()` — 90 s. The spans then had 14 seconds to exist in.
+      Say what is happening instead: a line when the plan starts and a line
+      when it lands, the way `blockStreamResponse` already announces which
+      assistant is working (STEP U13's "the reason is shown"). The user learns
+      what the wait is for, and the idle limit stops counting work as absence.
+      Giving the plan a deadline of its own would silence the symptom and keep
+      the blank wait.
+
+   3. **Work outlives the answer that needed it.** The span that finished at
+      49.2 s finished after the response had closed: a call paid for, and
+      thrown away. The stream's own model call is hung up (`hangUpAfter`), but
+      the spans run through the generator with a deadline of their own and no
+      link to the request. Carrying a cancellation signal from the request into
+      `GenerationRequest` is the honest fix, and it widens the port — so it is
+      a decision, not a patch.
+
+   And a question the numbers raise that no tuning answers: at 8 tok/s on a
+   passage and 57 on a document, **is 5 s reachable at all on this provider?**
+   A budget no reasonable endpoint can meet is a statement about the surface,
+   not about the code — and the answer might be that a passage edit must ask
+   for less, not that the plumbing must get faster again.
 
 **Out of scope:** changing how documents are stored; a per-agent provider (still
 STEP U13's out-of-scope); response caching — an answer that outlives the request
@@ -1072,8 +1125,11 @@ Acceptance:
 - [x] Every block type round-trips body → model format → body, deep-equal
 - [x] A model writes the format and the app accepts it: 13 blocks, 0 rejected,
       layout blocks with their attributes and marks — measured, not assumed
-- [ ] A passage edit on a paragraph answers in under 5 s on the reference provider
-- [ ] "Make it pretty" on the 78 KB reference document answers in under 60 s
+- [ ] A passage edit on a paragraph answers in under 5 s on the reference
+      provider — **measured at 15.6 s**, and the wait is throughput, not payload
+- [ ] "Make it pretty" on the 78 KB reference document answers in under 60 s —
+      **measured at 91 s and zero ops**: the silent plan spends the idle window
+      before the first span runs
 - [ ] The usage log shows the reused-prefix percentage on a provider that caches
 - [x] No surface keeps two code paths for the same edit — the provider's JSON
       mode, `BlockScanner`, `wrapInDoc` and `boldFromMarkdown` went with the
