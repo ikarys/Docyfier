@@ -188,6 +188,86 @@ describe("a passage turned into a block that has no content", () => {
     expect(isFaithfulLayout(layoutDrift([ascii], [drawn]))).toBe(true);
   });
 
+  /**
+   * A rich ASCII drawing states a hundred words: every policy, every mount,
+   * every resource name, most of them twice. A diagram of it carries a dozen
+   * labels, because that is what drawing it means. Judged on how much of the
+   * text it still holds, every real conversion was refused for "throwing away
+   * most of the text it was given" — and the block came back unchanged.
+   */
+  it("does not ask a drawing to hold every word the text stated", () => {
+    const ascii = {
+      type: "codeBlock",
+      content: [
+        {
+          type: "text",
+          text: [
+            "dev cluster: subscription astro_shared_dev (westeurope)",
+            "  AKS cluster astro_shared_dev (namespace K8s: openbao)",
+            "    OpenBao instance (raft, auto-unseal via AKV)",
+            "      Root namespace (auth: oidc/)",
+            "        policies: admin (path *), reader (path *)",
+            "      OpenBao ns dev/   mount: kv/ (v2)   policies: eso-reader, dev-projects, ci-terraform   auth: k8s+jwt",
+            "      OpenBao ns uat/   mount: kv/ (v2)   policies: eso-reader, uat-projects, ci-terraform   auth: k8s+jwt",
+            "  Platform KV kv-astroshddev-platform: unseal-key, root-token, oidc-secret, recovery-keys",
+            "  Managed Identity id-astroshddev-openbao-001 (Workload Identity)",
+            "  Backup ST stastrobackupweu container: openbao (raft snapshots)",
+          ].join("\n"),
+        },
+      ],
+    };
+    const drawn = {
+      type: "diagram",
+      attrs: {
+        kind: "architecture",
+        direction: "down",
+        title: "OpenBao on the dev cluster",
+        caption: null,
+        groups: [
+          { id: "sub", label: "subscription astro_shared_dev (westeurope)" },
+          { id: "aks", label: "AKS cluster astro_shared_dev", parent: "sub" },
+          { id: "bao", label: "OpenBao instance", parent: "aks" },
+        ],
+        nodes: [
+          { id: "root", label: "Root namespace", note: "auth: oidc/", group: "bao" },
+          { id: "dev", label: "OpenBao ns dev/", note: "mount: kv/ (v2)", group: "bao" },
+          { id: "uat", label: "OpenBao ns uat/", note: "mount: kv/ (v2)", group: "bao" },
+        ],
+        edges: [],
+      },
+    };
+
+    const drift = layoutDrift([ascii], [drawn]);
+    expect(drift.keptRatio).toBeLessThan(0.5);
+    expect(isFaithfulLayout(drift)).toBe(true);
+  });
+
+  /** Summarising is not licence to answer with something else entirely. */
+  it("still refuses a drawing that kept almost nothing of the passage", () => {
+    const prose = {
+      type: "paragraph",
+      content: [
+        {
+          type: "text",
+          text: "The gateway checks the token, the broker queues the job, the worker writes the report and the mailer sends it to the requester.",
+        },
+      ],
+    };
+    const unrelated = {
+      type: "diagram",
+      attrs: {
+        kind: "flow",
+        direction: "down",
+        title: null,
+        caption: null,
+        groups: [],
+        nodes: [{ id: "a", label: "Something" }],
+        edges: [],
+      },
+    };
+    expect(isFaithfulLayout(layoutDrift([prose], [unrelated]))).toBe(false);
+  });
+
   it("reads the figures a chart carries in its attributes", () => {
     const prose = {
       type: "paragraph",

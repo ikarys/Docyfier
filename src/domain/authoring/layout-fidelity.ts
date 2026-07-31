@@ -20,6 +20,19 @@ const MAX_ADDED_RATIO = 0.25;
 /** How much of the passage must still be there once it has been arranged. */
 const MIN_KEPT_RATIO = 0.5;
 
+/**
+ * The same, for a block that stands for the passage rather than holding it.
+ *
+ * A rich ASCII drawing states a hundred words — every policy, every mount,
+ * every resource name, most of them twice — and a diagram of it carries a dozen
+ * labels, because that is what drawing it means. Measured against the ordinary
+ * floor, a faithful six-box architecture of one came out at 0.52 and a five-box
+ * one at 0.48: every real conversion was refused for throwing the text away,
+ * and the block came back unchanged. What is still worth refusing here is an
+ * answer about something else, which keeps almost nothing.
+ */
+const MIN_KEPT_SUMMARY = 0.25;
+
 export interface LayoutDrift {
   /** Figures in the result that the passage never stated. */
   readonly invented: string[];
@@ -29,6 +42,12 @@ export interface LayoutDrift {
   readonly addedRatio: number;
   /** Words of the passage still present, over the words it had. */
   readonly keptRatio: number;
+  /**
+   * Whether the result stands for the passage rather than holding it — a
+   * drawing or a chart, whose whole job is to say the same thing in fewer
+   * words. It is held to a lower floor, never to a looser invention rule.
+   */
+  readonly summarised: boolean;
 }
 
 /**
@@ -131,6 +150,7 @@ export function layoutDrift(before: DocumentNode[], after: DocumentNode[]): Layo
     // An empty passage cannot be drifted from; an empty result always has.
     addedRatio: source.length === 0 ? 0 : added / source.length,
     keptRatio: source.length === 0 ? 1 : kept / source.length,
+    summarised: after.length > 0 && after.every((node) => ATOM_WORDS[node.type ?? ""] !== undefined),
   };
 }
 
@@ -140,7 +160,7 @@ export function isFaithfulLayout(drift: LayoutDrift): boolean {
     drift.invented.length === 0 &&
     drift.lost.length === 0 &&
     drift.addedRatio <= MAX_ADDED_RATIO &&
-    drift.keptRatio >= MIN_KEPT_RATIO
+    drift.keptRatio >= (drift.summarised ? MIN_KEPT_SUMMARY : MIN_KEPT_RATIO)
   );
 }
 
