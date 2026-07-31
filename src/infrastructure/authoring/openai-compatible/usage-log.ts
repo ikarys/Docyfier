@@ -16,6 +16,12 @@ export interface CallUsage {
   outputTokens?: number;
   /** Tokens spent thinking, when the provider declares them. */
   reasoningTokens?: number;
+  /**
+   * Tokens the provider served from a prompt it had already seen. The format
+   * contract is the same bytes on every call, so this is what says whether it
+   * is still being paid for or only sent.
+   */
+  cachedTokens?: number;
 }
 
 export function usageLoggingEnabled(): boolean {
@@ -30,10 +36,12 @@ export function readUsage(value: unknown): CallUsage {
     const found = candidates.find((candidate) => typeof candidate === "number");
     return typeof found === "number" ? found : undefined;
   };
+  const prompt = (usage.promptTokensDetails ?? {}) as Record<string, unknown>;
   return {
     inputTokens: count(usage.inputTokens, usage.promptTokens),
     outputTokens: count(usage.outputTokens, usage.completionTokens),
     reasoningTokens: count(usage.reasoningTokens, details.reasoningTokens),
+    cachedTokens: count(usage.cachedInputTokens, prompt.cachedTokens, usage.cacheReadInputTokens),
   };
 }
 
@@ -42,6 +50,11 @@ export function usageLine(label: string, ms: number, usage: CallUsage): string {
   const parts = [`[ai] ${label} ${seconds.toFixed(1)}s`];
 
   if (usage.inputTokens !== undefined) parts.push(`in ${usage.inputTokens}`);
+  if (usage.cachedTokens !== undefined) {
+    parts.push(`cached ${usage.cachedTokens}`);
+    const sent = usage.inputTokens ?? 0;
+    if (sent > 0) parts.push(`${Math.round((usage.cachedTokens / sent) * 100)}% reused`);
+  }
   if (usage.outputTokens !== undefined) {
     parts.push(`out ${usage.outputTokens}`);
     // Guard the division rather than the caller: a cached answer really can

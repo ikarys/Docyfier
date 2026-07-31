@@ -37,6 +37,27 @@ describe("usageLine", () => {
     expect(line).toContain("no usage reported");
   });
 
+  /**
+   * Whether the provider is reusing the prompt prefix is the one thing that
+   * decides if the format contract still costs anything on the second call.
+   * Unmeasured, it is a belief.
+   */
+  it("says how much of the prompt the provider had already seen", () => {
+    const line = usageLine("passage", 2_000, { inputTokens: 2_400, cachedTokens: 2_100 });
+
+    expect(line).toContain("in 2400");
+    expect(line).toContain("cached 2100");
+    expect(line).toContain("88%");
+  });
+
+  it("says nothing about caching when the provider reports none", () => {
+    expect(usageLine("passage", 1_000, { inputTokens: 500 })).not.toContain("cached");
+  });
+
+  it("does not divide by an input of zero", () => {
+    expect(usageLine("passage", 1_000, { inputTokens: 0, cachedTokens: 0 })).not.toContain("NaN");
+  });
+
   it("does not divide by a duration of zero", () => {
     expect(usageLine("caret", 0, { outputTokens: 5 })).not.toContain("Infinity");
   });
