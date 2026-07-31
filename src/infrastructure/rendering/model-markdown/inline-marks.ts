@@ -48,7 +48,9 @@ type Wrap = (text: string, attrs: Record<string, unknown> | undefined) => string
  */
 const WRAPS: readonly { readonly type: string; readonly wrap: Wrap }[] = [
   { type: "bold", wrap: (text) => `**${text}**` },
-  { type: "italic", wrap: (text) => `*${text}*` },
+  // Underscores rather than stars: a run that is both bold and italic would
+  // otherwise read as `***`, which no scanner can split the same way twice.
+  { type: "italic", wrap: (text) => `_${text}_` },
   { type: "strike", wrap: (text) => `~~${text}~~` },
   { type: "underline", wrap: (text) => `<u>${text}</u>` },
   { type: "subscript", wrap: (text) => `<sub>${text}</sub>` },

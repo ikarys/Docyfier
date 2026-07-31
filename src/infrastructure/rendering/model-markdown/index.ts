@@ -1,5 +1,3 @@
-import type { DocumentNode } from "@/domain/documents/body";
-
 /**
  * The format a model reads and writes (PLAN.md STEP U14).
  *
@@ -18,7 +16,4 @@ import type { DocumentNode } from "@/domain/documents/body";
  */
 
 export { blocksToModelMarkdown } from "./emit";
-
-export function modelMarkdownToBlocks(_text: string): DocumentNode[] {
-  throw new Error("modelMarkdownToBlocks is not implemented yet");
-}
+export { modelMarkdownToBlocks } from "./parse";
