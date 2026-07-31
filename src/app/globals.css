@@ -2530,7 +2530,6 @@ body {
   border: 1px solid transparent;
   border-radius: 6px;
   padding: 0.2rem 0.3rem;
-  max-width: 9rem;
   cursor: pointer;
 }
 .tb-select:hover {

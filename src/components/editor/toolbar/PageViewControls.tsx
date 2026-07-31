@@ -19,8 +19,10 @@ export function PageViewControls({ page }: { page: PageViewControl }) {
         aria-label="Page width"
       >
         {PAPERS.map((paper) => (
-          <option key={paper.id} value={paper.id}>
-            {paper.label} · {paper.hint}
+          // The hint belongs to the open list: a closed select shows the
+          // selected option's own text, and a sentence there is an ellipsis.
+          <option key={paper.id} value={paper.id} title={paper.hint}>
+            {paper.label}
           </option>
         ))}
       </select>
