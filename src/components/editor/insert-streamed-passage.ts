@@ -14,19 +14,29 @@ export async function insertStreamedPassage(
   editor: Editor,
   request: PassageRequest,
   passageRange: Range,
+  /** How the blocks are asked for; injected so a test can end the stream badly. */
+  ask: typeof requestPassageBlocks = requestPassageBlocks,
 ): Promise<PassageAnswer> {
   const passage = new StreamedPassage(passageRange);
+  let answer: PassageAnswer;
 
-  const answer = await requestPassageBlocks(request, (block) => {
-    const before = editor.state.doc.content.size;
-    editor.chain().insertContentAt(passage.target, block).run();
-    passage.grewBy(editor.state.doc.content.size - before);
-  });
+  // A stream ends badly in two ways, and both leave part of an answer where a
+  // passage used to be: the answer says so — a provider that dropped it, an
+  // assistant that broke its charter — or the stream dies and this throws.
+  // Only the first was ever handled, and on a call that takes minutes the
+  // second is the likely one, so it cost the writer the block they asked about.
+  try {
+    answer = await ask(request, (block) => {
+      const before = editor.state.doc.content.size;
+      editor.chain().insertContentAt(passage.target, block).run();
+      passage.grewBy(editor.state.doc.content.size - before);
+    });
+  } catch (err) {
+    answer = { error: err instanceof Error ? err.message : "The AI request failed.", reason: null };
+  }
 
-  // A stream that ended badly — a provider that dropped it, or an assistant
-  // that broke its charter — leaves part of an answer where a passage used to
-  // be. Half an edit is not an edit anyone asked for, so it goes back rather
-  // than staying for the user to find and undo.
+  // Half an edit is not an edit anyone asked for, so it goes back rather than
+  // staying for the user to find and undo.
   if (answer.error && passage.started) {
     editor.chain().insertContentAt(passage.written, request.blocks).run();
   }
