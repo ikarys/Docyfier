@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { blocksToModelMarkdown } from "@/infrastructure/rendering/model-markdown";
 import { ScriptedGenerator, authoringDeps } from "@test/fakes/authoring-deps";
 import type { Assignment } from "@/domain/authoring/agents/routing";
 import type { DocumentNode } from "@/domain/documents/body";
@@ -9,7 +10,7 @@ function paragraph(text: string): DocumentNode {
 }
 
 function doc(...blocks: DocumentNode[]): string {
-  return JSON.stringify({ type: "doc", content: blocks });
+  return blocksToModelMarkdown(blocks);
 }
 
 const PASSAGE = [
@@ -98,7 +99,7 @@ describe("runAssignment", () => {
   });
 
   it("fails the request when the first assistant cannot answer at all", async () => {
-    const generator = new ScriptedGenerator(["not json", "still not json"]);
+    const generator = new ScriptedGenerator(["", ""]);
 
     await expect(
       runAssignment(authoringDeps(generator), WRITER, PASSAGE, "Shorten it"),
@@ -106,10 +107,10 @@ describe("runAssignment", () => {
   });
 
   it("refuses an answer that emptied the passage", async () => {
-    const generator = new ScriptedGenerator([doc(), doc(paragraph("Vendor A: 120k, B: 90k."))]);
+    const generator = new ScriptedGenerator(["", doc(paragraph("Vendor A: 120k, B: 90k."))]);
 
     await runAssignment(authoringDeps(generator), WRITER, PASSAGE, "Shorten it");
 
-    expect(generator.requests[1]?.prompt).toMatch(/nothing/i);
+    expect(generator.requests[1]?.prompt).toMatch(/no blocks/i);
   });
 });

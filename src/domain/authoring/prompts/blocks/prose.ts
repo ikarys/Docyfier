@@ -4,15 +4,19 @@
  * Every surface sees these: they are what a document is made of before anyone
  * decides how it should look, and an assistant that owns only the wording still
  * has to return a list as a list and a table as a table.
+ *
+ * Written in markdown since STEP U14. A syntax the model already knows costs a
+ * fraction of the same vocabulary spelled out as JSON, and it gets answers back
+ * that are invalid less often — which matters more, because a rejected answer
+ * is a retry, and a retry is the wait paid twice.
  */
-export const PROSE_BLOCKS = `- {"type":"heading","attrs":{"level":1|2|3},"content":[inline]}
-- {"type":"paragraph","content":[inline]}
-- {"type":"bulletList","content":[{"type":"listItem","content":[blocks]}]}
-- {"type":"orderedList","content":[{"type":"listItem","content":[blocks]}]}
-- {"type":"blockquote","content":[blocks]}
-- {"type":"taskList","content":[{"type":"taskItem","attrs":{"checked":true|false},"content":[blocks]}]} — actions, acceptance criteria, checklists. Use it whenever the items are things to DO, not things to read; a plain bulletList otherwise.
-- {"type":"details","content":[{"type":"detailsSummary","content":[inline]},{"type":"detailsContent","content":[blocks]}]} — a section the reader opens: long appendices, raw logs, an aside that would break the flow. Never hide the point of the document inside one.
-- {"type":"codeBlock","attrs":{"language":"<lang>"},"content":[{"type":"text","text":"..."}]} — plain text only, no marks
-- {"type":"horizontalRule"}
-- {"type":"blockMath","attrs":{"latex":"..."}} — has NO "content"; a display formula in LaTeX. Inline, inside a paragraph: {"type":"inlineMath","attrs":{"latex":"..."}}. Only for real mathematics or units — never to typeset ordinary prose.
-- {"type":"table","content":[{"type":"tableRow","content":[cells]}]} — cell = {"type":"tableHeader"|"tableCell","content":[{"type":"paragraph","content":[inline]}]}; first row uses tableHeader; every row has the same number of cells.`;
+export const PROSE_BLOCKS = `- \`# Title\`, \`## Section\`, \`### Sub-section\` — headings, levels 1 to 3
+- a line of text on its own is a paragraph
+- \`- item\` a bullet list, \`1. item\` a numbered one. One paragraph per item; a list nested under an item is indented by two spaces.
+- \`- [ ] item\` / \`- [x] item\` — a checklist. Use it whenever the items are things to DO, not things to read; a plain bullet list otherwise.
+- \`> quoted\` — a blockquote, with \`>\` on every one of its lines
+- a fenced code block: three backticks and the language, the code, three backticks. Plain text, no marks inside.
+- \`---\` alone on its line — a horizontal rule
+- \`$$\` on a line, the LaTeX, then \`$$\` — a display formula; \`$x$\` inline. Only for real mathematics or units, never to typeset ordinary prose.
+- a table: \`| A | B |\`, then \`| --- | :---: |\` giving each column's alignment, then one line per row. The first row is the header and every row has the same number of cells.
+- \`::: details {"open":false}\` — a section the reader opens: long appendices, raw logs, an aside that would break the flow. It holds \`::: detailsSummary\` (the visible line) then \`::: detailsContent\` (the blocks). Never hide the point of the document inside one.`;

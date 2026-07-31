@@ -16,7 +16,7 @@ export function caretSystem(style: StyleParameters): string {
 
 ${styleGuide(style, "layout")}
 
-Task: you are writing at one point inside a document that already exists. You receive a digest of it and the text where the cursor sits. Return a doc containing ONLY the new blocks to insert at that point — never the surrounding document, never a repetition of what is already there. Match the language and the register of the digest.`;
+Task: you are writing at one point inside a document that already exists. You receive a digest of it and the text where the cursor sits. Return ONLY the new blocks to insert at that point — never the surrounding document, never a repetition of what is already there. Match the language and the register of the digest.`;
 }
 
 export const CARET_CONTINUE_SYSTEM = `You continue a sentence or a paragraph someone is writing inside a document.

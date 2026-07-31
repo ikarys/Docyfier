@@ -10,11 +10,15 @@ const paragraph = (text: string) => ({
 });
 const doc = (...blocks: object[]) => ({ type: "doc", content: blocks });
 
-const answer = (value: object) => JSON.stringify(value);
+/** A document the model wrote, in the format it now answers in. */
+const written = (...lines: string[]) => lines.join("\n\n");
+
+/** An op list, whose envelope is still JSON and whose blocks are not. */
+const ops = (value: object) => JSON.stringify(value);
 
 describe("generateDocument", () => {
   it("hands back the document the model wrote", async () => {
-    const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
+    const generator = new ScriptedGenerator([written("Bonjour")]);
 
     expect(await generateDocument(authoringDeps(generator), "Write a note", defaultBrief())).toEqual(
       doc(paragraph("Bonjour")),
@@ -22,7 +26,7 @@ describe("generateDocument", () => {
   });
 
   it("writes against the shape of the kind the plan chose", async () => {
-    const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
+    const generator = new ScriptedGenerator([written("Bonjour")]);
 
     await generateDocument(authoringDeps(generator), "Write up yesterday's outage", {
       ...defaultBrief(),
@@ -38,7 +42,7 @@ describe("generateDocument", () => {
   });
 
   it("carries the instance's style parameters into the prompt", async () => {
-    const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
+    const generator = new ScriptedGenerator([written("Bonjour")]);
     const style = StyleParameters.restore({ emoji: true, autoBold: true });
 
     await generateDocument(
@@ -53,7 +57,7 @@ describe("generateDocument", () => {
   });
 
   it("lets an imposed language win over the one the plan picked", async () => {
-    const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
+    const generator = new ScriptedGenerator([written("Bonjour")]);
     const style = StyleParameters.restore({ language: "French" });
 
     await generateDocument(authoringDeps(generator, { style }), "Write a note", {
@@ -67,7 +71,7 @@ describe("generateDocument", () => {
   });
 
   it("writes against the default shape when the plan named no kind it knows", async () => {
-    const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
+    const generator = new ScriptedGenerator([written("Bonjour")]);
 
     await generateDocument(authoringDeps(generator), "Write a note", {
       ...defaultBrief(),
@@ -77,33 +81,28 @@ describe("generateDocument", () => {
     expect(generator.requests[0].system).toContain("SHORT NOTE");
   });
 
-  it("reads an answer wrapped in prose and a fence", async () => {
-    const generator = new ScriptedGenerator([
-      "Sure!\n```json\n" + answer(doc(paragraph("Bonjour"))) + "\n```",
-    ]);
+  it("reads an answer the model fenced anyway", async () => {
+    const generator = new ScriptedGenerator(["```markdown\nBonjour\n```"]);
 
     expect(await generateDocument(authoringDeps(generator), "Write a note", defaultBrief())).toEqual(
       doc(paragraph("Bonjour")),
     );
   });
 
+  /** An answer saying nothing is as retryable as one the schema rejects: a
+   * model that refused in prose usually writes the document when told so. */
   it("re-asks once, quoting why the first answer was rejected", async () => {
-    const generator = new ScriptedGenerator([
-      answer({ type: "doc" }),
-      answer(doc(paragraph("Second try"))),
-    ]);
+    const generator = new ScriptedGenerator(["", written("Second try")]);
 
     const body = await generateDocument(authoringDeps(generator), "Write a note", defaultBrief());
 
     expect(body).toEqual(doc(paragraph("Second try")));
     expect(generator.requests[1].prompt).toContain("rejected");
+    expect(generator.requests[1].prompt).toContain("no blocks");
   });
 
   it("gives up after one retry rather than making the user wait again", async () => {
-    const generator = new ScriptedGenerator([
-      answer({ type: "doc" }),
-      answer({ type: "doc" }),
-    ]);
+    const generator = new ScriptedGenerator(["", ""]);
 
     await expect(
       generateDocument(authoringDeps(generator), "Write a note", defaultBrief()),
@@ -111,29 +110,18 @@ describe("generateDocument", () => {
     expect(generator.requests).toHaveLength(2);
   });
 
-  /** Unreadable is as retryable as invalid: a model that answered prose, or
-   * JSON with a trailing comma, usually answers JSON when told so. */
-  it("re-asks when the answer holds no JSON at all", async () => {
-    const generator = new ScriptedGenerator([
-      "I cannot do that.",
-      answer(doc(paragraph("Second try"))),
-    ]);
-
-    const body = await generateDocument(
-      authoringDeps(generator),
-      "Write a note",
-      defaultBrief(),
-    );
-
-    expect(body).toEqual(doc(paragraph("Second try")));
-    expect(generator.requests[1].prompt).toContain("No JSON");
-  });
-
-  it("never puts a parser's own words in front of the user", async () => {
-    const generator = new ScriptedGenerator(['{"type":"doc",,}', "still not json"]);
+  it("never puts the schema's own words in front of the user", async () => {
+    const generator = new ScriptedGenerator([written("Un"), written("Deux")]);
+    const deps = authoringDeps(generator, {
+      validator: {
+        validate: () => {
+          throw new Error("Invalid content for node doc at position 1021");
+        },
+      },
+    });
 
     await expect(
-      generateDocument(authoringDeps(generator), "Write a note", defaultBrief()),
+      generateDocument(deps, "Write a note", defaultBrief()),
     ).rejects.toThrow(/invalid answer/);
   });
 
@@ -147,7 +135,7 @@ describe("generateDocument", () => {
   });
 
   it("keeps the model's own output when the formatting pass misfires", async () => {
-    const generator = new ScriptedGenerator([answer(doc(paragraph("Bonjour")))]);
+    const generator = new ScriptedGenerator([written("Bonjour")]);
     const deps = authoringDeps(generator, {
       polisher: { polish: () => ({ type: "not-a-doc" }) },
     });
@@ -155,14 +143,6 @@ describe("generateDocument", () => {
     expect(await generateDocument(deps, "Write a note", defaultBrief())).toEqual(doc(paragraph("Bonjour")));
   });
 
-  it("uses the provider's JSON mode when it has one", async () => {
-    const generator = new ScriptedGenerator([]);
-    generator.jsonAnswers = [doc(paragraph("Structured"))];
-
-    expect(await generateDocument(authoringDeps(generator), "Write a note", defaultBrief())).toEqual(
-      doc(paragraph("Structured")),
-    );
-  });
 });
 
 describe("transformDocument", () => {
@@ -170,7 +150,7 @@ describe("transformDocument", () => {
 
   it("returns the edits the model named, and nothing else", async () => {
     const generator = new ScriptedGenerator([
-      answer([{ op: "replace", index: 1, blocks: [paragraph("Deux")] }]),
+      ops([{ op: "replace", index: 1, blocks: "Deux" }]),
     ]);
 
     const outcome = await transformDocument(
@@ -186,16 +166,16 @@ describe("transformDocument", () => {
   });
 
   it("addresses blocks by the numbering the model was given", async () => {
-    const generator = new ScriptedGenerator([answer([])]);
+    const generator = new ScriptedGenerator([ops([])]);
 
     await transformDocument(authoringDeps(generator), body, "make it pretty");
 
-    expect(generator.requests[0].prompt).toContain("0: ");
-    expect(generator.requests[0].prompt).toContain("1: ");
+    expect(generator.requests[0].prompt).toContain("[0]\nOne");
+    expect(generator.requests[0].prompt).toContain("[1]\nTwo");
   });
 
   it("falls back to a replacement when the model rewrites the whole document", async () => {
-    const generator = new ScriptedGenerator([answer(doc(paragraph("Rewritten")))]);
+    const generator = new ScriptedGenerator([written("Rewritten")]);
 
     expect(
       await transformDocument(authoringDeps(generator), body, "make it pretty"),
@@ -204,7 +184,7 @@ describe("transformDocument", () => {
 
   it("carries an op with no block left after formatting rather than an undefined one", async () => {
     const generator = new ScriptedGenerator([
-      answer([{ op: "replace", index: 0, blocks: [paragraph("One")] }]),
+      ops([{ op: "replace", index: 0, blocks: "One" }]),
     ]);
     const deps = authoringDeps(generator, {
       validator: { validate: (json) => json as { type: string } },
@@ -219,8 +199,8 @@ describe("transformDocument", () => {
 
   it("rejects the whole answer when one op is malformed, never applying part of it", async () => {
     const generator = new ScriptedGenerator([
-      answer([{ op: "replace", index: 99, blocks: [paragraph("Nope")] }]),
-      answer([{ op: "delete", index: 0 }]),
+      ops([{ op: "replace", index: 99, blocks: "Nope" }]),
+      ops([{ op: "delete", index: 0 }]),
     ]);
 
     const outcome = await transformDocument(

@@ -6,6 +6,10 @@ import type {
   TextGenerator,
 } from "@/domain/authoring/text-generator";
 import type { DocumentBody } from "@/domain/documents/body";
+import {
+  blocksToModelMarkdown,
+  modelMarkdownToBlocks,
+} from "@/infrastructure/rendering/model-markdown";
 
 /**
  * A model a test writes the answers of, plus a validator and a polisher it can
@@ -15,8 +19,6 @@ import type { DocumentBody } from "@/domain/documents/body";
 
 export class ScriptedGenerator implements TextGenerator {
   readonly requests: GenerationRequest[] = [];
-  /** Set to answer through the provider's JSON mode instead of text. */
-  jsonAnswers: unknown[] | null = null;
 
   constructor(private readonly answers: (string | GeneratedText)[]) {}
 
@@ -24,12 +26,6 @@ export class ScriptedGenerator implements TextGenerator {
     this.requests.push(request);
     const answer = this.answers[this.requests.length - 1] ?? "";
     return typeof answer === "string" ? { text: answer, truncated: false } : answer;
-  }
-
-  async generateJson(request: GenerationRequest): Promise<unknown | null> {
-    if (!this.jsonAnswers || request.shape !== "document") return null;
-    this.requests.push(request);
-    return this.jsonAnswers[this.requests.length - 1];
   }
 }
 
@@ -53,6 +49,10 @@ export function authoringDeps(
 ): AuthoringDeps {
   return {
     generator,
+    // The real format, not a stub: a use case that mangles what it sends the
+    // model, or reads its answer wrongly, is exactly what these tests are for.
+    reader: { read: modelMarkdownToBlocks },
+    writer: { write: blocksToModelMarkdown },
     validator: permissiveValidator(),
     polisher: { polish: (body) => body },
     style: StyleParameters.defaults(),

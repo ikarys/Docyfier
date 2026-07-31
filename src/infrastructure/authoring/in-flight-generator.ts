@@ -21,13 +21,11 @@ import type {
 type Pending = Map<string, Promise<unknown>>;
 
 /** Two requests are the same question when every field a model sees matches. */
-function questionOf(kind: string, request: GenerationRequest): string {
+function questionOf(request: GenerationRequest): string {
   return JSON.stringify([
-    kind,
     request.system,
     request.prompt,
     request.temperature,
-    request.shape,
     request.effort ?? null,
   ]);
 }
@@ -49,10 +47,7 @@ export function sharingInFlightCalls(generator: TextGenerator): TextGenerator {
 
   return {
     generate(request: GenerationRequest): Promise<GeneratedText> {
-      return share(pending, questionOf("text", request), () => generator.generate(request));
-    },
-    generateJson(request: GenerationRequest): Promise<unknown | null> {
-      return share(pending, questionOf("json", request), () => generator.generateJson(request));
+      return share(pending, questionOf(request), () => generator.generate(request));
     },
   };
 }

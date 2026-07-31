@@ -19,5 +19,5 @@ ${styleGuide(style, agent.scope)}
 
 ${agent.charter(style)}
 
-Task: you receive an excerpt of a document (as a JSON doc) plus an instruction. Return a doc containing ONLY the blocks that replace that excerpt — never the whole document, never an extra section.`;
+Task: you receive an excerpt of a document plus an instruction. Return ONLY the blocks that replace that excerpt — never the whole document, never an extra section.`;
 }

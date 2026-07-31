@@ -1,4 +1,5 @@
 import { agentById } from "@/domain/authoring/agents/catalog";
+import { blocksToModelMarkdown } from "@/infrastructure/rendering/model-markdown";
 import { effortFor } from "@/domain/authoring/thinking";
 import { charterBreach } from "@/domain/authoring/agents/charter-breach";
 import { routeSurface, type Surface } from "@/domain/authoring/agents/routing";
@@ -44,7 +45,7 @@ export async function POST(req: Request): Promise<Response> {
 
   return blockStreamResponse({
     system: agentSystem(agent, style),
-    prompt: selectionBlocksPrompt(passage, instruction),
+    prompt: selectionBlocksPrompt(blocksToModelMarkdown(passage), instruction),
     temperature: agent.temperature,
     effort: effortFor("passage"),
     style,

@@ -4,9 +4,11 @@
  *
  * Waiting for the closing bracket means waiting for the whole answer; instead
  * this tracks brace depth and string state, and hands back each object inside
- * the array the moment it closes. Which array that is — the `content` of a
- * document, or the bare list of edit operations — is the locator's business,
- * so a new answer shape is a new locator rather than a second scanner.
+ * the array the moment it closes.
+ *
+ * One answer still arrives this way: a list of edit operations, whose envelope
+ * is a handful of numbers and stays JSON. A document does not — since STEP U14
+ * it is markdown, and `BlockSplitter` reads that one.
  *
  * Pure text in, raw JSON text out — parsing and schema validation stay with the
  * caller, so a single bad item never kills the stream.
@@ -19,27 +21,6 @@ export interface ArrayLocator {
    * depth and the last string literal read. True on the `[` that opens it.
    */
   opens(char: string, depth: number, literal: string): boolean;
-}
-
-/**
- * The `content` array of the root object — how a whole document is answered.
- * The key must belong to the root object; `content` keys nested inside blocks
- * sit deeper and must not be mistaken for it.
- */
-export function rootContentArray(): ArrayLocator {
-  let expecting = false;
-  return {
-    opens(char, depth, literal) {
-      if (char === ":" && depth === 1 && literal === "content") {
-        expecting = true;
-        return false;
-      }
-      if (char !== "[") return false;
-      const wanted = expecting;
-      expecting = false;
-      return wanted;
-    },
-  };
 }
 
 /** The first array to open — how a list of edit operations is answered. */

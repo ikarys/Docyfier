@@ -41,14 +41,19 @@ import { activeEndpoint } from "@/lib/ai/provider";
 import { getStyleParameters } from "@/lib/settings/style";
 import { beautify } from "@/domain/authoring/beautify";
 import { validateDocJson } from "@/infrastructure/editor/schema";
+import {
+  blocksToModelMarkdown,
+  modelMarkdownToBlocks,
+} from "@/infrastructure/rendering/model-markdown";
 
 /**
  * Composition root for the AI surfaces.
  *
- * The use cases (`src/application/authoring/`) take their model, their validator
- * and their formatting pass as arguments; this is the one module that decides
- * what those are in a running app — the configured OpenAI-compatible endpoint,
- * the editor's own schema, and `beautify`. Server actions and routes call these
+ * The use cases (`src/application/authoring/`) take their model, the format it
+ * speaks, their validator and their formatting pass as arguments; this is the
+ * one module that decides what those are in a running app — the configured
+ * OpenAI-compatible endpoint, the model-facing markdown of STEP U14, the
+ * editor's own schema, and `beautify`. Server actions and routes call these
  * functions and never see the SDK.
  */
 
@@ -71,6 +76,8 @@ export async function authoringDeps(): Promise<AuthoringDeps> {
   const style = await getStyleParameters();
   return {
     generator,
+    reader: { read: modelMarkdownToBlocks },
+    writer: { write: blocksToModelMarkdown },
     validator: { validate: validateDocJson },
     polisher: { polish: (body) => beautify(body, style) },
     style,

@@ -2,7 +2,9 @@ import type { StyleParameters } from "@/domain/authoring/style-parameters";
 import type { StyleParametersRepository } from "@/domain/authoring/style-repository";
 import type {
   BodyPolisher,
+  BodyReader,
   BodyValidator,
+  BodyWriter,
   TextGenerator,
 } from "@/domain/authoring/text-generator";
 
@@ -14,6 +16,9 @@ import type {
  */
 export interface AuthoringDeps {
   generator: TextGenerator;
+  /** The format the model reads and answers in — see `BodyReader`. */
+  reader: BodyReader;
+  writer: BodyWriter;
   validator: BodyValidator;
   polisher: BodyPolisher;
   /** How this instance writes: emoji, bolding, badges, language. */

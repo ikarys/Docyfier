@@ -18,38 +18,43 @@ import { showsDocumentBlocks, showsLayoutBlocks, type ContractScope } from "./sc
  * only an economy.
  */
 
-const HEADER = `You write documents for a WYSIWYG editor that stores ProseMirror JSON.
+const HEADER = `You write documents for a WYSIWYG editor.
 
 OUTPUT RULES — follow exactly:
-- Output ONE JSON object and nothing else. No markdown fences, no commentary.
-- Root: {"type":"doc","content":[ ...block nodes... ]}.
+- Output the document itself and nothing else: no commentary, and never wrap
+  the whole answer in a code fence.
+- It is markdown, plus \`::: name {attrs}\` blocks for what markdown has no
+  syntax of its own for.
+- \`{attrs}\` is ONE JSON object on the opening line; leave it out entirely when
+  there is nothing to set.
+- EVERY \`:::\` block is closed by a line holding just \`:::\`, including the
+  ones with no content.
+- A blank line separates two blocks.
 
-Block nodes:`;
+Blocks:`;
 
-const SHARED_CONSTRAINTS = `- NEVER emit an image node. Images exist only when the user has uploaded one;
-  any "src" you write would point at a file that does not exist.
-- "text" values are PLAIN TEXT: never markdown syntax (**bold**, *italic*,
-  \`code\`, # headings) inside them — express styling with marks only.
-- When the user asks for color, apply textStyle color marks (and/or a
-  highlight) to the relevant words — do not just add symbols.
-- Never nest block nodes inside heading or paragraph.
-- Never emit "content": [] — omit the key instead.
+const SHARED_CONSTRAINTS = `- NEVER emit \`::: image\`, \`::: embed\` or \`::: attachment\`. Those exist only
+  once the user has uploaded or linked something; anything you write would
+  point at a file that does not exist.
+- When the user asks for colour, put a \`<span style="color:...">\` (and/or a
+  \`<mark>\`) on the relevant words — do not just add symbols.
 - THE USER'S EXPLICIT FORMAT REQUEST ALWAYS WINS over the style guide below:
-  if they ask for bullet points, produce a bulletList — not cards, not stats,
+  if they ask for bullet points, produce a bullet list — not cards, not stats,
   not a table. Only choose fancy blocks when the user has not specified a
   format.`;
 
-const NESTING_CONSTRAINT = `- Never nest cardGrid, statRow, columnList, timeline, stepList, pyramid,
-  chart, diagram, docCover, tableOfContents or pageBreak inside a card, column,
-  stat, callout, list item, table cell or each other — layout blocks live at the
-  top level only.`;
+const NESTING_CONSTRAINT = `- Never nest \`::: cardGrid\`, \`statRow\`, \`columnList\`, \`timeline\`,
+  \`stepList\`, \`pyramid\`, \`chart\`, \`diagram\`, \`docCover\`,
+  \`tableOfContents\` or \`pageBreak\` inside a card, a column, a stat, a
+  callout, a list item, a table cell or each other — those live at the top
+  level only.`;
 
 /**
  * What a prose-only assistant is told about the blocks it may not build. It
  * still meets them in the passage it was handed, and dropping one because it
  * was never described would lose content the user wrote.
  */
-const PRESERVE_LAYOUT = `The passage may already contain ${LAYOUT_BLOCK_NAMES} nodes. Return any of them EXACTLY as you received them, attributes included. Never create one: presenting content is another assistant's job.`;
+const PRESERVE_LAYOUT = `The passage may already contain \`::: ${LAYOUT_BLOCK_NAMES}\` blocks. Return any of them EXACTLY as you received them, opening line included. Never create one: presenting content is another assistant's job.`;
 
 function blockList(scope: ContractScope): string {
   const groups = [PROSE_BLOCKS];

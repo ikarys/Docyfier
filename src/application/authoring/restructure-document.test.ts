@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { blocksToModelMarkdown } from "@/infrastructure/rendering/model-markdown";
+import type { DocumentNode } from "@/domain/documents/body";
 import { ScriptedGenerator, authoringDeps } from "@test/fakes/authoring-deps";
 import type { DocOp } from "@/domain/authoring/ops";
 import { restructureDocument } from "./restructure-document";
 
 const paragraph = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] });
-const answer = (value: unknown) => JSON.stringify(value);
+/** A layout plan, which is a handful of numbers and stays JSON. */
+const plan = (value: unknown) => JSON.stringify(value);
+
+/** A span the designer wrote, in the format the model now answers in. */
+const written = (...blocks: DocumentNode[]) => blocksToModelMarkdown(blocks);
 
 const BLOCKS = [
   { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Vendors" }] },
@@ -31,8 +37,8 @@ async function opsOf(generator: ScriptedGenerator, blocks = BLOCKS): Promise<Doc
 describe("restructureDocument", () => {
   it("turns each planned span into one operation covering it", async () => {
     const generator = new ScriptedGenerator([
-      answer([{ from: 1, through: 2, as: "cardGrid" }]),
-      answer({ type: "doc", content: [GRID] }),
+      plan([{ from: 1, through: 2, as: "cardGrid" }]),
+      written(GRID),
     ]);
 
     expect(await opsOf(generator)).toEqual([
@@ -44,7 +50,7 @@ describe("restructureDocument", () => {
    * document's JSON, only a line per block, and never the block syntax it is
    * not going to write. */
   it("decides from an outline, not from the document", async () => {
-    const generator = new ScriptedGenerator([answer([])]);
+    const generator = new ScriptedGenerator([plan([])]);
     await opsOf(generator);
 
     const { system, prompt } = generator.requests[0];
@@ -54,7 +60,7 @@ describe("restructureDocument", () => {
   });
 
   it("asks for nothing when the plan found nothing worth changing", async () => {
-    const generator = new ScriptedGenerator([answer([])]);
+    const generator = new ScriptedGenerator([plan([])]);
 
     expect(await opsOf(generator)).toEqual([]);
     expect(generator.requests).toHaveLength(1);
@@ -62,8 +68,8 @@ describe("restructureDocument", () => {
 
   it("shows a span only the blocks it covers", async () => {
     const generator = new ScriptedGenerator([
-      answer([{ from: 1, through: 2, as: "cardGrid" }]),
-      answer({ type: "doc", content: [GRID] }),
+      plan([{ from: 1, through: 2, as: "cardGrid" }]),
+      written(GRID),
     ]);
     await opsOf(generator);
 
@@ -79,14 +85,13 @@ describe("restructureDocument", () => {
    * whole.
    */
   it("drops the span that broke the charter and keeps the rest", async () => {
-    const rewritten = { type: "doc", content: [paragraph("Vendor A is the safer choice overall.")] };
     const generator = new ScriptedGenerator([
-      answer([
+      plan([
         { from: 1, as: "callout" },
         { from: 2, as: "callout" },
       ]),
-      answer(rewritten),
-      answer({ type: "doc", content: [paragraph("Vendor B costs 90k a year.")] }),
+      written(paragraph("Vendor A is the safer choice overall.")),
+      written(paragraph("Vendor B costs 90k a year.")),
     ]);
 
     const ops = await opsOf(generator);
@@ -96,8 +101,8 @@ describe("restructureDocument", () => {
 
   it("spends the thinking on the plan and not on the spans", async () => {
     const generator = new ScriptedGenerator([
-      answer([{ from: 1, as: "callout" }]),
-      answer({ type: "doc", content: [paragraph("Vendor A costs 120k a year.")] }),
+      plan([{ from: 1, as: "callout" }]),
+      plan({ type: "doc", content: [paragraph("Vendor A costs 120k a year.")] }),
     ]);
     await opsOf(generator);
 

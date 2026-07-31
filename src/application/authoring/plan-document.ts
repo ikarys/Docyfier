@@ -26,7 +26,6 @@ async function askPlan(
       prompt,
       // Warm enough to pick a dress that fits, cold enough to stay a plan.
       temperature: 0.4,
-      shape: "free",
     });
     return readBrief(jsonFromAnswer(text), vocabulary);
   } catch {

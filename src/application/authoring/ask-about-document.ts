@@ -27,8 +27,6 @@ export function askAboutDocument(
       system: QUESTION_SYSTEM,
       prompt: questionPrompt(digest, question),
       temperature: 0.2,
-      // An answer object is not a document: no provider document mode fits it.
-      shape: "free",
     },
     readAnswer,
   );

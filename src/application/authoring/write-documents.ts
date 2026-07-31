@@ -1,6 +1,7 @@
 import type { Agent } from "@/domain/authoring/agents/contract";
 import { opBreach } from "@/domain/authoring/agents/layout-ops";
 import type { DocumentBrief } from "@/domain/authoring/brief";
+import { jsonFromAnswer } from "@/domain/authoring/model-answer";
 import { coveredBlocks, parseOps, type DocOp } from "@/domain/authoring/ops";
 import {
   transformOpsPrompt,
@@ -10,7 +11,7 @@ import {
 import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
 import { blocksOf, type DocumentBody, type DocumentNode } from "@/domain/documents/body";
 import { effortFor } from "@/domain/authoring/thinking";
-import { askDocument, askJson, bodyFromJson, polished } from "./ask-model";
+import { askDocument, askOnce, bodyFromAnswer, blocksFromAnswer, polished } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
 /** The two whole-document AI surfaces: writing one, and editing one. */
@@ -55,9 +56,27 @@ function looksLikeOps(json: unknown[]): boolean {
 export function readOps(deps: AuthoringDeps, json: unknown, blockCount: number): DocOp[] {
   return parseOps(json, blockCount).map((op) => {
     if (op.op === "delete") return op;
-    const body = bodyFromJson(deps, { type: "doc", content: op.blocks });
-    return { ...op, blocks: (polished(deps, body).content ?? []) as DocumentNode[] };
+    return { ...op, blocks: blocksFromAnswer(deps, op.blocks) };
   });
+}
+
+/**
+ * The ops in this answer, or null when it is not an op list at all.
+ *
+ * The contract asks for ops; a model that answers with the document instead has
+ * still done the work, and refusing it would cost a retry to arrive at
+ * something usable. An answer that IS an op list but a malformed one throws, so
+ * the retry gets its reason.
+ */
+function opsFrom(deps: AuthoringDeps, text: string, blockCount: number): DocOp[] | null {
+  let json: unknown;
+  try {
+    json = jsonFromAnswer(text);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(json) || !looksLikeOps(json)) return null;
+  return readOps(deps, json, blockCount);
 }
 
 /**
@@ -87,19 +106,19 @@ export function transformDocument(
   agent?: Agent,
 ): Promise<TransformOutcome> {
   const blocks = blocksOf(body);
-  return askJson(
+  return askOnce(
     deps,
     {
       system: transformOpsSystem(deps.style, agent),
-      prompt: transformOpsPrompt(blocks, instruction),
+      prompt: transformOpsPrompt(blocks.map((block) => deps.writer.write([block])), instruction),
       temperature: agent ? agent.temperature : 0.3,
       effort: effortFor("document"),
-      // An op list is an array: no provider JSON mode describes it.
-      shape: "free",
     },
-    (json): TransformOutcome =>
-      Array.isArray(json) && looksLikeOps(json)
-        ? { kind: "ops", ops: inLane(agent, readOps(deps, json, blocks.length), blocks) }
-        : { kind: "doc", content: polished(deps, bodyFromJson(deps, json)) },
+    (text): TransformOutcome => {
+      const ops = opsFrom(deps, text, blocks.length);
+      return ops
+        ? { kind: "ops", ops: inLane(agent, ops, blocks) }
+        : { kind: "doc", content: polished(deps, bodyFromAnswer(deps, text)) };
+    },
   );
 }

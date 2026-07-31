@@ -6,7 +6,7 @@ import { agentSystem, selectionBlocksPrompt } from "@/domain/authoring/prompts";
 import { ModelUnavailable } from "@/domain/authoring/text-generator";
 import type { DocumentNode } from "@/domain/documents/body";
 import { effortFor } from "@/domain/authoring/thinking";
-import { askJson, bodyFromJson, polished } from "./ask-model";
+import { askOnce, blocksFromAnswer } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
 /**
@@ -44,17 +44,16 @@ async function runAgent(
   blocks: DocumentNode[],
   instruction: string,
 ): Promise<DocumentNode[]> {
-  return askJson(
+  return askOnce(
     deps,
     {
       system: agentSystem(agent, deps.style),
-      prompt: selectionBlocksPrompt(blocks, instruction),
+      prompt: selectionBlocksPrompt(deps.writer.write(blocks), instruction),
       temperature: agent.temperature,
       effort: effortFor("passage"),
-      shape: "document",
     },
-    (json) => {
-      const next = polished(deps, bodyFromJson(deps, json)).content ?? [];
+    (text) => {
+      const next = blocksFromAnswer(deps, text);
       const breach = charterBreach(agent, blocks, next);
       if (breach) throw new Error(breach);
       return next;

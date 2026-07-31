@@ -12,7 +12,7 @@ const somewhere = { digest: "# Rapport\nLe trimestre", here: "" };
 describe("writeAtCaret", () => {
   it("hands back only the blocks to insert, never the document around them", async () => {
     const generator = new ScriptedGenerator([
-      JSON.stringify({ type: "doc", content: [paragraph("Une conclusion")] }),
+      "Une conclusion",
     ]);
 
     expect(
@@ -37,13 +37,12 @@ describe("writeAtCaret", () => {
     expect(request.prompt).toContain("add a table");
   });
 
-  it("hands back nothing when the answer holds no block at all", async () => {
-    const generator = new ScriptedGenerator([JSON.stringify({ type: "doc" })]);
-    const deps = authoringDeps(generator, {
-      validator: { validate: (json) => json as { type: string } },
-    });
+  it("refuses an answer that holds no block at all", async () => {
+    const generator = new ScriptedGenerator(["", ""]);
 
-    expect(await writeAtCaret(deps, somewhere, "write something")).toEqual([]);
+    await expect(
+      writeAtCaret(authoringDeps(generator), somewhere, "write something"),
+    ).rejects.toThrow(/invalid answer/);
   });
 });
 

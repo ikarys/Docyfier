@@ -26,19 +26,30 @@ export type DocOp =
   | { op: "insert_after"; index: number; blocks: DocumentNode[] }
   | { op: "delete"; index: number };
 
+/**
+ * An operation as the model wrote it: the envelope says *where*, and it is a
+ * handful of numbers, so it stays JSON. What goes in is still text in the
+ * model's own format (STEP U14) — the expensive half, and the half a reader
+ * turns into blocks.
+ */
+export type RawOp =
+  | { op: "replace"; index: number; through: number; blocks: string }
+  | { op: "insert_after"; index: number; blocks: string }
+  | { op: "delete"; index: number };
+
 const OPS = ["replace", "insert_after", "delete"] as const;
 
 /** The blocks of the original document an operation stands in for. */
-export function coveredBlocks(op: DocOp, blocks: DocumentNode[]): DocumentNode[] {
+export function coveredBlocks(op: DocOp | RawOp, blocks: DocumentNode[]): DocumentNode[] {
   const last = op.op === "replace" ? op.through : op.index;
   return blocks.slice(op.index, last + 1);
 }
 
-function asBlocks(value: unknown, op: string, index: number): DocumentNode[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new Error(`Op ${op} at index ${index} needs a non-empty "blocks" array`);
+function asBlocks(value: unknown, op: string, index: number): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`Op ${op} at index ${index} needs a non-empty "blocks" string`);
   }
-  return value as DocumentNode[];
+  return value;
 }
 
 /**
@@ -46,7 +57,7 @@ function asBlocks(value: unknown, op: string, index: number): DocumentNode[] {
  * loop as schema validation, so a malformed op list is re-asked rather than
  * partially applied.
  */
-export function parseOps(json: unknown, blockCount: number): DocOp[] {
+export function parseOps(json: unknown, blockCount: number): RawOp[] {
   if (!Array.isArray(json)) throw new Error("Expected a JSON array of operations");
   return json.map((raw, i) => {
     if (typeof raw !== "object" || raw === null) {

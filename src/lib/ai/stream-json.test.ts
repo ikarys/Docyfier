@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { JsonArrayScanner, firstArray, rootContentArray } from "./stream-json";
+import { JsonArrayScanner, firstArray } from "./stream-json";
 
 const opsOf = (payload: string): string[] =>
   new JsonArrayScanner(firstArray()).push(payload);
@@ -51,15 +51,5 @@ describe("JsonArrayScanner over the first array (an op list)", () => {
     const ops: string[] = [];
     for (const char of payload) ops.push(...scanner.push(char));
     expect(ops).toEqual(['{"op":"delete","index":0}', '{"op":"delete","index":1}']);
-  });
-});
-
-describe("JsonArrayScanner over the root content array (a document)", () => {
-  it("skips the arrays that open before the one it wants", () => {
-    const doc =
-      '{"meta":["a","b"],"type":"doc","content":[{"type":"paragraph"}]}';
-    expect(new JsonArrayScanner(rootContentArray()).push(doc)).toEqual([
-      '{"type":"paragraph"}',
-    ]);
   });
 });

@@ -60,7 +60,6 @@ export async function continueWriting(
     // Offered as ghost text while the writer keeps typing: an answer that
     // arrives after the next word is an answer nobody will read.
     effort: effortFor("block"),
-    shape: "free",
   });
   return newWords(fragmentFromAnswer(answer.text), context.here);
 }

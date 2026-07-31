@@ -14,7 +14,7 @@ const paragraph = (text: string) => ({
 describe("rewriteSelectionBlocks", () => {
   it("hands back the replacement blocks, not the document around them", async () => {
     const generator = new ScriptedGenerator([
-      JSON.stringify({ type: "doc", content: [paragraph("Rewritten")] }),
+      "Rewritten",
     ]);
 
     expect(
@@ -26,15 +26,14 @@ describe("rewriteSelectionBlocks", () => {
     ).toEqual([paragraph("Rewritten")]);
   });
 
-  it("hands back nothing when the answer holds no block at all", async () => {
-    const generator = new ScriptedGenerator([JSON.stringify({ type: "doc" })]);
-    const deps = authoringDeps(generator, {
-      validator: { validate: (json) => json as { type: string } },
-    });
+  /** Emptying the passage is what an assistant does when it has failed, not a
+   * way of deleting it: refused here as it already is in `runAssignment`. */
+  it("refuses an answer that holds no block at all", async () => {
+    const generator = new ScriptedGenerator(["", ""]);
 
-    expect(await rewriteSelectionBlocks(deps, [paragraph("Original")], "shorten")).toEqual(
-      [],
-    );
+    await expect(
+      rewriteSelectionBlocks(authoringDeps(generator), [paragraph("Original")], "shorten"),
+    ).rejects.toThrow(/invalid answer/);
   });
 });
 

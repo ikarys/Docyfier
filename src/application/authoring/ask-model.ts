@@ -1,8 +1,4 @@
-import {
-  boldFromMarkdown,
-  jsonFromAnswer,
-  wrapInDoc,
-} from "@/domain/authoring/model-answer";
+import { jsonFromAnswer, plainFromAnswer } from "@/domain/authoring/model-answer";
 import { retryPrompt } from "@/domain/authoring/prompts";
 import {
   AnswerTruncated,
@@ -19,47 +15,49 @@ import type { AuthoringDeps } from "./deps";
  * One retry, not more: a second failure means the model cannot produce this
  * answer, and a third request only makes the user wait longer for the same
  * error. This is where "invalid output → retry, never a broken editor" lives.
+ *
+ * Two kinds of answer come back, and they are read differently. A **document**
+ * is text in the model's own format (STEP U14) and goes through `deps.reader`.
+ * A **plan** — an op list, a layout plan, a brief — is still JSON, because it
+ * is a handful of numbers and names rather than prose, and JSON is the shortest
+ * way to say that.
  */
 
-/** A model answer as JSON, through the provider's JSON mode when it has one. */
-async function jsonAnswer(
+async function answer(
   deps: AuthoringDeps,
   request: GenerationRequest,
-): Promise<unknown> {
-  const structured = await deps.generator.generateJson(request);
-  if (structured !== null) return structured;
-
+): Promise<string> {
   const { text, truncated } = await deps.generator.generate(request);
   if (truncated) {
     throw new AnswerTruncated(
       "The document is too large for a whole-document edit — select the section to change and use the selection menu instead.",
     );
   }
-  return jsonFromAnswer(text);
+  return text;
 }
 
 /**
- * Ask for JSON, hand it to `read`, and re-ask once with the reason it failed.
+ * Ask, hand the answer to `read`, and re-ask once with the reason it failed.
  *
- * Reading the answer is inside the retry, not around it: an answer that is not
- * JSON at all is exactly as retryable as one the schema rejects, and letting a
+ * Reading the answer is inside the retry, not around it: an answer that is
+ * malformed is exactly as retryable as one the schema rejects, and letting a
  * parser error escape puts "Expected double-quoted property name at position
  * 1021" in front of the user instead of a second, valid document.
  *
  * The two failures a second attempt cannot fix — an unreachable model, an
  * answer cut off by the output ceiling — are handed straight back.
  */
-export async function askJson<T>(
+export async function askOnce<T>(
   deps: AuthoringDeps,
   request: GenerationRequest,
-  read: (json: unknown) => T,
+  read: (text: string) => T,
 ): Promise<T> {
   let lastError = "";
   for (let attempt = 0; attempt < 2; attempt++) {
     const prompt =
       attempt === 0 ? request.prompt : retryPrompt(request.prompt, lastError);
     try {
-      return read(await jsonAnswer(deps, { ...request, prompt }));
+      return read(await answer(deps, { ...request, prompt }));
     } catch (err) {
       if (err instanceof ModelUnavailable || err instanceof AnswerTruncated) throw err;
       lastError = err instanceof Error ? err.message : String(err);
@@ -68,10 +66,35 @@ export async function askJson<T>(
   throw new Error(`The AI returned an invalid answer (${lastError})`);
 }
 
-/** Model output → a body the editor can render: envelope repaired, markdown
- * artifacts turned into marks, schema proven. */
-export function bodyFromJson(deps: AuthoringDeps, json: unknown): DocumentBody {
-  return deps.validator.validate(boldFromMarkdown(wrapInDoc(json) as DocumentNode));
+/** Ask for a plan — an op list, a layout plan, a brief — which is still JSON. */
+export function askJson<T>(
+  deps: AuthoringDeps,
+  request: GenerationRequest,
+  read: (json: unknown) => T,
+): Promise<T> {
+  return askOnce(deps, request, (text) => read(jsonFromAnswer(text)));
+}
+
+/**
+ * Model output → a body the editor can render: format read, schema proven.
+ *
+ * The fence comes off first. The contract says not to wrap the answer in one
+ * and models mostly obey, but one that does would otherwise turn a whole
+ * document into a single code block — an answer that parses, validates and is
+ * completely wrong, which is the worst kind.
+ *
+ * An answer holding no block at all is refused rather than returned empty: it
+ * is a failure the retry can do something about, and an empty document is not.
+ */
+export function bodyFromAnswer(deps: AuthoringDeps, text: string): DocumentBody {
+  const blocks = deps.reader.read(plainFromAnswer(text));
+  if (!blocks.length) throw new Error("The answer contained no blocks");
+  return deps.validator.validate({ type: "doc", content: blocks });
+}
+
+/** The same, for a passage: the blocks alone, polished and proven. */
+export function blocksFromAnswer(deps: AuthoringDeps, text: string): DocumentNode[] {
+  return (polished(deps, bodyFromAnswer(deps, text)).content ?? []) as DocumentNode[];
 }
 
 /**
@@ -90,9 +113,7 @@ export function polished(deps: AuthoringDeps, body: DocumentBody): DocumentBody 
 /** Ask for a document and hand back the polished, validated body. */
 export function askDocument(
   deps: AuthoringDeps,
-  request: Omit<GenerationRequest, "shape">,
+  request: GenerationRequest,
 ): Promise<DocumentBody> {
-  return askJson(deps, { ...request, shape: "document" }, (json) =>
-    polished(deps, bodyFromJson(deps, json)),
-  );
+  return askOnce(deps, request, (text) => polished(deps, bodyFromAnswer(deps, text)));
 }

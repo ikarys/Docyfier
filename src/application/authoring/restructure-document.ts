@@ -11,7 +11,7 @@ import {
 } from "@/domain/authoring/prompts";
 import { effortFor } from "@/domain/authoring/thinking";
 import type { DocumentNode } from "@/domain/documents/body";
-import { askJson, bodyFromJson, polished } from "./ask-model";
+import { askJson, askOnce, blocksFromAnswer } from "./ask-model";
 import type { AuthoringDeps } from "./deps";
 
 /**
@@ -43,8 +43,6 @@ async function plan(
       prompt: layoutPlanPrompt(outlineOf(blocks), instruction),
       temperature: designer.temperature,
       effort: effortFor("document"),
-      // A plan is an array; no provider JSON mode describes one.
-      shape: "free",
     },
     (json) => parseLayoutPlan(json, blocks.length),
   );
@@ -62,16 +60,18 @@ async function carryOut(
 ): Promise<DocOp | null> {
   const span = blocks.slice(intent.from, intent.through + 1);
   try {
-    const written = await askJson(
+    const written = await askOnce(
       deps,
       {
         system: agentSystem(designer, deps.style),
-        prompt: selectionBlocksPrompt(span, `Present this as one ${intent.as}.`),
+        prompt: selectionBlocksPrompt(
+          deps.writer.write(span),
+          `Present this as one ${intent.as}.`,
+        ),
         temperature: designer.temperature,
         effort: effortFor("passage"),
-        shape: "document",
       },
-      (json) => polished(deps, bodyFromJson(deps, json)).content ?? [],
+      (text) => blocksFromAnswer(deps, text),
     );
     const op: DocOp = { op: "replace", index: intent.from, through: intent.through, blocks: written };
     const breach = opBreach(designer.id, op, coveredBlocks(op, blocks));

@@ -26,10 +26,10 @@ describe("parseOps", () => {
 
   it("requires blocks on the operations that carry a payload", () => {
     expect(() => parseOps([{ op: "replace", index: 0 }], 1)).toThrow(
-      /needs a non-empty "blocks" array/,
+      /needs a non-empty "blocks" string/,
     );
-    expect(() => parseOps([{ op: "insert_after", index: 0, blocks: [] }], 1)).toThrow(
-      /needs a non-empty "blocks" array/,
+    expect(() => parseOps([{ op: "insert_after", index: 0, blocks: "" }], 1)).toThrow(
+      /needs a non-empty "blocks" string/,
     );
   });
 
@@ -40,8 +40,8 @@ describe("parseOps", () => {
   });
 
   it("returns the payload operations unchanged", () => {
-    expect(parseOps([{ op: "replace", index: 0, blocks: [A] }], 1)).toEqual([
-      { op: "replace", index: 0, through: 0, blocks: [A] },
+    expect(parseOps([{ op: "replace", index: 0, blocks: "A" }], 1)).toEqual([
+      { op: "replace", index: 0, through: 0, blocks: "A" },
     ]);
   });
 
@@ -52,23 +52,23 @@ describe("parseOps", () => {
    * and the whole merge is one operation.
    */
   it("lets a replace reach across several blocks", () => {
-    expect(parseOps([{ op: "replace", index: 0, through: 2, blocks: [A] }], 3)).toEqual([
-      { op: "replace", index: 0, through: 2, blocks: [A] },
+    expect(parseOps([{ op: "replace", index: 0, through: 2, blocks: "A" }], 3)).toEqual([
+      { op: "replace", index: 0, through: 2, blocks: "A" },
     ]);
   });
 
   it("refuses a span that ends before it starts or runs off the document", () => {
-    expect(() => parseOps([{ op: "replace", index: 2, through: 1, blocks: [A] }], 3)).toThrow(
+    expect(() => parseOps([{ op: "replace", index: 2, through: 1, blocks: "A" }], 3)).toThrow(
       /"through"/,
     );
-    expect(() => parseOps([{ op: "replace", index: 0, through: 3, blocks: [A] }], 3)).toThrow(
+    expect(() => parseOps([{ op: "replace", index: 0, through: 3, blocks: "A" }], 3)).toThrow(
       /"through"/,
     );
   });
 
   it("keeps a span off the operations that cannot carry one", () => {
-    expect(parseOps([{ op: "insert_after", index: 0, through: 1, blocks: [A] }], 2)).toEqual([
-      { op: "insert_after", index: 0, blocks: [A] },
+    expect(parseOps([{ op: "insert_after", index: 0, through: 1, blocks: "A" }], 2)).toEqual([
+      { op: "insert_after", index: 0, blocks: "A" },
     ]);
   });
 });

@@ -1,5 +1,3 @@
-import type { DocumentNode } from "@/domain/documents/body";
-
 /**
  * Reading what a model actually answered.
  *
@@ -69,55 +67,6 @@ export function jsonFromAnswer(raw: string): unknown {
     throw new Error("No JSON found in model output");
   }
   return parseModelJson(text.slice(start, end + 1));
-}
-
-/**
- * The document envelope models do not always honour: a bare block or an array
- * of blocks becomes the document it was meant to be.
- */
-export function wrapInDoc(json: unknown): unknown {
-  if (Array.isArray(json)) return { type: "doc", content: json };
-  const node = json as { type?: unknown } | null;
-  if (typeof json === "object" && json !== null && typeof node?.type === "string") {
-    return node.type === "doc" ? json : { type: "doc", content: [json] };
-  }
-  return json;
-}
-
-/**
- * Markdown emphasis leaked into text nodes, turned into the mark it meant.
- * Balanced `**` pairs become bold; a stray marker is dropped rather than shown.
- * Code blocks keep every character: `**` is code there.
- */
-export function boldFromMarkdown(node: DocumentNode): DocumentNode {
-  if (node.type === "codeBlock" || !Array.isArray(node.content)) return node;
-
-  const content: DocumentNode[] = [];
-  for (const child of node.content) {
-    if (child.type !== "text" || !child.text?.includes("**")) {
-      content.push(boldFromMarkdown(child));
-      continue;
-    }
-    content.push(...splitOnMarkers(child));
-  }
-  return { ...node, content };
-}
-
-function splitOnMarkers(child: DocumentNode): DocumentNode[] {
-  const parts = (child.text as string).split("**");
-  // An even number of markers leaves an odd number of parts: those are pairs.
-  if (parts.length % 2 === 0) return [{ ...child, text: parts.join("") }];
-
-  const pieces: DocumentNode[] = [];
-  parts.forEach((part, index) => {
-    if (!part) return;
-    const marks = child.marks ? [...child.marks] : [];
-    if (index % 2 === 1 && !marks.some((mark) => mark.type === "bold")) {
-      marks.push({ type: "bold" });
-    }
-    pieces.push({ ...child, text: part, marks: marks.length ? marks : undefined });
-  });
-  return pieces;
 }
 
 /**

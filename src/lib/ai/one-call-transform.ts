@@ -1,9 +1,8 @@
 import "server-only";
 import { streamText } from "ai";
 import { readOps } from "@/application/authoring/write-documents";
-import { bodyFromJson, polished } from "@/application/authoring/ask-model";
+import { bodyFromAnswer, polished } from "@/application/authoring/ask-model";
 import type { AuthoringDeps } from "@/application/authoring/deps";
-import { jsonFromAnswer } from "@/domain/authoring/model-answer";
 import { transformOpsPrompt, transformOpsSystem } from "@/domain/authoring/prompts";
 import type { Agent } from "@/domain/authoring/agents/contract";
 import { opBreach } from "@/domain/authoring/agents/layout-ops";
@@ -95,7 +94,7 @@ export async function modelOpLines(
   const parts = streamText({
     model: await languageModel(),
     system: transformOpsSystem(deps.style, agent),
-    prompt: transformOpsPrompt(blocks, instruction),
+    prompt: transformOpsPrompt(blocks.map((block) => deps.writer.write([block])), instruction),
     temperature: agent.temperature,
     maxOutputTokens: endpoint.maxOutputTokens,
     ...reasoningOptions(endpoint, effortFor("document")),
@@ -109,7 +108,7 @@ export async function modelOpLines(
   });
   const lines = transformLines(events, {
     op: (raw) => inLane(agent, readOps(deps, [raw], blocks.length)[0], blocks),
-    doc: (text) => polished(deps, bodyFromJson(deps, jsonFromAnswer(text))),
+    doc: (text) => polished(deps, bodyFromAnswer(deps, text)),
   });
 
   return hangUpAfter(lines, aborter);

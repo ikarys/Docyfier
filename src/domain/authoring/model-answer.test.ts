@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  boldFromMarkdown,
   fragmentFromAnswer,
   jsonFromAnswer,
   plainFromAnswer,
-  wrapInDoc,
 } from "./model-answer";
 
 /**
@@ -65,94 +63,6 @@ describe("jsonFromAnswer", () => {
 
   it("still refuses what no repair can fix", () => {
     expect(() => jsonFromAnswer("{'a': 1}")).toThrow();
-  });
-});
-
-describe("wrapInDoc", () => {
-  it("leaves a document alone", () => {
-    const doc = { type: "doc", content: [{ type: "paragraph" }] };
-    expect(wrapInDoc(doc)).toBe(doc);
-  });
-
-  it("wraps a bare block, which models return when the prompt is short", () => {
-    expect(wrapInDoc({ type: "paragraph" })).toEqual({
-      type: "doc",
-      content: [{ type: "paragraph" }],
-    });
-  });
-
-  it("wraps an array of blocks", () => {
-    expect(wrapInDoc([{ type: "paragraph" }])).toEqual({
-      type: "doc",
-      content: [{ type: "paragraph" }],
-    });
-  });
-});
-
-describe("boldFromMarkdown", () => {
-  it("turns leaked ** markers into the mark they meant", () => {
-    const node = {
-      type: "paragraph",
-      content: [{ type: "text", text: "Revenue **grew** sharply" }],
-    };
-
-    expect(boldFromMarkdown(node)).toEqual({
-      type: "paragraph",
-      content: [
-        { type: "text", text: "Revenue ", marks: undefined },
-        { type: "text", text: "grew", marks: [{ type: "bold" }] },
-        { type: "text", text: " sharply", marks: undefined },
-      ],
-    });
-  });
-
-  it("keeps the marks a segment already carried", () => {
-    const node = {
-      type: "paragraph",
-      content: [
-        { type: "text", text: "**strong**", marks: [{ type: "italic" }] },
-      ],
-    };
-
-    expect(boldFromMarkdown(node).content?.[0].marks).toEqual([
-      { type: "italic" },
-      { type: "bold" },
-    ]);
-  });
-
-  it("drops stray markers rather than showing them", () => {
-    const node = {
-      type: "paragraph",
-      content: [{ type: "text", text: "one ** two" }],
-    };
-
-    expect(boldFromMarkdown(node).content?.[0].text).toBe("one  two");
-  });
-
-  it("leaves a code block untouched: ** is code there", () => {
-    const node = {
-      type: "codeBlock",
-      content: [{ type: "text", text: "a ** b" }],
-    };
-
-    expect(boldFromMarkdown(node)).toBe(node);
-  });
-
-  it("reaches nested content, where a list hides its paragraphs", () => {
-    const node = {
-      type: "bulletList",
-      content: [
-        {
-          type: "listItem",
-          content: [
-            { type: "paragraph", content: [{ type: "text", text: "**x**" }] },
-          ],
-        },
-      ],
-    };
-
-    const paragraph = boldFromMarkdown(node).content?.[0].content?.[0];
-    expect(paragraph?.content?.[0].marks).toEqual([{ type: "bold" }]);
   });
 });
 

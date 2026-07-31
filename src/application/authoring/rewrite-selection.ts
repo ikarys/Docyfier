@@ -23,7 +23,7 @@ export async function rewriteSelectionBlocks(
 ): Promise<DocumentNode[]> {
   const body = await askDocument(deps, {
     system: selectionBlocksSystem(deps.style),
-    prompt: selectionBlocksPrompt(blocks, instruction),
+    prompt: selectionBlocksPrompt(deps.writer.write(blocks), instruction),
     temperature: 0.3,
     effort: effortFor("passage"),
   });
@@ -46,7 +46,6 @@ export async function rewriteSelectionText(
     temperature: 0.3,
     // Swapping one fragment mid-sentence: there is nothing here to deliberate.
     effort: effortFor("passage"),
-    shape: "free",
   });
   return fragmentFromAnswer(answer.text);
 }
@@ -66,7 +65,6 @@ export async function completePlainText(
     system,
     prompt,
     temperature,
-    shape: "free",
   });
   if (truncated) {
     throw new Error(

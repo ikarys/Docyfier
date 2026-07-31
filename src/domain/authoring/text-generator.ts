@@ -1,20 +1,16 @@
-import type { DocumentBody } from "@/domain/documents/body";
+import type { DocumentBody, DocumentNode } from "@/domain/documents/body";
 
 /**
  * The model behind the AI surfaces — the port, not a provider.
  *
  * Which endpoint answers, how it is authenticated, how long it is given and how
  * its failures read are infrastructure concerns. What the use cases need is
- * narrower: ask for text, learn whether the answer was cut short, and — when
- * the endpoint supports it — ask for JSON directly.
+ * narrower: ask for text, and learn whether the answer was cut short.
+ *
+ * There is no "ask for JSON" any more. A provider's JSON mode only ever fitted
+ * the document shape, and since STEP U14 a document is not JSON — so the mode
+ * had nothing left to describe.
  */
-
-/**
- * What the answer is expected to be. Only a whole document has a shape a
- * provider's JSON mode can be told about; an op list or a fragment is asked for
- * in the prompt alone.
- */
-export type AnswerShape = "document" | "free";
 
 /**
  * How much thinking a request is worth, for a model that thinks before it
@@ -30,7 +26,6 @@ export interface GenerationRequest {
   prompt: string;
   /** 0 for a faithful rewrite, higher for a document written from scratch. */
   temperature: number;
-  shape: AnswerShape;
   /** Absent means "whatever this model does by default". */
   effort?: ThinkingEffort;
 }
@@ -43,12 +38,6 @@ export interface GeneratedText {
 
 export interface TextGenerator {
   generate(request: GenerationRequest): Promise<GeneratedText>;
-  /**
-   * The same request in the provider's JSON mode. Answers `null` when this
-   * endpoint has no such mode, or when the shape asked for does not fit one —
-   * the caller then reads JSON out of the text instead.
-   */
-  generateJson(request: GenerationRequest): Promise<unknown | null>;
 }
 
 /** The model could not be reached, or did not answer in time. Carries the
@@ -86,4 +75,28 @@ export interface BodyValidator {
  */
 export interface BodyPolisher {
   polish(body: DocumentBody): DocumentBody;
+}
+
+/**
+ * What a model wrote → the blocks it describes.
+ *
+ * Which format that is belongs to an adapter, not to a use case: STEP U14 moved
+ * it from ProseMirror JSON to markdown with `:::` directives, and not one use
+ * case had to know. Reading is total — an answer that says nothing gives back
+ * no blocks — because whether the result is usable is `BodyValidator`'s ruling,
+ * and it is the one whose complaint a retry can quote.
+ */
+export interface BodyReader {
+  read(text: string): DocumentNode[];
+}
+
+/**
+ * Blocks → what the model is shown of them.
+ *
+ * The other half of `BodyReader`, and the half that was measured: a document
+ * handed to a model as ProseMirror JSON costs 4.94x the words it contains, and
+ * the model pays that on the way in as surely as on the way out.
+ */
+export interface BodyWriter {
+  write(blocks: DocumentNode[]): string;
 }

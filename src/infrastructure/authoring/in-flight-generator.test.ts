@@ -10,7 +10,6 @@ const ASK: GenerationRequest = {
   system: "be brief",
   prompt: "shorten this",
   temperature: 0.3,
-  shape: "free",
 };
 
 /** A generator whose answer is held open until the test lets it finish. */
@@ -28,7 +27,7 @@ function heldGenerator(): {
     return { text: `answer ${mine}`, truncated: false };
   };
   return {
-    generator: { generate: answer, generateJson: async () => null },
+    generator: { generate: answer },
     calls: () => calls,
     release: () => open.splice(0).forEach((resolve) => resolve()),
   };
@@ -63,7 +62,7 @@ describe("sharing a call that is already in flight", () => {
    * question, because the document it was asked about has moved on. */
   it("asks again once the first answer has landed", async () => {
     const generate = vi.fn(async () => ({ text: "done", truncated: false }));
-    const shared = sharingInFlightCalls({ generate, generateJson: async () => null });
+    const shared = sharingInFlightCalls({ generate });
 
     await shared.generate(ASK);
     await shared.generate(ASK);
@@ -75,7 +74,7 @@ describe("sharing a call that is already in flight", () => {
     const generate = vi.fn(async () => {
       throw new Error("nope");
     });
-    const shared = sharingInFlightCalls({ generate, generateJson: async () => null });
+    const shared = sharingInFlightCalls({ generate });
 
     await expect(Promise.all([shared.generate(ASK), shared.generate(ASK)])).rejects.toThrow(
       "nope",
@@ -84,28 +83,4 @@ describe("sharing a call that is already in flight", () => {
     expect(generate).toHaveBeenCalledTimes(2);
   });
 
-  it("shares the JSON mode on the same terms", async () => {
-    const generateJson = vi.fn(async () => ({ type: "doc" }));
-    const shared = sharingInFlightCalls({
-      generate: async () => ({ text: "", truncated: false }),
-      generateJson,
-    });
-
-    await Promise.all([shared.generateJson(ASK), shared.generateJson(ASK)]);
-
-    expect(generateJson).toHaveBeenCalledTimes(1);
-  });
-
-  /** Two shapes of the same words are two questions: one asks the provider's
-   * JSON mode, the other does not. */
-  it("does not confuse a text call with a JSON call", async () => {
-    const generate = vi.fn(async () => ({ text: "t", truncated: false }));
-    const generateJson = vi.fn(async () => ({ type: "doc" }));
-    const shared = sharingInFlightCalls({ generate, generateJson });
-
-    await Promise.all([shared.generate(ASK), shared.generateJson(ASK)]);
-
-    expect(generate).toHaveBeenCalledTimes(1);
-    expect(generateJson).toHaveBeenCalledTimes(1);
-  });
 });

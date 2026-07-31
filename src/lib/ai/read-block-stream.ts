@@ -1,13 +1,13 @@
 import "server-only";
 import type { TextStreamPart, ToolSet } from "ai";
 import { beautify } from "@/domain/authoring/beautify";
-import { parseModelJson } from "@/domain/authoring/model-answer";
 import type { StyleParameters } from "@/domain/authoring/style-parameters";
 import type { DocumentNode } from "@/domain/documents/body";
 import { validateDocJson } from "@/infrastructure/editor/schema";
 import type { AnswerSize } from "@/infrastructure/authoring/openai-compatible/usage-log";
 import { providerMessage as message } from "./ndjson";
-import { BlockScanner } from "./stream-blocks";
+import { BlockSplitter } from "@/infrastructure/rendering/model-markdown/split-blocks";
+import { modelMarkdownToBlocks } from "@/infrastructure/rendering/model-markdown";
 
 /**
  * Reading a model answer as it is written: the part of a block stream that
@@ -46,7 +46,7 @@ export function emptyRead(): Read {
  * are block-local, so a single-block document is a faithful wrapper.
  */
 function prepare(raw: string, style: StyleParameters): unknown {
-  const doc = validateDocJson({ type: "doc", content: [parseModelJson(raw)] });
+  const doc = validateDocJson({ type: "doc", content: modelMarkdownToBlocks(raw) });
   const polished = beautify(doc, style);
   return (validateDocJson(polished).content ?? [])[0];
 }
@@ -64,7 +64,7 @@ export async function readAnswer(
   send: (block: unknown) => void,
   read: Read,
 ): Promise<void> {
-  const scanner = new BlockScanner();
+  const splitter = new BlockSplitter();
 
   const emit = (raw: string) => {
     try {
@@ -81,14 +81,14 @@ export async function readAnswer(
   };
 
   read.answer.chars += source.firstText.length;
-  for (const raw of scanner.push(source.firstText)) emit(raw);
+  for (const raw of splitter.push(source.firstText)) emit(raw);
 
-  while (!scanner.finished) {
+  for (;;) {
     const next = await source.parts.next();
     if (next.done) break;
     if (next.value.type === "text-delta") {
       read.answer.chars += next.value.text.length;
-      for (const raw of scanner.push(next.value.text)) emit(raw);
+      for (const raw of splitter.push(next.value.text)) emit(raw);
     } else if (next.value.type === "reasoning-delta") {
       // Nothing downstream wants the thinking, but its size is the difference
       // between a model that was slow and a model that was deliberating.
@@ -103,4 +103,8 @@ export async function readAnswer(
       }
     }
   }
+
+  // No closing bracket says the answer is over any more: the last block is
+  // whatever the writing stopped in the middle of, and it is still a block.
+  for (const raw of splitter.end()) emit(raw);
 }

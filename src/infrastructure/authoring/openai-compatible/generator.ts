@@ -1,4 +1,4 @@
-import { APICallError, generateObject, generateText, jsonSchema } from "ai";
+import { APICallError, generateText } from "ai";
 import type {
   GeneratedText,
   GenerationRequest,
@@ -7,12 +7,7 @@ import type {
 import { ModelUnavailable } from "@/domain/authoring/text-generator";
 import { callOptions, callTimeoutMs, isTimeout, timeoutMessage } from "./deadline";
 import { logUsage } from "./usage-log";
-import {
-  languageModel,
-  reasoningOptions,
-  type LoadEndpoint,
-  type ProviderEndpoint,
-} from "./endpoint";
+import { languageModel, reasoningOptions, type LoadEndpoint } from "./endpoint";
 
 /**
  * The `TextGenerator` adapter over any OpenAI-compatible endpoint.
@@ -22,21 +17,6 @@ import {
  * only this layer knows which endpoint that was. Which endpoint is in force is
  * handed in by the composition root, never read from settings here.
  */
-
-/**
- * Deliberately permissive: it only pins the document envelope, which is what
- * models get wrong when they answer with a fence or a bare block. Node shapes
- * stay free — the editor schema is the real contract, and encoding it here
- * would be a second source of truth to keep in sync.
- */
-const DOC_ENVELOPE = jsonSchema<{ type: string; content: unknown[] }>({
-  type: "object",
-  properties: {
-    type: { type: "string", enum: ["doc"] },
-    content: { type: "array", items: { type: "object" } },
-  },
-  required: ["type", "content"],
-});
 
 function unreachable(baseUrl: string, err: unknown): never {
   throw new ModelUnavailable(
@@ -98,42 +78,5 @@ export function createOpenAiCompatibleGenerator(
         throw err;
       }
     },
-
-    /**
-     * The provider's JSON mode, when the setting is on. Any failure there answers
-     * `null` so the caller falls back to reading JSON out of text: turning the
-     * option on can never make a working provider stop working.
-     */
-    async generateJson(request: GenerationRequest): Promise<unknown | null> {
-      return structuredAnswer(await loadEndpoint(), request);
-    },
   };
-}
-
-async function structuredAnswer(
-  endpoint: ProviderEndpoint,
-  request: GenerationRequest,
-): Promise<unknown | null> {
-  if (!endpoint.structuredOutput || request.shape !== "document") return null;
-  const started = Date.now();
-  try {
-    const { object, usage } = await generateObject({
-      model: await languageModel(endpoint),
-      schema: DOC_ENVELOPE,
-      system: request.system,
-      prompt: request.prompt,
-      temperature: request.temperature,
-      maxOutputTokens: endpoint.maxOutputTokens,
-      ...reasoningOptions(endpoint, request.effort),
-      ...callOptions(),
-    });
-    logUsage("generateObject", started, usage);
-    return object;
-  } catch (err) {
-    // A deadline is not a reason to try the same endpoint again: falling
-    // through would spend the timeout a second time before failing.
-    if (isTimeout(err)) throw new ModelUnavailable(timeoutMessage());
-    console.error("[ai] structured output failed, using the text path:", err);
-    return null;
-  }
 }
