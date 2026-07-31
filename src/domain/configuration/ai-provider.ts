@@ -41,7 +41,12 @@ export class UnreadableProviderKey extends Error {
  * OpenAI-compatible wire understands; a server that ignores the field answers
  * exactly as it did before, so choosing one can never break a working provider.
  */
-export const REASONING_EFFORTS = ["default", "minimal", "low", "medium", "high"] as const;
+/**
+ * What a provider may be told about thinking. "default" leaves the model to its
+ * habit but still lets a call say what it is worth (STEP U14); "off" sends the
+ * field on no call at all — the escape for a server that stalls on it.
+ */
+export const REASONING_EFFORTS = ["default", "off", "minimal", "low", "medium", "high"] as const;
 
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 

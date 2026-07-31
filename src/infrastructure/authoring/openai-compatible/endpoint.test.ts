@@ -94,6 +94,18 @@ describe("how hard the model may think", () => {
     });
   });
 
+  /**
+   * Measured, and the reason "off" exists at all: the same local model answered
+   * the same prompt in 6.4 seconds without this field and had written nothing
+   * after 150 with it. A reference provider ignores it entirely. So it has to
+   * be possible to say "never send this" — and "default" cannot mean that,
+   * because a call's guess still applies there, which is the whole of STEP U14.
+   */
+  it("sends nothing at all when the provider turned thinking off", () => {
+    expect(reasoningOptions({ ...provider, reasoningEffort: "off" })).toEqual({});
+    expect(reasoningOptions({ ...provider, reasoningEffort: "off" }, "medium")).toEqual({});
+  });
+
   /** The provider's setting is a person's choice; the call's is a guess about
    * one request. A guess never overrides a choice. */
   it("keeps the provider's own effort over what a call asked for", () => {

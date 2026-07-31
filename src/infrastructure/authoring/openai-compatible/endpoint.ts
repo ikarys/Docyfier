@@ -59,6 +59,11 @@ export function reasoningOptions(
   asked?: string,
 ): { providerOptions?: Record<string, Record<string, string>> } {
   const chosen = endpoint.reasoningEffort;
+  // "off" is the only value that also refuses the call's own guess. It exists
+  // because the field is worse than useless on some servers: the same local
+  // model answered the same prompt in 6.4 seconds without it and had written
+  // nothing after 150 with it, and the reference provider ignores it outright.
+  if (chosen === "off") return {};
   const effort = chosen && chosen !== "default" ? chosen : asked;
   if (!effort) return {};
   return { providerOptions: { [PROVIDER_OPTIONS_KEY]: { reasoningEffort: effort } } };
