@@ -36,6 +36,17 @@ describe("tokensFor", () => {
     expect(tokensFor("document")).toBeGreaterThan(tokensFor("passage"));
   });
 
+  /**
+   * The point is to stop a small call buying a document's worth of thinking,
+   * never to cap a document. Guessing a ceiling here would silently undo the
+   * budget somebody raised in Settings, and the answer would come back cut off
+   * — reported as "the document is too large", which it was not.
+   */
+  it("hands a whole document the budget the instance chose, however large", () => {
+    expect(tokensFor("document", 128_000)).toBe(128_000);
+    expect(tokensFor("document", 8_192)).toBe(8_192);
+  });
+
   /** The instance's own ceiling still wins: it is the one somebody chose. */
   it("never asks for more than the provider allows", () => {
     for (const stake of ["block", "passage", "document"] as const) {

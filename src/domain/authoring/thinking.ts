@@ -40,7 +40,11 @@ export function effortFor(stake: Stake): ThinkingEffort {
 const ROOM: Record<Stake, number> = {
   block: 2048,
   passage: 4096,
-  document: 32768,
+  // No guess at all: a whole-document edit is the call the instance's budget
+  // was set for, and a ceiling invented here would quietly undo the one raised
+  // in Settings — the answer coming back cut off, reported as "the document is
+  // too large" when the only thing that was too small is this number.
+  document: Number.POSITIVE_INFINITY,
 };
 
 export function tokensFor(stake: Stake, budget = Number.POSITIVE_INFINITY): number {
