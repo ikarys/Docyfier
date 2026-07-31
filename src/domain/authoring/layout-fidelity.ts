@@ -84,7 +84,10 @@ function words(nodes: DocumentNode[]): string[] {
     .map(spacedText)
     .join(" ")
     .toLowerCase()
-    .split(/[^\p{L}\p{N}%.,]+/u)
+    // A hyphen and an underscore hold a name together. Splitting on them turned
+    // `astro-001` into a bare `001` that the passage never stated as a figure,
+    // and every drawing full of ids was refused for losing it.
+    .split(/[^\p{L}\p{N}%.,\-_]+/u)
     .map((word) => word.replace(/^[.,]+|[.,]+$/g, ""))
     .filter(Boolean);
 }
@@ -93,10 +96,17 @@ function words(nodes: DocumentNode[]): string[] {
  * A figure, read through the decoration around it: a price written `120k` in
  * the passage and `$120k` in the table is the same figure, and reporting it as
  * invented would fail every prettified price.
+ *
+ * A figure *begins* with a digit. A word that merely holds one is a name —
+ * `k8s`, `v2`, `astro-001` — and a technical drawing is made of them. Counting
+ * those meant a diagram, which shortens a label and drops a note by design, was
+ * refused for dropping figures nobody had stated; no architecture drawing could
+ * be converted, whatever the model answered.
  */
 function figures(nodes: DocumentNode[]): Set<string> {
   const found = words(nodes)
-    .filter((word) => /\d/.test(word))
+    .map((word) => word.replace(/^[^\p{L}\p{N}]+/u, ""))
+    .filter((word) => /^\d/.test(word))
     .map((word) => word.replace(/[^\d.,%a-z]/gi, ""));
   return new Set(found.filter(Boolean));
 }

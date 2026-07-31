@@ -1,7 +1,7 @@
 "use client";
 
-import { REASONING_EFFORTS } from "@/domain/configuration/ai-provider";
 import type { AiProviderSummary } from "@/lib/settings-types";
+import { effortChoices } from "./reasoning-labels";
 
 /** How much the model may answer, and how tightly its answer is constrained. */
 export function ProviderOutputFields({ initial }: { initial: AiProviderSummary }) {
@@ -30,17 +30,18 @@ export function ProviderOutputFields({ initial }: { initial: AiProviderSummary }
           name="reasoningEffort"
           defaultValue={initial.reasoningEffort ?? "default"}
         >
-          {REASONING_EFFORTS.map((effort) => (
-            <option key={effort} value={effort}>
-              {effort === "default" ? "Model's own default" : effort}
+          {effortChoices().map((choice) => (
+            <option key={choice.value} value={choice.value} title={choice.hint}>
+              {choice.label}
             </option>
           ))}
         </select>
         <span className="field-help">
           Reasoning models think before they answer, and that thinking is most
-          of the wait: several seconds before the first word, on every action.
-          Formatting work rarely needs it — lower it here. A server that does
-          not support the setting ignores it.
+          of the wait: minutes before the first word, on every action.
+          Formatting work rarely needs it — lower it here. Not every server
+          ignores a setting it does not support: some stall on it instead, so
+          &quot;Off&quot; is what to try when answers never arrive.
         </span>
       </label>
     </>

@@ -88,6 +88,31 @@ describe("layoutDrift", () => {
     expect(drift.lost).toEqual([]);
   });
 
+  /**
+   * A name that happens to hold a digit is not a figure, and a technical
+   * drawing is made of them: `k8s`, `v2`, `astro-001`. Counting them meant a
+   * diagram — which shortens a label and drops a note by design — was refused
+   * for "dropping figures" it had never been given, so the conversion of any
+   * architecture drawing could not succeed whatever the model answered.
+   */
+  it("does not read an identifier as a figure", () => {
+    const source = [
+      paragraph("Cluster astro-001 runs k8s with the kv/ v2 mount and auth k8s+jwt."),
+    ];
+    const drawn = [paragraph("Cluster runs the mount and the auth method.")];
+
+    const drift = layoutDrift(source, drawn);
+    expect(drift.lost).toEqual([]);
+    expect(drift.invented).toEqual([]);
+  });
+
+  it("still reads a real quantity, however it is decorated", () => {
+    const source = [paragraph("Revenue was 120k, up 18% over 2 quarters.")];
+    const drift = layoutDrift(source, [paragraph("Revenue was 120k.")]);
+
+    expect(drift.lost).toEqual(expect.arrayContaining(["18%", "2"]));
+  });
+
   it("refuses a layout that threw most of the content away", () => {
     const drift = layoutDrift(SOURCE, [paragraph("Vendors: 120k, 90k.")]);
 

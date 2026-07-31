@@ -29,6 +29,26 @@ start port=port:
 # Build then serve the production bundle
 serve port=port: build (start port)
 
+# `next dev` compiles a route the first time it is asked for, so the first
+# document opened after a restart waits on ~3600 modules. A built bundle has
+# none of that. The kill and the clean are part of the recipe because a dev
+# server and a build writing the same .next is what produces
+# "Expected clientReferenceManifest to be defined" — twice in one evening.
+#
+# Stop every dev server, rebuild from scratch, serve the result on {{port}}
+prod port=port:
+    -pkill -f "next dev"
+    -pkill -f "next-server"
+    rm -rf .next
+    npm run build
+    # `next start` warns and is not what a standalone build is meant to run:
+    # next.config declares output "standalone" for the Docker image, and the
+    # server it emits carries its own node_modules. Static assets are not
+    # copied into it by the build, so they are put beside it here.
+    cp -r public .next/standalone/public
+    cp -r .next/static .next/standalone/.next/static
+    PORT={{port}} node .next/standalone/server.js
+
 # Build the Docker image (tagged {{image}})
 docker-build tag=image:
     docker build -t {{tag}} .
