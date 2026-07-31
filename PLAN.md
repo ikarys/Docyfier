@@ -1037,8 +1037,30 @@ Instructions:
    the character counts above are not that line. They say what is sent; only a
    provider says what it costs and how long it takes.
 
-   This is the open half of the STEP: one run per surface against the reference
-   provider, before and after, against the budgets below.
+   **First run against a real model** — `cline-pass/glm-5.2`, a one-page note
+   asked for in French, `DOCYFIER_LOG_USAGE=1`:
+
+   ```
+   [ai] generate 18.0s · in 743  · out 928
+   [ai] stream   63.6s · in 3504 · out 4280 · answer 2589 chars ~647 tok
+                                             · thinking 13477 chars ~3369 tok
+   ```
+
+   Thirteen blocks streamed, **none rejected** — the model writes the new
+   format, and it reaches for `statRow`, `callout` and `stepList` with their
+   attributes and marks intact. That is the question the format switch had to
+   answer, and it is answered.
+
+   The numbers say something this STEP did not expect. The document is 647
+   tokens; deliberating over it is **3369** — five times what was written, and
+   most of the 63.6 s. The payload was the lever on what *travels*, and it
+   worked; **what makes the user wait is now the thinking**, on a call that
+   already asks for `effortFor("document")` = `"medium"`. A shorter format
+   cannot touch it. That is where the remaining budgets below will be won or
+   lost, and a change to the format contract is no longer the place to look.
+
+   Still open: the same run for a passage edit and for "make it pretty", which
+   are the two surfaces carrying a budget.
 
 **Out of scope:** changing how documents are stored; a per-agent provider (still
 STEP U13's out-of-scope); response caching — an answer that outlives the request
@@ -1048,6 +1070,8 @@ is stale, because the document it was about has moved on. Sharing a call that is
 Acceptance:
 
 - [x] Every block type round-trips body → model format → body, deep-equal
+- [x] A model writes the format and the app accepts it: 13 blocks, 0 rejected,
+      layout blocks with their attributes and marks — measured, not assumed
 - [ ] A passage edit on a paragraph answers in under 5 s on the reference provider
 - [ ] "Make it pretty" on the 78 KB reference document answers in under 60 s
 - [ ] The usage log shows the reused-prefix percentage on a provider that caches

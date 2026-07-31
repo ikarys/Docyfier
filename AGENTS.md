@@ -200,8 +200,16 @@ is not the lever**. Stating the same vocabulary in markdown rather than JSON too
 it from 9 136 characters to 8 454 — seven per cent — because what fills a format
 contract is when to reach for a chart and what a diagram may declare, not the
 punctuation around it. The saving is in the document, which travels both ways.
-What is left of U14 is wall clock against a real provider, per surface,
-`DOCYFIER_LOG_USAGE=1`: character counts say what is sent, never what it costs.
+
+The first run against a real model settled the rest. `glm-5.2` streamed thirteen
+blocks with **none rejected**, reaching for `statRow`, `callout` and `stepList`
+with their attributes and marks intact: the format works end to end. And it
+spent **3 369 tokens of thinking on a 647-token document** — five times what it
+wrote, and most of the wait, on a call already asking for `"medium"` effort. So
+**the remaining latency lever is the thinking, not the format**: shortening a
+prompt further buys nothing a user can feel. Wall clock per surface, with
+`DOCYFIER_LOG_USAGE=1`, is what is left of U14 — character counts say what is
+sent, never what it costs.
 
 **Speed is a P0 need** (`docs/vision.md`, PLAN.md #6b), not an optimization to
 schedule later: a rewrite that takes twenty seconds is not a slow feature, it is
