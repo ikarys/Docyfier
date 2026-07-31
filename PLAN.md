@@ -5,10 +5,10 @@ original P\* where justified; the "Was → Now" column tracks every change.
 
 **MVP = STEPS 0–4.** Everything after is post-MVP.
 
-The UX & rendering upgrade STEPS **U1–U7** ([Part C](#part-c--ux--rendering-upgrade-steps-u1u12))
+The UX & rendering upgrade STEPS **U1–U7** ([Part C](#part-c--ux--rendering-upgrade-steps-u1u14))
 slot **between STEP 2b and STEP 3**. Recommended order: U1 → U4 → U3 → U2 → U5 → U6 → U7.
-The editing STEPS **U8–U12** continue Part C and run **before STEP 6**:
-U8 → U9 → U10 → U11 → U12.
+The editing STEPS **U8–U14** continue Part C and run **before STEP 6**:
+U8 → U9 → U10 → U11 → U13 → U14 → U12.
 
 ## Part A — Prioritized needs
 
@@ -313,7 +313,7 @@ Acceptance:
 
 **Exit criteria:** per integration: connect, list, import, push update without leaving the app.
 
-## Part C — UX & rendering upgrade STEPS (U1–U12)
+## Part C — UX & rendering upgrade STEPS (U1–U14)
 
 Motivation: the current editor produces correct but classic documents; the UX is
 toolbar-only; themes are four fixed presets; whole-document AI transforms are
@@ -887,8 +887,8 @@ Acceptance:
 
 **Goal:** stop asking one call to be good at two jobs. A **writer** owns the
 words — tone, argument, length, language. A **layout designer** owns the shape —
-which block carries what — and changes no word. An **orchestrator** decides who
-runs, in what order, and says so.
+which block carries what — and changes no word. Which one runs is read off the
+surface the user touched, and said out loud.
 
 **Why:** every AI surface today sends one prompt that must arbitrate between
 writing well and presenting well, and the arbitration is invisible: when the
@@ -913,15 +913,18 @@ Instructions:
    was given. A drift triggers the existing retry; a second drift refuses the
    answer rather than storing a rewrite the user never asked for. Without this
    rule the two agents collapse back into one within three prompts.
-3. **Routing is deterministic where the surface already says it.** A block action
-   carries its `family` (`rewrite` → writer, `turn-into` → designer); "Style for
-   me" and "make it pretty" are the designer; a selection quick action is the
-   writer. Only the panel's free prompt is ambiguous — *"shorten it and make it
-   scannable"* is both — and only there does the orchestrator spend one short
-   model call. Routing yields an ordered assignment plus the reason for it.
-4. **The reason is shown.** "Rewriting, then laying out" is what the user reads
-   while it runs. An orchestrator whose decision is invisible is a black box
-   nobody can report a bug against.
+3. **Routing is deterministic, everywhere.** A block action carries its `family`
+   (`rewrite` → writer, `turn-into` → designer); "Style for me" and "make it
+   pretty" are the designer; a selection quick action is the writer; a free
+   prompt is the writer, because touching the words and not the shape is the
+   safe half of any request. *Revised by [STEP U14](#step-u14--the-cost-of-one-ai-call):
+   the free prompt was originally read by a short model call, which cost a whole
+   round trip — its own contract, its own thinking — before any work began, and
+   could answer "both", making one click two waits. The user who wanted the other
+   half is one click from the styling action, on a passage that has settled.*
+4. **The reason is shown.** "Rewriting the words" is what the user reads while it
+   runs. A decision that is invisible is a black box nobody can report a bug
+   against.
 5. **One pipeline, unchanged.** Every step still goes through `authoringDeps`
    (`src/lib/ai/service.ts`), `validateDocJson` and `beautify`, and a chain lands
    under one review bar: Reject undoes the whole assignment, not the last step.
@@ -938,11 +941,78 @@ Acceptance:
 
 - [ ] Turning a paragraph into a table invents nothing: every figure survives, the wording is the paragraph's, and the only new words are the labels a table needs
 - [ ] A layout answer that reworded is retried, and refused rather than applied if it drifts again
-- [ ] "Add a conclusion" runs the writer alone, "make it scannable" the designer alone, "shorten it and make it pretty" both, in that order
+- [ ] "Add a conclusion" runs the writer alone, "make it scannable" the designer alone, and no single click ever runs both
 - [ ] The user sees which assistant is running and why, before the answer lands
 - [ ] Rejecting a two-step answer restores the document deep-equal to what it was
 - [ ] Generation still streams its first block with no second pass
 - [ ] No surface talks to a model outside `authoringDeps`
+
+---
+
+### STEP U14 — The cost of one AI call
+
+**Goal:** an AI action costs what the work costs, not what the plumbing costs.
+"Shorten this paragraph" answers in seconds, not in twenty; "make it pretty"
+answers in tens of seconds, not in minutes.
+
+**Why:** measured on a real document (26 794 characters of body JSON, 6 095 of
+visible text), one editing surface was paying four separate taxes that have
+nothing to do with the work asked for:
+
+| Tax | Measured | Status |
+|---|---|---|
+| The format contract and style guide, shipped whole to every call | 3 030 tokens, every time | **Done** |
+| A model call to decide which assistant answers, before any work | one round trip, with its own thinking | **Done** |
+| Two assistants chained inside one click | two waits for one action | **Done** |
+| Reasoning effort never stated, so a reasoning model deliberates over a one-line rewrite | most of the seconds, on GLM-class models | **Done** |
+| ProseMirror JSON as the model's wire format | **×4.4** the visible text, in **both** directions | Open |
+| A passage edit that streams nothing | the user sees the first byte when they see the last | Open |
+
+The first four shipped together: a prose-only assistant's system prompt went
+from 3 030 to 1 101 tokens, and a free prompt costs one call instead of three.
+What is left is the two structural ones.
+
+Storage is **not** on this list and never was: `JSON.parse` on a 78 KB document
+takes 0.15 ms. The document stays ProseMirror JSON on disk — it is the editor's
+own shape, and changing it would buy nothing.
+
+Instructions:
+
+1. **A model-facing format that is not JSON.** Markdown for what markdown
+   already covers, plus `:::` directive blocks for what it does not
+   (`statRow`, `cardGrid`, `chart`, `diagram`, …). An emitter and a parser under
+   `src/infrastructure/rendering/` — the markdown emitter is most of one half
+   already — with a round-trip test per block type: every block in the schema
+   survives body → text → body deep-equal. Two wins, and the second is bigger
+   than the first: **×4.4 down to about ×1.2** on tokens, and a syntax the model
+   already knows, so the format contract shrinks again *and* invalid answers —
+   the ones that trigger the retry, which doubles the wait — become rare.
+   Do **not** invent a private syntax: `:::` is a convention models have read
+   millions of times, and a bespoke one reopens the problem markdown solves.
+2. **The passage streams.** A selection edit lands block by block through
+   `blockStreamResponse`, as generation and the caret already do. This is the
+   one item with a real cost to weigh: the streaming path has neither the
+   `askJson` retry nor STEP U13's charter check, which compares the passage
+   before and after and cannot run until the last block. Either the check runs
+   at the end of the stream and a breach rolls the whole insertion back, or the
+   surface keeps two shapes for one thing — which is what this codebase refuses
+   elsewhere. Decide that before writing the route.
+3. **Measure before and after, per surface.** `DOCYFIER_LOG_USAGE=1` already
+   prints tokens in, tokens out, tokens thought, tokens the provider had already
+   seen, and seconds. A change to a prompt without that line is a guess.
+
+**Out of scope:** changing how documents are stored; a per-agent provider (still
+STEP U13's out-of-scope); response caching — an answer that outlives the request
+is stale, because the document it was about has moved on. Sharing a call that is
+*in flight* is not caching and already ships.
+
+Acceptance:
+
+- [ ] Every block type round-trips body → model format → body, deep-equal
+- [ ] A passage edit on a paragraph answers in under 5 s on the reference provider
+- [ ] "Make it pretty" on the 78 KB reference document answers in under 60 s
+- [ ] The usage log shows the reused-prefix percentage on a provider that caches
+- [ ] No surface keeps two code paths for the same edit
 
 ---
 

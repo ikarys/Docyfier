@@ -118,11 +118,37 @@ is `src/lib/ai/block-stream-response.ts` now, shared by the generation and
 caret routes; `useAiReview` closes over a streamed edit with one snapshot and
 one bar, so Reject undoes the whole answer.
 
+STEP U13 is in: two assistants, a **writer** that owns the words and a
+**designer** that owns the shape, declared in `src/domain/authoring/agents/`
+(same registry shape) and held to their charters by
+`domain/authoring/layout-fidelity.ts` rather than merely asked. Which one
+answers is read off the surface the user touched
+(`agents/routing.ts`) — never asked of a model, and never two in one click.
+
+Half of **STEP U14** is in, and it is the one to read before touching a prompt:
+what an AI call costs is mostly plumbing, and the plumbing is now measured.
+An agent declares the **scope** of block vocabulary it is shown
+(`domain/authoring/prompts/scope.ts`), and `formatContract(scope)` assembles the
+contract from `prompts/blocks/{prose,layout,document}.ts` — so the writer, whose
+charter forbids every visual block, is not shown one. That is a charter enforced
+by omission, not a saving: 3 030 tokens of system prompt become 1 101. The style
+guide splits the same way. A `GenerationRequest` also carries an `effort`, and
+`sharingInFlightCalls` (`infrastructure/authoring/in-flight-generator.ts`) joins
+two identical calls in flight into one — a decorator over the port, not a cache:
+nothing outlives the answer, because the document it was about has moved on.
+
+Two rules that came out of measuring, and that a change must not undo: the
+document body stays ProseMirror JSON **on disk** (`JSON.parse` on 78 KB is
+0.15 ms — storage was never the problem), and it is the **model-facing** format
+that costs, at ×4.4 the visible text in both directions. Replacing it with
+markdown plus `:::` directives is the open half of U14, together with streaming
+a passage edit. Do not add a second code path for a surface that already has one.
+
 What the editor still cannot do is written down as **STEP U12** in PLAN.md:
-comments, suggestions and version history. Next: **STEP U12**, then the rest of
-STEP 10 and STEP 6 (multi-tenant). PDF stays print-based on purpose; a
-headless-Chromium renderer is the only open item of STEP 3 and was judged not
-worth its weight.
+comments, suggestions and version history. Next: **STEP U12**, the rest of
+**STEP U14**, then the rest of STEP 10 and STEP 6 (multi-tenant). PDF stays
+print-based on purpose; a headless-Chromium renderer is the only open item of
+STEP 3 and was judged not worth its weight.
 
 ## Working conventions
 

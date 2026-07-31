@@ -39,6 +39,10 @@ transcript you reformat by hand.
   pretty", shorten, change tone, add sections, via chat or one-click actions.
 - **Selection rewrites** — select text, get a floating menu with rephrase /
   shorten / expand / formal, or apply a free prompt to that selection only.
+- **Two assistants, never both at once** — a **writer** owns the words (tone,
+  length, what is said) and a **layout designer** owns the shape (which block
+  carries what, changing no word). Which one answers is read off the button you
+  pressed, so nothing is spent deciding; the other is one click away.
 - **Diff review** — AI edits arrive as a reviewable diff, applied or rejected
   block by block, never as a silent overwrite.
 
@@ -133,6 +137,20 @@ structured-output setting. One is active; switch from `/settings/ai` or from the
 picker in the app header when a quota runs out or a task needs the other model.
 The environment variables below describe the first provider, the one a fresh
 deployment starts with.
+
+**Speed.** Two settings decide most of the wait, and both are per provider.
+*Max output tokens* caps how long an answer may get. *Reasoning effort* tells a
+model that thinks before it writes how hard to think; leaving it on `default`
+lets a reasoning model deliberate over a one-line rewrite, which is often most
+of the seconds you counted. Docyfier already asks for `low` on the small
+surfaces — a selection rewrite, a caret insert — and a value set here overrides
+that everywhere, so pick it deliberately. Each call is also sent only the block
+vocabulary its surface may produce, which is why rewording a paragraph carries a
+third of the prompt a whole-document edit does.
+
+To see where the time actually goes, start the app with `DOCYFIER_LOG_USAGE=1`:
+every call prints its duration, tokens in and out, tokens spent thinking, and
+how much of the prompt the provider served from a prefix it had already seen.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -293,9 +311,12 @@ it; that is the intended extension point.
 Shipped so far: the editor, the AI surfaces, themes, templates, import/export,
 the composers, single-user auth, the instance's own identity and writing style,
 and diagrams — flows, architectures, sequences, hierarchies and phase axes,
-placed by the app rather than by whoever wrote them. Next up: multi-tenant
-workspaces with per-user permissions, and print-quality PDF through headless
-Chromium — today's PDF goes through the browser print dialog on purpose.
+placed by the app rather than by whoever wrote them. Next up: comments,
+suggestions and version history; a model-facing document format that is not
+raw JSON (which today costs 4.4 characters of syntax per character of text, in
+both directions); then multi-tenant workspaces with per-user permissions, and
+print-quality PDF through headless Chromium — today's PDF goes through the
+browser print dialog on purpose.
 
 [PLAN.md](PLAN.md) holds the ordered roadmap; [docs/vision.md](docs/vision.md)
 holds the product intent behind it.
