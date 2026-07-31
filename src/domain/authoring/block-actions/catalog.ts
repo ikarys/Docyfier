@@ -1,6 +1,6 @@
 import type { BlockAction } from "./contract";
 import { expand, rewrite, shorten } from "./rewrite";
-import { intoChart, intoStats, intoSteps, intoTable } from "./turn-into";
+import { intoChart, intoDiagram, intoStats, intoSteps, intoTable } from "./turn-into";
 
 /**
  * Every action the drag handle offers on one block.
@@ -17,6 +17,7 @@ export const BLOCK_ACTIONS: readonly BlockAction[] = [
   intoSteps,
   intoStats,
   intoChart,
+  intoDiagram,
 ];
 
 export function findBlockAction(id: string): BlockAction | undefined {

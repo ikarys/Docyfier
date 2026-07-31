@@ -158,9 +158,21 @@ body {
 /* ---- Document shell ------------------------------------------------------ */
 
 .doc-shell {
-  max-width: var(--shell-max);
-  margin: 2.5rem auto;
+  /* The paper and the zoom the writer chose (`page-view.ts`); the defaults are
+     here so a document renders the same with no preference stored, and so the
+     export and print routes — which never mount the toolbar — still have them. */
+  --doc-paper: var(--shell-max);
+  --doc-zoom: 1;
+
+  max-width: var(--doc-paper);
+  /* Level with the side panel's own top margin: the sheet and the rail are
+     read as one row, and 1.5rem of difference is the thing you see. */
+  margin: 1rem auto 2.5rem;
   padding: 0 1.25rem;
+
+  /* Zoom is one number and everything inside the sheet is em, so the page
+     comes closer whole rather than only its text growing. */
+  font-size: calc(1rem * var(--doc-zoom));
 
   /* Everything colored by the document derives from the accent token, so an
      override in the Design panel repaints the whole subtree — including the
@@ -174,8 +186,9 @@ body {
      document should be tighter, not cramped to read. */
   --doc-lead: calc(1.72 * (0.85 + 0.15 * var(--doc-space)));
   /* The margin the text column sits in. A full-bleed image is exactly what
-     breaks out of it, so the two must be the same number. */
-  --doc-gutter: calc(4.5rem * var(--doc-space));
+     breaks out of it, so the two must be the same number. In em, so it follows
+     the zoom rather than staying put while the text grows past it. */
+  --doc-gutter: calc(4.5em * var(--doc-space));
 }
 
 .doc-sheet {
@@ -184,7 +197,7 @@ body {
   border-radius: var(--radius);
   box-shadow: 0 1px 2px rgba(20, 22, 30, 0.04),
     0 12px 32px -12px rgba(20, 22, 30, 0.12);
-  padding: calc(4rem * var(--doc-space)) var(--doc-gutter);
+  padding: calc(4em * var(--doc-space)) var(--doc-gutter);
 }
 
 /* ---- Document typography (the "pretty" layer) ---------------------------- */
@@ -192,7 +205,7 @@ body {
 .doc {
   color: var(--ink);
   font-family: var(--doc-font-body);
-  font-size: 1.02rem;
+  font-size: 1.02em;
   line-height: var(--doc-lead, 1.72);
 }
 
@@ -2505,6 +2518,30 @@ body {
   min-width: 0;
 }
 
+/* The page view: which paper, and from how far (`page-view.ts`). */
+.tb-page {
+  gap: 0.15rem;
+}
+.tb-select {
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.2rem 0.3rem;
+  max-width: 9rem;
+  cursor: pointer;
+}
+.tb-select:hover {
+  border-color: var(--rule);
+  color: var(--ink);
+}
+.tb-zoom {
+  min-width: 3.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---- AI side panel (whole-document operations) ---------------------------- */
 
 .ai-panel {
@@ -3300,6 +3337,13 @@ body {
   @page {
     size: A4;
     margin: 18mm 16mm;
+  }
+  /* A zoom is where the writer was standing, not what the document is: the
+     printed page is A4 at 100% whatever the screen was showing. */
+  .doc-shell {
+    --doc-zoom: 1;
+    max-width: none;
+    font-size: 1rem;
   }
   body {
     background: #fff;

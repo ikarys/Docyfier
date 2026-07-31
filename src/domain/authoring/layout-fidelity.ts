@@ -32,6 +32,35 @@ export interface LayoutDrift {
 }
 
 /**
+ * Where a block keeps its words when it has no `content`.
+ *
+ * A chart and a diagram are atoms: every label, figure and caption they carry
+ * lives in their attributes. Reading `content` alone sees nothing there, calls
+ * the result a passage thrown away, and refuses every conversion into one —
+ * which is exactly what "turn this into a chart" asks for.
+ */
+const ATOM_WORDS: Record<string, (attrs: Record<string, unknown>) => unknown[]> = {
+  chart: (attrs) => [
+    attrs.title,
+    attrs.caption,
+    ...((attrs.categories as unknown[]) ?? []),
+    ...(((attrs.series as { label?: unknown; values?: unknown[] }[]) ?? []).flatMap(
+      (series) => [series.label, ...(series.values ?? [])],
+    )),
+  ],
+  diagram: (attrs) => [
+    attrs.title,
+    attrs.caption,
+    ...(((attrs.nodes as { label?: unknown; note?: unknown }[]) ?? []).flatMap((node) => [
+      node.label,
+      node.note,
+    ])),
+    ...(((attrs.edges as { label?: unknown }[]) ?? []).map((edge) => edge.label)),
+    ...(((attrs.groups as { label?: unknown }[]) ?? []).map((group) => group.label)),
+  ],
+};
+
+/**
  * The text of a node with its structure turned into spaces.
  *
  * `nodeText` concatenates, which is right for a paragraph and wrong here: three
@@ -40,6 +69,12 @@ export interface LayoutDrift {
  */
 function spacedText(node: DocumentNode): string {
   if (node.text !== undefined) return node.text;
+  const inAttrs = ATOM_WORDS[node.type ?? ""];
+  if (inAttrs) {
+    return inAttrs(node.attrs ?? {})
+      .filter((value) => value !== null && value !== undefined)
+      .join(" ");
+  }
   const children = node.content;
   return children ? children.map(spacedText).join(" ") : "";
 }

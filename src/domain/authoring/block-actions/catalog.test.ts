@@ -14,7 +14,7 @@ describe("the block action catalog", () => {
 
   it("names the block each conversion must produce, or it produces a paragraph", () => {
     const vague = blockActionsOf("turn-into").filter(
-      (action) => !/table|stepList|statRow|chart/.test(action.instruction),
+      (action) => !/table|stepList|statRow|chart|diagram/.test(action.instruction),
     );
     expect(vague).toEqual([]);
   });
@@ -25,6 +25,16 @@ describe("the block action catalog", () => {
       "shorten",
       "expand",
     ]);
+  });
+
+  /**
+   * A drawing made of text is the one source that is not prose. A model handed
+   * a code block reads it as code unless the instruction says it is a picture.
+   */
+  it("tells the two conversions that read a drawing that it is one", () => {
+    for (const id of ["into-diagram", "into-steps"]) {
+      expect(findBlockAction(id)?.instruction).toMatch(/drawing made of text/);
+    }
   });
 
   it("answers nothing for an action nobody registered", () => {

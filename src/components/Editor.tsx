@@ -20,7 +20,9 @@ import { EditorSurface } from "./editor/EditorSurface";
 import { editorExtensions } from "./editor/extensions";
 import { MenuBar, type PanelName } from "./editor/MenuBar";
 import { PanelHost } from "./editor/PanelHost";
+import { pageViewStyle } from "./editor/page-view";
 import { SearchBar } from "./editor/SearchBar";
+import { usePageView } from "./editor/usePageView";
 import { useAiReview } from "./editor/useAiReview";
 import { useCaretPrompt } from "./editor/useCaretPrompt";
 import { useContinuation } from "./editor/useContinuation";
@@ -57,6 +59,7 @@ export function DocumentEditor({
 }) {
   /** Only one side panel at a time — they share the same slot. */
   const [panel, setPanel] = useState<PanelName | null>("ai");
+  const page = usePageView();
   const { theme, changeTheme } = useDocumentTheme(id, initialTheme);
   /** The editor is created before the hook that saves it, and its `onUpdate`
    * only fires once both exist — hence the indirection rather than an order. */
@@ -103,6 +106,7 @@ export function DocumentEditor({
       <MenuBar
         editor={editor}
         saveState={autosave.saveState}
+        page={page}
         panel={panel}
         onTogglePanel={(which) => setPanel((p) => (p === which ? null : which))}
         onSaveNow={autosave.saveNow}
@@ -112,7 +116,7 @@ export function DocumentEditor({
         <main
           className="doc-shell"
           data-theme={presetSkin(theme.preset, presets)}
-          style={tokenStyle(resolveTokens(theme, presets))}
+          style={{ ...tokenStyle(resolveTokens(theme, presets)), ...pageViewStyle(page.view) }}
         >
           <EditorSurface
             editor={editor}

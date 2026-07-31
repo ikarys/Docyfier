@@ -121,3 +121,65 @@ describe("layoutBlocksIntroduced", () => {
     expect(layoutBlocksIntroduced([table], [table])).toEqual([]);
   });
 });
+
+/**
+ * The blocks whose words are not in their `content`.
+ *
+ * A diagram and a chart are atoms: every label they carry lives in their
+ * attributes. A fidelity check that reads `content` alone sees an empty result,
+ * calls it a passage thrown away, and refuses every conversion into one.
+ */
+describe("a passage turned into a block that has no content", () => {
+  const ascii = {
+    type: "codeBlock",
+    content: [
+      {
+        type: "text",
+        text: "| Workload pod |\n     |\n     v\n| OpenBao (validates the JWT) |\n     |\n     v\n| K8s Secret |",
+      },
+    ],
+  };
+  const drawn = {
+    type: "diagram",
+    attrs: {
+      kind: "flow",
+      direction: "down",
+      nodes: [
+        { id: "pod", label: "Workload pod" },
+        { id: "bao", label: "OpenBao", note: "validates the JWT" },
+        { id: "secret", label: "K8s Secret" },
+      ],
+      edges: [
+        { from: "pod", to: "bao", label: null, style: "solid", head: "arrow" },
+        { from: "bao", to: "secret", label: null, style: "solid", head: "arrow" },
+      ],
+      groups: [],
+      title: null,
+      caption: null,
+    },
+  };
+
+  it("reads the labels a diagram carries in its attributes", () => {
+    expect(isFaithfulLayout(layoutDrift([ascii], [drawn]))).toBe(true);
+  });
+
+  it("reads the figures a chart carries in its attributes", () => {
+    const prose = {
+      type: "paragraph",
+      content: [{ type: "text", text: "Revenue was 12 in Q1 and 19 in Q2." }],
+    };
+    const chart = {
+      type: "chart",
+      attrs: {
+        kind: "bar",
+        categories: ["Q1", "Q2"],
+        series: [{ label: "Revenue", values: [12, 19] }],
+        title: null,
+        caption: null,
+        showGrid: true,
+        showLegend: true,
+      },
+    };
+    expect(layoutDrift([prose], [chart]).lost).toEqual([]);
+  });
+});

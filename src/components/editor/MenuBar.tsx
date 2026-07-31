@@ -10,8 +10,10 @@ import { BlockTypeMenu } from "./toolbar/BlockTypeMenu";
 import { HighlightMenu, TextColorMenu } from "./toolbar/ColorMenu";
 import { InsertMenu } from "./toolbar/InsertMenu";
 import { MarkButtons } from "./toolbar/MarkButtons";
+import { PageViewControls } from "./toolbar/PageViewControls";
 import { WordCount } from "./WordCount";
 import type { SaveState } from "./save-state";
+import type { PageViewControl } from "./usePageView";
 
 export type PanelName = "ai" | "design";
 
@@ -27,12 +29,14 @@ export type PanelName = "ai" | "design";
 export function MenuBar({
   editor,
   saveState,
+  page,
   panel,
   onTogglePanel,
   onSaveNow,
 }: {
   editor: Editor;
   saveState: SaveState;
+  page: PageViewControl;
   panel: PanelName | null;
   onTogglePanel: (which: PanelName) => void;
   onSaveNow: () => void;
@@ -72,6 +76,7 @@ export function MenuBar({
       </div>
 
       <div className="tb-right">
+        <PageViewControls page={page} />
         <WordCount editor={editor} />
         <SaveStatus state={saveState} onRetry={onSaveNow} />
         <div className="tb-panels" role="group" aria-label="Panels">
