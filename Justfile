@@ -47,7 +47,12 @@ prod port=port:
     # copied into it by the build, so they are put beside it here.
     cp -r public .next/standalone/public
     cp -r .next/static .next/standalone/.next/static
-    PORT={{port}} node .next/standalone/server.js
+    # Every stored thing hangs off DOCYFIER_DATA_DIR, and its default hangs off
+    # the working directory — which is .next/standalone for this server, not the
+    # repo. Left implicit, the build starts on an empty instance: no providers,
+    # no credentials, and a second secret.key that cannot read the first one's
+    # ciphertext. It is passed here so dev and prod share one instance.
+    DOCYFIER_DATA_DIR={{justfile_directory()}}/data/documents PORT={{port}} node .next/standalone/server.js
 
 # Build the Docker image (tagged {{image}})
 docker-build tag=image:
