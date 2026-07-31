@@ -3,10 +3,11 @@ import type { PlacedBox, Point } from "./geometry";
 /**
  * Orthogonal edge routes.
  *
- * The layouts place on a grid with a clear gap between ranks, so a forward edge
- * never has an obstacle to avoid: it leaves the rank it starts in, crosses the
- * gap and arrives. Only an edge that goes backwards has to travel past boxes,
- * and it does so in a lane cleared beside the drawing.
+ * The layouts place on a grid with a clear gap between ranks, and an edge that
+ * skips a rank is split into hops through a lane of its own before it gets
+ * here (`long-edges.ts`). So a forward edge never has an obstacle to avoid: it
+ * always leaves one rank, crosses the gap and arrives at the next. Only an edge
+ * that goes backwards travels past boxes, in a lane beside the drawing.
  */
 
 export type Axis = "down" | "right";

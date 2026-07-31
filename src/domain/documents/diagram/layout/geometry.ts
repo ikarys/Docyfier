@@ -66,6 +66,8 @@ export const BOX_PAD_Y = 12;
 export const MIN_BOX_WIDTH = 116;
 export const MAX_BOX_WIDTH = 208;
 export const GAP_ALONG = 40;
+/** The slot an edge stands in while getting past a rank it does not stop at. */
+export const LANE_WIDTH = 16;
 export const GAP_ACROSS = 56;
 export const MARGIN = 20;
 export const GROUP_PAD = 16;

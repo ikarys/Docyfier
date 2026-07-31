@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DIAGRAM_KINDS, type DiagramAttrs } from "../diagram";
 import { sampleDiagram } from "../sample";
-import type { Placement } from "./geometry";
+import type { PlacedBox, Placement, Point } from "./geometry";
 import { placeNodes } from "./place";
 
 /**
@@ -16,6 +16,23 @@ function overlaps(a: { x: number; y: number; width: number; height: number }, b:
   return (
     a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
   );
+}
+
+/**
+ * Does the straight segment a-b pass through the inside of the box?
+ *
+ * An edge spanning more than one rank used to be drawn as one line from its
+ * source to its target, straight over whatever sat between them: nine such
+ * segments on a ten-node flow. An arrow through a box says two things are
+ * connected that are not.
+ */
+function crosses(a: Point, b: Point, box: PlacedBox): boolean {
+  const inside = (p: Point): boolean =>
+    p.x > box.x + 1 && p.x < box.x + box.width - 1 && p.y > box.y + 1 && p.y < box.y + box.height - 1;
+  const steps = 40;
+  return Array.from({ length: steps - 1 }, (_, i) =>
+    inside({ x: a.x + ((b.x - a.x) * (i + 1)) / steps, y: a.y + ((b.y - a.y) * (i + 1)) / steps }),
+  ).some(Boolean);
 }
 
 function expectSound(placement: Placement, attrs: DiagramAttrs): void {
@@ -37,6 +54,15 @@ function expectSound(placement: Placement, attrs: DiagramAttrs): void {
   }
 
   for (const edge of placement.edges) {
+    for (const box of placement.boxes) {
+      if (box.id === edge.from || box.id === edge.to) continue;
+      const over = edge.points.some((point, i) => {
+        const next = edge.points[i + 1];
+        return next !== undefined && crosses(point, next, box);
+      });
+      expect(over, `${edge.from}->${edge.to} runs over ${box.id}`).toBe(false);
+    }
+
     expect(edge.points.length).toBeGreaterThanOrEqual(2);
     for (const point of edge.points) {
       expect(point.x).toBeGreaterThanOrEqual(0);
@@ -102,6 +128,38 @@ describe("placeNodes", () => {
       caption: null,
     };
     expectSound(placeNodes(attrs), attrs);
+  });
+
+  /**
+   * A flow where a step skips ahead — an escalation, an early exit, a retry
+   * that rejoins later. Every sample happens to connect neighbouring ranks, so
+   * nothing pinned what an edge does when it has ranks to get past.
+   */
+  it("gets a skipping edge past the ranks between, not through them", () => {
+    const nodes = Array.from({ length: 8 }, (_, i) => ({ id: `n${i}`, label: `Step ${i}` }));
+    const chain = nodes.slice(1).map((n, i) => ({ from: nodes[i].id, to: n.id }));
+    const skips = [
+      { from: "n0", to: "n5" },
+      { from: "n1", to: "n7" },
+      { from: "n2", to: "n6" },
+      { from: "n0", to: "n3" },
+    ];
+    const attrs: DiagramAttrs = {
+      kind: "flow",
+      direction: "down",
+      nodes,
+      edges: [...chain, ...skips].map((e) => ({
+        ...e,
+        label: null,
+        style: "solid" as const,
+        head: "arrow" as const,
+      })),
+      groups: [],
+      title: null,
+      caption: null,
+    };
+    expectSound(placeNodes(attrs), attrs);
+    expectSound(placeNodes({ ...attrs, direction: "right" }), { ...attrs, direction: "right" });
   });
 
   it("keeps a wide fan-out from spilling out of the canvas", () => {

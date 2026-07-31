@@ -1,5 +1,6 @@
 import type { DiagramEdge, DiagramGroup, DiagramNode } from "../diagram";
 import { groupOrder } from "../group-tree";
+import { countCrossings, transposeRanks } from "./crossings";
 
 /**
  * Which rank each node belongs to, and in what order they sit inside it.
@@ -84,24 +85,56 @@ export function orderRanks(
   groups: DiagramGroup[] = [],
 ): string[][] {
   const groupOf = new Map(nodes.map((n) => [n.id, n.group ?? ""]));
-  // Depth first over the tree, so a group's members sit beside the members of
-  // the groups inside it rather than beside a stranger from another branch. A
-  // group only the nodes mention still gets a place: ordering is a tidiness
-  // rule, and it may not stop working because a declaration is missing.
-  const order = groupOrder(groups);
+  const rank = groupRank(nodes, groups);
+  const tidy = (arrangement: string[][]): string[][] =>
+    arrangement.map((ids) => stableSortBy(ids, (id) => rank.get(groupOf.get(id) ?? "") ?? -1));
+
+  let best = tidy(medianPass(ranks, forward, true));
+  let fewest = countCrossings(best, forward);
+
+  // Down then up, over and over: a median pass only ever looks at one side, so
+  // a box well placed for what leads into it can be badly placed for what leads
+  // out. Each arrangement is measured and only a strictly better one is kept,
+  // which is what stops a heuristic pass from making a drawing worse.
+  let current = best;
+  for (let pass = 0; pass < SWEEPS && fewest > 0; pass++) {
+    current = transposeRanks(tidy(medianPass(current, forward, pass % 2 === 1)), forward, groupOf);
+    const crossings = countCrossings(current, forward);
+    if (crossings >= fewest) continue;
+    fewest = crossings;
+    best = current.map((ids) => [...ids]);
+  }
+  return best;
+}
+
+/** How many down-and-up rounds to try before the drawing is as tidy as it gets. */
+const SWEEPS = 8;
+
+/**
+ * Where each group sits among its siblings, depth first over the tree, so a
+ * group's members sit beside the members of the groups inside it rather than
+ * beside a stranger from another branch. A group only the nodes mention still
+ * gets a place: ordering is a tidiness rule, and it may not stop working
+ * because a declaration is missing.
+ */
+function groupRank(nodes: DiagramNode[], groups: DiagramGroup[]): Map<string, number> {
+  const rank = groupOrder(groups);
   for (const node of nodes) {
     const id = node.group ?? "";
-    if (!order.has(id)) order.set(id, order.size);
+    if (!rank.has(id)) rank.set(id, rank.size);
   }
+  return rank;
+}
 
-  const ordered = ranks.map((rank) => [...rank]);
-  for (let r = 1; r < ordered.length; r++) {
-    const above = new Map(ordered[r - 1].map((id, i) => [id, i]));
-    ordered[r] = stableSortBy(ordered[r], (id, i) => medianOfParents(id, forward, above) ?? i);
+/** One pass over the ranks, each box moved towards the neighbours it is tied to. */
+function medianPass(ranks: string[][], edges: DiagramEdge[], downward: boolean): string[][] {
+  const out = ranks.map((ids) => [...ids]);
+  const steps = out.map((_, r) => r).slice(1);
+  for (const r of downward ? steps : [...steps].reverse().map((s) => s - 1)) {
+    const fixed = new Map(out[downward ? r - 1 : r + 1].map((id, i) => [id, i]));
+    out[r] = stableSortBy(out[r], (id, i) => medianOfNeighbours(id, edges, fixed, downward) ?? i);
   }
-  return ordered.map((rank) =>
-    stableSortBy(rank, (id) => order.get(groupOf.get(id) ?? "") ?? -1),
-  );
+  return out;
 }
 
 /**
@@ -158,14 +191,21 @@ function evenRows(run: string[]): string[][] {
   );
 }
 
-function medianOfParents(
+/**
+ * Where the boxes tied to this one sit, in the rank that is currently fixed —
+ * the median rather than the mean, because one far-off neighbour should not
+ * drag a box away from the three it sits with.
+ */
+function medianOfNeighbours(
   id: string,
-  forward: DiagramEdge[],
-  above: Map<string, number>,
+  edges: DiagramEdge[],
+  fixed: Map<string, number>,
+  downward: boolean,
 ): number | null {
-  const positions = forward
-    .filter((e) => e.to === id && above.has(e.from))
-    .map((e) => above.get(e.from) as number)
+  const positions = edges
+    .filter((e) => (downward ? e.to === id : e.from === id))
+    .map((e) => fixed.get(downward ? e.from : e.to))
+    .filter((at): at is number => at !== undefined)
     .sort((a, b) => a - b);
   if (positions.length === 0) return null;
   return positions[Math.floor((positions.length - 1) / 2)];
