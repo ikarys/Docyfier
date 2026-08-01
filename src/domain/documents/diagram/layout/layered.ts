@@ -16,6 +16,7 @@ import {
   type Point,
 } from "./geometry";
 import { isLane, laneLongEdges, type Detour } from "./long-edges";
+import { straightenAlong } from "./straighten";
 import { orderRanks, rankNodes, splitBackEdges, wrapWideRanks } from "./ranking";
 
 /**
@@ -44,12 +45,14 @@ export function layered(attrs: DiagramAttrs): Placement {
   const size = uniformBoxSize(attrs.nodes);
   const byId = new Map(attrs.nodes.map((n) => [n.id, n]));
 
-  const all = placeRanks(
+  // Evenly spaced and centred is the honest first answer and it zigzags: a
+  // chain through ranks of two, three and one box wanders for no reason a
+  // reader can see. Straightening slides the boxes along their rank only.
+  const all = straightenAlong(
+    placeRanks(ranks, byId, size, attrs.direction, headroomBefore(ranks, attrs.nodes, attrs.groups)),
     ranks,
-    byId,
-    size,
+    hops,
     attrs.direction,
-    headroomBefore(ranks, attrs.nodes, attrs.groups),
   );
   const placed = new Map(all.map((b) => [b.id, b]));
   const boxes = all.filter((box) => !isLane(box.id));

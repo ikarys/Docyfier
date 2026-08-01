@@ -195,8 +195,11 @@ function evenRows(run: string[]): string[][] {
  * Where the boxes tied to this one sit, in the rank that is currently fixed —
  * the median rather than the mean, because one far-off neighbour should not
  * drag a box away from the three it sits with.
+ *
+ * `fixed` says where each box in that rank is. Ordering measures that in seats
+ * and straightening in pixels; the rule is the same one either way.
  */
-function medianOfNeighbours(
+export function medianOfNeighbours(
   id: string,
   edges: DiagramEdge[],
   fixed: Map<string, number>,
