@@ -26,8 +26,19 @@ function entry(box: PlacedBox, axis: Axis): Point {
 
 /** A forward route: out of `from`, across the gap between the two ranks, into `to`. */
 export function routeForward(from: PlacedBox, to: PlacedBox, axis: Axis): Point[] {
-  const start = exit(from, axis);
-  const end = entry(to, axis);
+  return routeBetween(exit(from, axis), entry(to, axis), axis);
+}
+
+/**
+ * The route between two ends already known — straight when they line up, and a
+ * step through the middle of the gap when they do not.
+ *
+ * Split out of `routeForward` because a surface that lets someone drag a box
+ * knows where the line leaves and lands but not what it leaves and lands on:
+ * while the box is under the cursor there is no placed box to measure. The rule
+ * is the same one either way, and it is written once.
+ */
+export function routeBetween(start: Point, end: Point, axis: Axis): Point[] {
   if (axis === "down") {
     if (Math.abs(start.x - end.x) < 0.5) return [start, end];
     const mid = (start.y + end.y) / 2;

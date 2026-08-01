@@ -41,6 +41,7 @@
     "@tiptap/react": "^3.28.0",
     "@tiptap/starter-kit": "^3.28.0",
     "@tiptap/suggestion": "^3.28.0",
+    "@xyflow/react": "^12.11.2",
     "ai": "^7.0.31",
     "docx": "^9.7.1",
     "katex": "^0.17.0",

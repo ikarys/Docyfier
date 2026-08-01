@@ -152,12 +152,19 @@ function edge(edge: PlacedEdge): Shape[] {
   return shapes;
 }
 
-function polyline(points: Point[]): string {
+/**
+ * A run of points as an SVG path, and the head that closes it.
+ *
+ * Both are exported because the editing surface draws the same line live, from
+ * the ends React Flow reports while a box is under the cursor. One arrow, one
+ * shape, whoever is drawing it.
+ */
+export function polyline(points: Point[]): string {
   return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
 }
 
 /** A filled triangle rather than an SVG marker: markers inherit colour poorly. */
-function arrowhead(points: Point[]): PathShape {
+export function arrowheadPath(points: Point[]): string {
   const tip = points[points.length - 1];
   const before = points[points.length - 2];
   const length = Math.hypot(tip.x - before.x, tip.y - before.y) || 1;
@@ -165,12 +172,17 @@ function arrowhead(points: Point[]): PathShape {
   const uy = (tip.y - before.y) / length;
   const baseX = tip.x - ux * ARROW_LENGTH;
   const baseY = tip.y - uy * ARROW_LENGTH;
+  return (
+    `M ${tip.x} ${tip.y} ` +
+    `L ${baseX - uy * ARROW_HALF} ${baseY + ux * ARROW_HALF} ` +
+    `L ${baseX + uy * ARROW_HALF} ${baseY - ux * ARROW_HALF} Z`
+  );
+}
+
+function arrowhead(points: Point[]): PathShape {
   return {
     shape: "path",
-    d:
-      `M ${tip.x} ${tip.y} ` +
-      `L ${baseX - uy * ARROW_HALF} ${baseY + ux * ARROW_HALF} ` +
-      `L ${baseX + uy * ARROW_HALF} ${baseY - ux * ARROW_HALF} Z`,
+    d: arrowheadPath(points),
     stroke: null,
     fill: "line",
     width: 0,
