@@ -34,6 +34,15 @@ export function renameNode(attrs: DiagramAttrs, id: string, label: string): Diag
   return mapNode(attrs, id, (n) => ({ ...n, label }));
 }
 
+/** A group nobody declared cannot be renamed: the band drawn for it is a stray. */
+export function renameGroup(attrs: DiagramAttrs, id: string, label: string): DiagramAttrs {
+  if (!attrs.groups.some((g) => g.id === id)) return attrs;
+  return kept(attrs, {
+    ...attrs,
+    groups: attrs.groups.map((g) => (g.id === id ? { ...g, label } : g)),
+  });
+}
+
 /**
  * An empty note is no note: the second line disappears rather than going blank.
  * The same holds for a colour and a group — an absent option is dropped from

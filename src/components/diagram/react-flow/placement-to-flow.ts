@@ -19,10 +19,21 @@ const BOX = "box:";
 const BAND = "band:";
 
 export interface BoxData {
+  /** The label as written; `lines` is the same text broken to the box's width. */
+  label: string;
   lines: string[];
   note: string | null;
   accent: number | null;
   direction: DiagramDirection;
+  /**
+   * Whether a box has room for a second line at all.
+   *
+   * Every box in a diagram is one size, and that size carries a note only when
+   * some box has one (`uniformBoxSize`). So a diagram where nobody wrote a note
+   * cannot offer to add one here: the words would hang out of the box, and
+   * growing the box would draw something the exported SVG does not.
+   */
+  roomForNote: boolean;
 }
 
 export interface BandData {
@@ -47,6 +58,8 @@ export interface WireData {
   head: EdgeHead;
   label: string | null;
   direction: DiagramDirection;
+  /** Where the arrow sits in the diagram's own list, which is how an edit names it. */
+  index: number;
 }
 
 export interface FlowEdge {
@@ -62,6 +75,7 @@ export function toFlow(
   placement: Placement,
   direction: DiagramDirection,
 ): { nodes: FlowNode[]; edges: FlowEdge[] } {
+  const roomForNote = placement.boxes.some((box) => box.note !== null);
   return {
     nodes: [
       ...placement.groups.map((band) => ({
@@ -81,7 +95,14 @@ export function toFlow(
         position: { x: box.x, y: box.y },
         width: box.width,
         height: box.height,
-        data: { lines: box.lines, note: box.note, accent: box.accent, direction },
+        data: {
+          label: box.label,
+          lines: box.lines,
+          note: box.note,
+          accent: box.accent,
+          direction,
+          roomForNote,
+        },
         draggable: true,
         selectable: true,
         zIndex: 2,
@@ -100,6 +121,7 @@ export function toFlow(
         head: edge.head,
         label: edge.label,
         direction,
+        index: i,
       },
       zIndex: 1,
     })),
@@ -109,4 +131,9 @@ export function toFlow(
 /** The node a dragged box stands for, or null when the library moved something else. */
 export function boxIdOf(flowId: string): string | null {
   return flowId.startsWith(BOX) ? flowId.slice(BOX.length) : null;
+}
+
+/** The group a band stands for, or null when the id names something else. */
+export function groupIdOf(flowId: string): string | null {
+  return flowId.startsWith(BAND) ? flowId.slice(BAND.length) : null;
 }

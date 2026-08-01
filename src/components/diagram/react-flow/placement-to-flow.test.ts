@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { moveNode } from "@/domain/documents/diagram/diagram-edits";
 import { placeNodes } from "@/domain/documents/diagram/layout/place";
 import { sampleDiagram } from "@/domain/documents/diagram/sample";
-import { boxIdOf, toFlow, type FlowNode } from "./placement-to-flow";
+import { boxIdOf, toFlow, type BoxData, type FlowNode } from "./placement-to-flow";
 
 /**
  * The drawing handed to the library that lets someone edit it.
@@ -65,6 +65,17 @@ describe("a placement handed to the editing surface", () => {
     attrs.edges = [...attrs.edges, { ...attrs.edges[0], label: "again", style: "dashed" }];
     const { edges } = toFlow(placeNodes(attrs), "down");
     expect(new Set(edges.map((e) => e.id)).size).toBe(edges.length);
+  });
+
+  /**
+   * The box height carries a second line only when some box has a note, so a
+   * diagram where nobody wrote one has nowhere to put it.
+   */
+  it("says whether a box has room for a note", () => {
+    const withNotes = toFlow(placeNodes(sampleDiagram("architecture")), "down");
+    const without = toFlow(flow(), "down");
+    expect(boxes(withNotes.nodes).every((n) => (n.data as BoxData).roomForNote)).toBe(true);
+    expect(boxes(without.nodes).some((n) => (n.data as BoxData).roomForNote)).toBe(false);
   });
 
   it("hands back the place a moved box was left in", () => {

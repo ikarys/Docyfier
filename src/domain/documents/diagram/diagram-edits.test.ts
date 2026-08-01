@@ -12,6 +12,7 @@ import {
   realign,
   removeEdge,
   removeNode,
+  renameGroup,
   renameNode,
   setAccent,
   setEdgeLabel,
@@ -176,6 +177,17 @@ describe("texts and lines", () => {
   it("drops an arrow by position", () => {
     const next = removeEdge(flow(), 1);
     expect(links(next)).toEqual(["request->review", "review->rejected"]);
+  });
+
+  it("renames a group without touching what belongs to it", () => {
+    const next = renameGroup(sampleDiagram("architecture"), "back", "Services");
+    expect(next.groups.find((g) => g.id === "back")?.label).toBe("Services");
+    expect(next.nodes.filter((n) => n.group === "back")).toHaveLength(2);
+  });
+
+  it("refuses to rename a group that is not declared", () => {
+    const attrs = sampleDiagram("architecture");
+    expect(renameGroup(attrs, "nowhere", "Services")).toBe(attrs);
   });
 
   it("remembers where a box was dropped", () => {

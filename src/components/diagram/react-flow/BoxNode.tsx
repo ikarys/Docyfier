@@ -1,7 +1,8 @@
 "use client";
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import type { BoxData } from "./placement-to-flow";
+import { InlineText } from "./InlineText";
+import { boxIdOf, type BoxData } from "./placement-to-flow";
 
 /**
  * A box, in HTML rather than in SVG.
@@ -11,19 +12,38 @@ import type { BoxData } from "./placement-to-flow";
  * SVG reads, so a document that changes theme changes this too. The handles are
  * on the axis the diagram flows along — an arrow drawn by dragging one leaves
  * and lands where the layout would have made it leave and land.
+ *
+ * The label and the note are edited in place. A box with no note offers one
+ * while it is selected: an empty line nobody can see is a feature nobody finds.
  */
-export function BoxNode({ data, selected }: NodeProps) {
+export function BoxNode({ id, data, selected }: NodeProps) {
   const box = data as unknown as BoxData;
+  const node = boxIdOf(id) ?? id;
   const along = box.direction === "down";
+
   return (
     <div className="diagram-box" data-accent={box.accent ?? undefined} data-selected={selected}>
       <Handle type="target" position={along ? Position.Top : Position.Left} />
-      <span className="diagram-box-label">
+
+      <InlineText
+        target={{ of: "label", id: node }}
+        value={box.label}
+        className="diagram-box-label"
+      >
         {box.lines.map((line, i) => (
           <span key={i}>{line}</span>
         ))}
-      </span>
-      {box.note && <span className="diagram-box-note">{box.note}</span>}
+      </InlineText>
+
+      {(box.note || (selected && box.roomForNote)) && (
+        <InlineText
+          target={{ of: "note", id: node }}
+          value={box.note ?? ""}
+          className="diagram-box-note"
+          placeholder="Note"
+        />
+      )}
+
       <Handle type="source" position={along ? Position.Bottom : Position.Right} />
     </div>
   );

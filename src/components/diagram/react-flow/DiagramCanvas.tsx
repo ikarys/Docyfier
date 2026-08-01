@@ -6,6 +6,7 @@ import type { DiagramAttrs } from "@/domain/documents/diagram/diagram";
 import { placeNodes } from "@/domain/documents/diagram/layout/place";
 import { BandNode } from "./BandNode";
 import { BoxNode } from "./BoxNode";
+import { EditingProvider, useLabelEditing } from "./editing-context";
 import { useDiagramFlow } from "./use-diagram-flow";
 import { WireEdge } from "./WireEdge";
 
@@ -33,6 +34,7 @@ export function DiagramCanvas({
 }) {
   const placement = placeNodes(attrs);
   const flow = useDiagramFlow(attrs, update);
+  const editing = useLabelEditing(attrs, update);
 
   return (
     <div
@@ -42,27 +44,29 @@ export function DiagramCanvas({
       onKeyDown={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <ReactFlow
-        nodes={flow.nodes}
-        edges={flow.edges}
-        onNodesChange={flow.onNodesChange}
-        onEdgesChange={flow.onEdgesChange}
-        onNodeDragStop={flow.onNodeDragStop}
-        onConnect={flow.onConnect}
-        nodeTypes={NODE_TYPES}
-        edgeTypes={EDGE_TYPES}
-        fitView
-        fitViewOptions={{ padding: 0 }}
-        minZoom={0.1}
-        maxZoom={4}
-        zoomOnScroll={false}
-        zoomOnPinch={false}
-        zoomOnDoubleClick={false}
-        panOnScroll={false}
-        panOnDrag={false}
-        preventScrolling={false}
-        proOptions={{ hideAttribution: true }}
-      />
+      <EditingProvider value={editing}>
+        <ReactFlow
+          nodes={flow.nodes}
+          edges={flow.edges}
+          onNodesChange={flow.onNodesChange}
+          onEdgesChange={flow.onEdgesChange}
+          onNodeDragStop={flow.onNodeDragStop}
+          onConnect={flow.onConnect}
+          nodeTypes={NODE_TYPES}
+          edgeTypes={EDGE_TYPES}
+          fitView
+          fitViewOptions={{ padding: 0 }}
+          minZoom={0.1}
+          maxZoom={4}
+          zoomOnScroll={false}
+          zoomOnPinch={false}
+          zoomOnDoubleClick={false}
+          panOnScroll={false}
+          panOnDrag={false}
+          preventScrolling={false}
+          proOptions={{ hideAttribution: true }}
+        />
+      </EditingProvider>
     </div>
   );
 }

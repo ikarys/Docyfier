@@ -684,15 +684,51 @@ body {
   fill: var(--diagram-line);
   stroke: none;
 }
-.doc .diagram-wire-label {
+.doc .diagram-wire-plate {
   position: absolute;
   padding: 0 5px;
   font-size: 11px;
   line-height: 15px;
-  color: var(--diagram-muted);
   background: var(--diagram-surface);
   border-radius: 4px;
-  pointer-events: none;
+}
+.doc .diagram-wire-label {
+  color: var(--diagram-muted);
+}
+
+/* Text edited where it is read: the field takes the place of the words, at
+   their size, so nothing jumps between reading and writing. */
+.doc .diagram-box-label,
+.doc .diagram-box-note,
+.doc .diagram-band-label,
+.doc .diagram-wire-label {
+  cursor: text;
+}
+.doc .diagram-box-note[data-placeholder],
+.doc .diagram-band-label[data-placeholder] {
+  opacity: 0.45;
+}
+.doc .diagram-inline-input {
+  width: 100%;
+  min-width: 3rem;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  outline: none;
+}
+.doc .diagram-box-label.diagram-inline-input {
+  text-align: center;
+}
+.doc .diagram-box-note.diagram-inline-input {
+  text-align: center;
+}
+.doc .diagram-band-label.diagram-inline-input {
+  width: 12rem;
 }
 .doc .diagram-canvas .react-flow__handle {
   width: 7px;

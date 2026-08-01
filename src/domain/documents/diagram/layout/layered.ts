@@ -107,6 +107,7 @@ function laneBox(id: string, at: Point, size: BoxSize, direction: "down" | "righ
     ...at,
     width: direction === "down" ? LANE_WIDTH : size.width,
     height: direction === "down" ? size.height : LANE_WIDTH,
+    label: "",
     lines: [],
     note: null,
     icon: null,

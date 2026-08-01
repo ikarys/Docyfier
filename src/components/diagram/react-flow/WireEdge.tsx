@@ -1,9 +1,10 @@
 "use client";
 
 import { EdgeLabelRenderer, type EdgeProps } from "@xyflow/react";
-import { routeBetween } from "@/domain/documents/diagram/layout/edges";
+import { labelAnchor, routeBetween } from "@/domain/documents/diagram/layout/edges";
 import type { Point } from "@/domain/documents/diagram/layout/geometry";
 import { arrowheadPath, polyline } from "@/domain/documents/diagram/scene";
+import { InlineText } from "./InlineText";
 import type { WireData } from "./placement-to-flow";
 
 /**
@@ -22,7 +23,10 @@ export function WireEdge({ sourceX, sourceY, targetX, targetY, data }: EdgeProps
   const points = ends(wire.points, start, end)
     ? wire.points
     : routeBetween(start, end, wire.direction);
-  const at = points[Math.floor(points.length / 2)];
+  // `labelAnchor`, not the middle point of the run: the exported drawing puts
+  // the label at the middle of the longest straight stretch, and a label that
+  // moves when the block is selected is a drawing that lies about itself.
+  const at = labelAnchor(points);
 
   return (
     <>
@@ -32,13 +36,17 @@ export function WireEdge({ sourceX, sourceY, targetX, targetY, data }: EdgeProps
         strokeDasharray={wire.dashed ? "5 4" : undefined}
       />
       {wire.head === "arrow" && <path className="diagram-wire-head" d={arrowheadPath(points)} />}
-      {wire.label && (
+      {wire.label !== null && (
         <EdgeLabelRenderer>
           <span
-            className="diagram-wire-label nodrag nopan"
+            className="diagram-wire-plate nodrag nopan"
             style={{ transform: `translate(-50%, -50%) translate(${at.x}px, ${at.y}px)` }}
           >
-            {wire.label}
+            <InlineText
+              target={{ of: "wire", index: wire.index }}
+              value={wire.label}
+              className="diagram-wire-label"
+            />
           </span>
         </EdgeLabelRenderer>
       )}

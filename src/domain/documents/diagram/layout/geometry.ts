@@ -17,6 +17,11 @@ export interface PlacedBox extends Point {
   id: string;
   width: number;
   height: number;
+  /**
+   * The label as it was written, beside the lines it was broken into: a surface
+   * that lets someone rewrite it needs the sentence, not the wrapping.
+   */
+  label: string;
   lines: string[];
   note: string | null;
   icon: string | null;
@@ -138,6 +143,7 @@ export function boxFrom(node: DiagramNode, at: Point, size: BoxSize): PlacedBox 
     y: at.y,
     width: size.width,
     height: size.height,
+    label: node.label,
     lines: wrapLabel(node.label, size.width - BOX_PAD_X * 2),
     note: node.note ?? null,
     icon: node.icon ?? null,
