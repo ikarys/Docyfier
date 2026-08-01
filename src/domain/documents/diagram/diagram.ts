@@ -40,6 +40,17 @@ export interface DiagramNode {
   /** Palette slot 1-4, mapped to the theme's diagram colours. */
   accent?: number;
   group?: string;
+  /**
+   * Where a hand dropped this box, in the drawing's own units — absent for
+   * every box nobody moved, which is what `layout/` still places.
+   *
+   * A diagram is declared as meaning and a place is not meaning: it is written
+   * only by someone dragging the box, never by a model, and `realign` takes it
+   * away again. That is what keeps the escape hatch open — a drawing pulled
+   * into a mess is one click from the layout that knows how to place it.
+   */
+  x?: number;
+  y?: number;
 }
 
 export interface DiagramEdge {

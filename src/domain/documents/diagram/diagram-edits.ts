@@ -51,6 +51,25 @@ export function setAccent(attrs: DiagramAttrs, id: string, accent: number | null
   );
 }
 
+/**
+ * Remember where a hand dropped a box.
+ *
+ * The drawing starts at its own edge, so a box dropped past it is kept on the
+ * paper rather than pushing the whole picture sideways. Anything that is not a
+ * number leaves the diagram alone, like every other edit here.
+ */
+export function moveNode(attrs: DiagramAttrs, id: string, x: number, y: number): DiagramAttrs {
+  return mapNode(attrs, id, (n) => ({ ...n, x: Math.max(0, x), y: Math.max(0, y) }));
+}
+
+/** Hand every box back to the layout — the way out of a drawing pulled into a mess. */
+export function realign(attrs: DiagramAttrs): DiagramAttrs {
+  return kept(attrs, {
+    ...attrs,
+    nodes: attrs.nodes.map((n) => without(without(n, "x"), "y")),
+  });
+}
+
 export function moveToGroup(attrs: DiagramAttrs, id: string, group: string | null): DiagramAttrs {
   return mapNode(attrs, id, (n) =>
     group === null ? without(n, "group") : { ...n, group },

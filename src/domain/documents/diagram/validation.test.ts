@@ -212,6 +212,23 @@ describe("diagramError", () => {
     expect(diagramError(withAccent(1.5))).toMatch(/accent must be a whole number between 1 and 4/);
   });
 
+  /**
+   * A place is where a hand dropped the box; half a place is a drawing nobody
+   * can put on a page, so it is refused rather than half honoured.
+   */
+  it("takes a box's place as a pair of finite numbers or not at all", () => {
+    const placed = (place: object) => ({
+      ...valid,
+      nodes: [{ id: "a", label: "Demande", ...place }, valid.nodes[1]],
+    });
+    expect(diagramError(placed({ x: 10, y: 20 }))).toBeNull();
+    expect(diagramError(placed({}))).toBeNull();
+    expect(diagramError(placed({ x: 10 }))).toMatch(/needs both "x" and "y", or neither/);
+    expect(diagramError(placed({ y: 20 }))).toMatch(/needs both "x" and "y", or neither/);
+    expect(diagramError(placed({ x: "10", y: 20 }))).toMatch(/place must be finite numbers/);
+    expect(diagramError(placed({ x: Number.NaN, y: 20 }))).toMatch(/place must be finite numbers/);
+  });
+
   it("rejects a title or caption that is neither text nor absent", () => {
     expect(diagramError({ ...valid, title: 12 })).toMatch(/"title" must be text or null/);
     expect(diagramError({ ...valid, caption: [] })).toMatch(/"caption" must be text or null/);

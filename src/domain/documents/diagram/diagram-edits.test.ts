@@ -7,7 +7,9 @@ import {
   setEdgeStyle,
   setTitle,
   flipDirection,
+  moveNode,
   moveToGroup,
+  realign,
   removeEdge,
   removeNode,
   renameNode,
@@ -174,5 +176,26 @@ describe("texts and lines", () => {
   it("drops an arrow by position", () => {
     const next = removeEdge(flow(), 1);
     expect(links(next)).toEqual(["request->review", "review->rejected"]);
+  });
+
+  it("remembers where a box was dropped", () => {
+    const next = moveNode(flow(), "review", 240, 90);
+    expect(next.nodes.find((n) => n.id === "review")).toMatchObject({ x: 240, y: 90 });
+  });
+
+  it("keeps a box dropped past the edge on the paper", () => {
+    const next = moveNode(flow(), "review", -40, -10);
+    expect(next.nodes.find((n) => n.id === "review")).toMatchObject({ x: 0, y: 0 });
+  });
+
+  it("refuses a place that is not a number", () => {
+    const attrs = flow();
+    expect(moveNode(attrs, "review", Number.NaN, 0)).toBe(attrs);
+    expect(moveNode(attrs, "review", 0, Number.POSITIVE_INFINITY)).toBe(attrs);
+  });
+
+  it("hands every box back to the layout when realigning", () => {
+    const moved = moveNode(moveNode(flow(), "review", 240, 90), "approved", 10, 10);
+    expect(realign(moved).nodes.every((n) => n.x === undefined && n.y === undefined)).toBe(true);
   });
 });

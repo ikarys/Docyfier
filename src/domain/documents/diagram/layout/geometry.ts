@@ -167,10 +167,35 @@ export function frame(placement: Omit<Placement, "width" | "height">): Placement
   }
   const dx = MARGIN - Math.min(...xs);
   const dy = MARGIN - Math.min(...ys);
+  const shifted = translate(placement, dx, dy);
+  return { ...shifted, ...canvasSize(shifted) };
+}
+
+/**
+ * A canvas wide and tall enough for everything in it, with the margin kept.
+ *
+ * Read off the drawing rather than off the layout's own grid, so a box someone
+ * dragged past the edge grows the picture instead of hanging outside it.
+ */
+export function canvasSize(placement: Omit<Placement, "width" | "height">): {
+  width: number;
+  height: number;
+} {
+  const xs = [
+    ...placement.boxes.map((b) => b.x + b.width),
+    ...placement.groups.map((g) => g.x + g.width),
+    ...placement.edges.flatMap((e) => e.points.map((p) => p.x)),
+    ...placement.rails.flatMap((r) => [r.from.x, r.to.x]),
+  ];
+  const ys = [
+    ...placement.boxes.map((b) => b.y + b.height),
+    ...placement.groups.map((g) => g.y + g.height),
+    ...placement.edges.flatMap((e) => e.points.map((p) => p.y)),
+    ...placement.rails.flatMap((r) => [r.from.y, r.to.y]),
+  ];
   return {
-    ...translate(placement, dx, dy),
-    width: Math.round(Math.max(...xs) - Math.min(...xs) + MARGIN * 2),
-    height: Math.round(Math.max(...ys) - Math.min(...ys) + MARGIN * 2),
+    width: Math.round(Math.max(...xs) + MARGIN),
+    height: Math.round(Math.max(...ys) + MARGIN),
   };
 }
 
