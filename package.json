@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "prompts": "tsx scripts/print-prompts.ts"
+    "prompts": "tsx scripts/print-prompts.ts",
+    "notices": "tsx scripts/third-party-notices.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.12",

@@ -841,6 +841,63 @@ body {
   color: var(--ink-faint);
   margin: 0 0 2rem;
 }
+
+/* Third-party notices: a long list nobody reads end to end, so each package
+   opens on demand and the licence texts stay out of the way until asked for. */
+.app-footer {
+  max-width: var(--shell-max);
+  margin: 0 auto 2.5rem;
+  padding: 1.25rem;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--rule);
+}
+.app-footer a {
+  color: inherit;
+}
+.notices-intro {
+  color: var(--ink-faint);
+  margin: 0 0 1.5rem;
+  max-width: 42rem;
+}
+.notices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+.notices li {
+  border-bottom: 1px solid var(--rule);
+}
+.notices summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.6rem 0.25rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.notices-name {
+  font-weight: 600;
+}
+.notices-version,
+.notices-license {
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+}
+.notices-license {
+  margin-left: auto;
+}
+.notices-text {
+  margin: 0 0 0.9rem;
+  padding: 0.9rem;
+  background: var(--paper-shell);
+  border-radius: var(--radius);
+  font-size: 0.76rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
 .doc-card {
   display: flex;
   align-items: center;
