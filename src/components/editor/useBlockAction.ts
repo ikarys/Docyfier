@@ -43,7 +43,7 @@ export function useBlockAction(editor: Editor, review: AiReview): BlockActionRun
               instruction: action.instruction,
               // The catalog already says which assistant this action belongs
               // to: "turn into" is layout, the rest is writing.
-              surface: { kind: "block-action", family: action.family },
+              surface: { kind: "block-action", family: action.family, actionId: action.id },
             },
             { from: at.pos, to: at.pos + at.size },
           );

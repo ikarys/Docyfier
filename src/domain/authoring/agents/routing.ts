@@ -30,7 +30,7 @@ const DESIGNER: Assignment = {
 /** What a surface can say about itself. */
 export type Surface =
   /** One of the catalog's per-block actions; its family names the assistant. */
-  | { kind: "block-action"; family: BlockAction["family"] }
+  | { kind: "block-action"; family: BlockAction["family"]; actionId?: BlockAction["id"] }
   /** A button that asks for a shape: "Make it pretty". */
   | { kind: "styling" }
   /** A button that asks for other words: shorten, formal, add a conclusion. */
