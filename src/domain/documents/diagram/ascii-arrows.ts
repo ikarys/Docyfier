@@ -13,7 +13,7 @@ import type { Box } from "./ascii-boxes";
  * being read as a relation nobody drew.
  */
 
-const ARROW_HEAD = new Set(["v", "V", "▼", ">"]);
+const ARROW_HEAD = new Set(["v", "V", "▼", ">", "<", "^"]);
 const CONNECTOR = new Set(["│", "|", "─", "-", "v", "V", "▼", ">", "<", "^"]);
 
 export interface FoundEdge {
@@ -36,6 +36,25 @@ function verticalRun(lines: readonly string[], top: number, bottom: number, col:
   return sawHead;
 }
 
+/**
+ * Whether some column across the whole overlap — not just its rounded
+ * midpoint — carries a complete connector run with an explicit arrowhead.
+ * A hand-drawn arrow rarely lands on the exact midpoint column, the same way
+ * `ascii-boxes.ts` already tolerates drift in a box's own walls.
+ */
+function anyVerticalRun(
+  lines: readonly string[],
+  top: number,
+  bottom: number,
+  left: number,
+  right: number,
+): boolean {
+  for (let col = left; col <= right; col++) {
+    if (verticalRun(lines, top, bottom, col)) return true;
+  }
+  return false;
+}
+
 /** One edge per box: the nearest sibling below it that a real connector reaches. */
 export function findVerticalEdges(lines: readonly string[], boxes: readonly Box[]): FoundEdge[] {
   const edges: FoundEdge[] = [];
@@ -46,9 +65,7 @@ export function findVerticalEdges(lines: readonly string[], boxes: readonly Box[
       .find((box) => {
         const left = Math.max(above.left, box.left);
         const right = Math.min(above.right, box.right);
-        return (
-          left <= right && verticalRun(lines, above.bottom + 1, box.top, Math.round((left + right) / 2))
-        );
+        return left <= right && anyVerticalRun(lines, above.bottom + 1, box.top, left, right);
       });
     if (below) edges.push({ from: above, to: below });
   }
@@ -66,6 +83,20 @@ function horizontalRun(line: string, left: number, right: number): boolean {
   return sawHead;
 }
 
+/** Whether some row across the whole overlap carries a complete connector run with a head. */
+function anyHorizontalRun(
+  lines: readonly string[],
+  top: number,
+  bottom: number,
+  left: number,
+  right: number,
+): boolean {
+  for (let row = top; row <= bottom; row++) {
+    if (horizontalRun(lines[row] ?? "", left, right)) return true;
+  }
+  return false;
+}
+
 /** One edge per box: the nearest sibling to its right that a real connector reaches. */
 export function findHorizontalEdges(lines: readonly string[], boxes: readonly Box[]): FoundEdge[] {
   const edges: FoundEdge[] = [];
@@ -76,10 +107,7 @@ export function findHorizontalEdges(lines: readonly string[], boxes: readonly Bo
       .find((box) => {
         const top = Math.max(left.top, box.top);
         const bottom = Math.min(left.bottom, box.bottom);
-        return (
-          top <= bottom &&
-          horizontalRun(lines[Math.round((top + bottom) / 2)] ?? "", left.right + 1, box.left)
-        );
+        return top <= bottom && anyHorizontalRun(lines, top, bottom, left.right + 1, box.left);
       });
     if (right) edges.push({ from: left, to: right });
   }

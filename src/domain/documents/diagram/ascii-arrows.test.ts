@@ -38,6 +38,32 @@ const unevenSiblings = [
   '└──────────────────┘',
 ];
 
+// The exact midpoint of the overlap between these two boxes is column 5, but
+// the arrow is drawn one column to its left (column 4) — an ordinary,
+// well-centered hand-drawn arrow that just doesn't land on the exact
+// rounded midpoint. Only checking that one column misses it entirely.
+const verticalOffCenter = [
+  "┌─────────┐",
+  "│ Request │",
+  "└────┬────┘",
+  "    │",
+  "    v",
+  "┌─────────┐",
+  "│ Handler │",
+  "└─────────┘",
+];
+
+const upwardArrow = [
+  "┌─────────┐",
+  "│ Request │",
+  "└────┬────┘",
+  "     │",
+  "     ^",
+  "┌─────────┐",
+  "│ Handler │",
+  "└─────────┘",
+];
+
 describe("findVerticalEdges", () => {
   it("reads a chain of arrows down the page", () => {
     const boxes = findBoxes(verticalFlow)!;
@@ -59,6 +85,18 @@ describe("findVerticalEdges", () => {
     const boxes = findBoxes(unevenSiblings)!;
     expect(findVerticalEdges(unevenSiblings, boxes)).toEqual([]);
   });
+
+  it("finds an arrow drawn one column off the exact midpoint", () => {
+    const boxes = findBoxes(verticalOffCenter)!;
+    expect(findVerticalEdges(verticalOffCenter, boxes)).toEqual([
+      { from: boxes[0], to: boxes[1] },
+    ]);
+  });
+
+  it("recognizes an upward-drawn arrowhead", () => {
+    const boxes = findBoxes(upwardArrow)!;
+    expect(findVerticalEdges(upwardArrow, boxes)).toEqual([{ from: boxes[0], to: boxes[1] }]);
+  });
 });
 
 describe("findHorizontalEdges", () => {
@@ -71,5 +109,37 @@ describe("findHorizontalEdges", () => {
   it("invents no edge between boxes side by side with only a gap", () => {
     const boxes = findBoxes(unevenSiblings)!;
     expect(findHorizontalEdges(unevenSiblings, boxes)).toEqual([]);
+  });
+
+  /**
+   * The exact midpoint row of the overlap between these two boxes (of
+   * uneven height) has no connector on it — the real arrow is drawn on the
+   * boxes' own top border row instead. Only checking the rounded midpoint
+   * row misses it entirely.
+   */
+  it("finds an arrow drawn one row off the exact midpoint", () => {
+    const top = "┌─────┐" + "------->" + "┌───────┐";
+    const a = "│  A  │" + " ".repeat(8) + "│       │";
+    const b = "└─────┘" + " ".repeat(8) + "│   B   │";
+    const c = " ".repeat(15) + "│       │";
+    const bottom = " ".repeat(15) + "└───────┘";
+    const horizontalOffCenter = [top, a, b, c, bottom];
+
+    const boxes = findBoxes(horizontalOffCenter)!;
+    expect(findHorizontalEdges(horizontalOffCenter, boxes)).toEqual([
+      { from: boxes[0], to: boxes[1] },
+    ]);
+  });
+
+  it("recognizes a leftward-drawn arrowhead", () => {
+    const leftwardArrow = [
+      "┌─────┐        ┌─────┐",
+      "│  A  │<-------│  B  │",
+      "└─────┘        └─────┘",
+    ];
+    const boxes = findBoxes(leftwardArrow)!;
+    expect(findHorizontalEdges(leftwardArrow, boxes)).toEqual([
+      { from: boxes[0], to: boxes[1] },
+    ]);
   });
 });
