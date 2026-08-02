@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { DiagramGroup } from "./diagram";
-import { groupCycle, groupDepth, groupOrder, groupPath, outermostFirst } from "./group-tree";
+import type { DiagramGroup, DiagramNode } from "./diagram";
+import { deadGroupError, groupCycle, groupDepth, groupOrder, groupPath, outermostFirst } from "./group-tree";
 
 /**
  * What "inside" means for a group (PLAN.md STEP 10).
@@ -139,5 +139,41 @@ describe("the order the bands are drawn in", () => {
     expect(outermostFirst(nested).map((g) => g.id).sort()).toEqual(
       nested.map((g) => g.id).sort(),
     );
+  });
+});
+
+describe("a group that holds nothing", () => {
+  /**
+   * Schema-legal today — nothing requires a group to have a member or a
+   * child — and it is exactly the shape a model left behind when it dropped
+   * a "parent" chain on a real drawing: three groups declared for boxes that
+   * turned out to have nothing of their own inside them.
+   */
+  it("rejects a group with no member and no child", () => {
+    expect(deadGroupError([], [{ id: "empty", label: "Empty" }])).toBe(
+      'diagram group "empty" holds no node and no group',
+    );
+  });
+
+  it("accepts a group with a direct member", () => {
+    const nodes: DiagramNode[] = [{ id: "a", label: "A", group: "g" }];
+    expect(deadGroupError(nodes, [{ id: "g", label: "G" }])).toBeNull();
+  });
+
+  it("accepts a group whose only content is a nested group", () => {
+    const nodes: DiagramNode[] = [{ id: "a", label: "A", group: "inner" }];
+    const groups: DiagramGroup[] = [
+      { id: "outer", label: "Outer" },
+      { id: "inner", label: "Inner", parent: "outer" },
+    ];
+    expect(deadGroupError(nodes, groups)).toBeNull();
+  });
+
+  it("still rejects a dead leaf group even when it has a parent", () => {
+    const groups: DiagramGroup[] = [
+      { id: "outer", label: "Outer" },
+      { id: "inner", label: "Inner", parent: "outer" },
+    ];
+    expect(deadGroupError([], groups)).toBe('diagram group "inner" holds no node and no group');
   });
 });

@@ -1,4 +1,4 @@
-import { MAX_GROUP_DEPTH, type DiagramGroup } from "./diagram";
+import { MAX_GROUP_DEPTH, type DiagramGroup, type DiagramNode } from "./diagram";
 
 /**
  * What "inside" means for a group (PLAN.md STEP 10).
@@ -118,4 +118,24 @@ export function groupTreeError(groups: readonly DiagramGroup[]): string | null {
   return deepest
     ? `diagram group "${deepest.id}" is nested more than ${MAX_GROUP_DEPTH} deep`
     : null;
+}
+
+/**
+ * A group nothing belongs to and nothing sits inside is dead weight: it
+ * would draw a band around nothing, and if it was meant to hold something,
+ * the "parent" that would say so is exactly what a model forgot on a real,
+ * deep drawing — schema-legal, but never what anyone meant to declare.
+ */
+export function deadGroupError(
+  nodes: readonly DiagramNode[],
+  groups: readonly DiagramGroup[],
+): string | null {
+  const hasMember = new Set(
+    nodes.map((node) => node.group).filter((group): group is string => group !== undefined),
+  );
+  const hasChild = new Set(
+    groups.map((group) => group.parent).filter((parent): parent is string => parent !== undefined),
+  );
+  const dead = groups.find((group) => !hasMember.has(group.id) && !hasChild.has(group.id));
+  return dead ? `diagram group "${dead.id}" holds no node and no group` : null;
 }
