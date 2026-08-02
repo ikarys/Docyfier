@@ -8,6 +8,7 @@ import {
   MAX_LABEL,
   MAX_NODES,
   MAX_NOTE,
+  MAX_PLACE,
   type DiagramAttrs,
   type DiagramDirection,
   type DiagramEdge,
@@ -90,7 +91,26 @@ function nodeError(node: unknown, index: number): string | null {
   if (n.accent !== undefined && !isAccentSlot(n.accent)) {
     return `diagram node "${n.id}" accent must be a whole number between 1 and ${ACCENT_SLOTS}`;
   }
+  return placeError(n);
+}
+
+/** A box is either placed by the layout or dropped somewhere — never half of each. */
+function placeError(n: Partial<DiagramNode>): string | null {
+  if (n.x === undefined && n.y === undefined) return null;
+  if (n.x === undefined || n.y === undefined) {
+    return `diagram node "${n.id}" needs both "x" and "y", or neither`;
+  }
+  if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) {
+    return `diagram node "${n.id}" place must be finite numbers`;
+  }
+  if (!inPaper(n.x) || !inPaper(n.y)) {
+    return `diagram node "${n.id}" place must be between 0 and ${MAX_PLACE}`;
+  }
   return null;
+}
+
+function inPaper(value: number): boolean {
+  return value >= 0 && value <= MAX_PLACE;
 }
 
 function isAccentSlot(value: unknown): boolean {

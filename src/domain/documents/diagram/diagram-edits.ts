@@ -1,9 +1,11 @@
-import type {
-  DiagramAttrs,
-  DiagramEdge,
-  DiagramKind,
-  DiagramNode,
-  EdgeStyle,
+import {
+  acceptsPlaces,
+  MAX_PLACE,
+  type DiagramAttrs,
+  type DiagramEdge,
+  type DiagramKind,
+  type DiagramNode,
+  type EdgeStyle,
 } from "./diagram";
 import { diagramError } from "./validation";
 
@@ -34,6 +36,15 @@ export function renameNode(attrs: DiagramAttrs, id: string, label: string): Diag
   return mapNode(attrs, id, (n) => ({ ...n, label }));
 }
 
+/** A group nobody declared cannot be renamed: the band drawn for it is a stray. */
+export function renameGroup(attrs: DiagramAttrs, id: string, label: string): DiagramAttrs {
+  if (!attrs.groups.some((g) => g.id === id)) return attrs;
+  return kept(attrs, {
+    ...attrs,
+    groups: attrs.groups.map((g) => (g.id === id ? { ...g, label } : g)),
+  });
+}
+
 /**
  * An empty note is no note: the second line disappears rather than going blank.
  * The same holds for a colour and a group — an absent option is dropped from
@@ -49,6 +60,47 @@ export function setAccent(attrs: DiagramAttrs, id: string, accent: number | null
   return mapNode(attrs, id, (n) =>
     accent === null ? without(n, "accent") : { ...n, accent },
   );
+}
+
+/**
+ * Remember where a hand dropped a box.
+ *
+ * A kind that hangs a rail off its boxes refuses outright rather than storing a
+ * place its drawing then ignores: an inert write is still a transaction, an
+ * autosave and a line in a diff, and the coordinate it leaves behind is one
+ * change of kind away from being honoured.
+ *
+ * Everywhere else a box dropped past an edge is kept on the paper rather than
+ * pushing the picture sideways — both edges, because the canvas is measured
+ * from what it holds and a coordinate nobody bounded is a figure no export can
+ * carry. Anything that is not a number leaves the diagram alone.
+ */
+export function moveNode(attrs: DiagramAttrs, id: string, x: number, y: number): DiagramAttrs {
+  if (!acceptsPlaces(attrs.kind)) return attrs;
+  return mapNode(attrs, id, (n) => ({ ...n, x: onPaper(x), y: onPaper(y) }));
+}
+
+/**
+ * Clamping is for a gesture that overshot the paper, not for a number that
+ * means nothing: `Math.min` would turn an infinity into a valid 4 000 and store
+ * it, so what is not finite is handed on untouched for `diagramError` to refuse.
+ */
+function onPaper(value: number): number {
+  return Number.isFinite(value) ? Math.min(MAX_PLACE, Math.max(0, value)) : value;
+}
+
+/** Hand every box back to the layout — the way out of a drawing pulled into a mess. */
+export function realign(attrs: DiagramAttrs): DiagramAttrs {
+  return kept(attrs, { ...attrs, nodes: attrs.nodes.map(unplaced) });
+}
+
+/** Whether the way back is worth offering: nothing to realign is nothing to undo. */
+export function hasHandPlaces(attrs: DiagramAttrs): boolean {
+  return attrs.nodes.some((n) => n.x !== undefined || n.y !== undefined);
+}
+
+function unplaced(node: DiagramNode): DiagramNode {
+  return without(without(node, "x"), "y");
 }
 
 export function moveToGroup(attrs: DiagramAttrs, id: string, group: string | null): DiagramAttrs {
@@ -138,9 +190,15 @@ export function setCaption(attrs: DiagramAttrs, caption: string): DiagramAttrs {
  * wrong kind with no way out but deleting the block.
  */
 export function setKind(attrs: DiagramAttrs, kind: DiagramKind): DiagramAttrs {
-  if (kind === "timeline") return kept(attrs, { ...attrs, kind, edges: [] });
-  if (kind === "hierarchy") return kept(attrs, { ...attrs, kind, edges: spanningTree(attrs.edges) });
-  return kept(attrs, { ...attrs, kind });
+  // A kind that draws where the layout said has no use for the places the old
+  // one kept — and leaving them would hold a dead coordinate for whichever kind
+  // is picked next to resurrect, moving a box the user never touched.
+  const nodes = acceptsPlaces(kind) ? attrs.nodes : attrs.nodes.map(unplaced);
+  if (kind === "timeline") return kept(attrs, { ...attrs, kind, nodes, edges: [] });
+  if (kind === "hierarchy") {
+    return kept(attrs, { ...attrs, kind, nodes, edges: spanningTree(attrs.edges) });
+  }
+  return kept(attrs, { ...attrs, kind, nodes });
 }
 
 /** The first edge that claims each node, which is a tree whenever one exists. */

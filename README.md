@@ -56,8 +56,11 @@ transcript you reformat by hand.
   cards, timelines, step lists, pyramids, and bar & line **charts** rendered as
   inline SVG.
 - **Diagrams**: flows, architectures, sequences, hierarchies and phase axes.
-  You say what relates to what — the app decides where every box lands, so a
-  diagram cannot be dragged into a mess and an AI-written one arrives placed.
+  You say what relates to what and the app decides where every box lands, so an
+  AI-written diagram arrives placed. Rename a box where you read it, recolour
+  it, drop it, or drag it somewhere you like better — a moved box moves alone,
+  so nudging one never rearranges the picture around it, and Realign hands the
+  whole drawing back to the layout.
 - **Images**: paste, drag-drop or pick a file, re-rendered at 25 / 50 / 75 /
   100 % of the text column.
 - **Cover page and table of contents**, with print control for both.
@@ -310,11 +313,11 @@ it; that is the intended extension point.
 
 Shipped so far: the editor, the AI surfaces, themes, templates, import/export,
 the composers, single-user auth, the instance's own identity and writing style,
-and diagrams — flows, architectures, sequences, hierarchies and phase axes,
-placed by the app rather than by whoever wrote them. Next up: comments,
-suggestions and version history; a model-facing document format that is not
-raw JSON (which today costs 4.4 characters of syntax per character of text, in
-both directions); then multi-tenant workspaces with per-user permissions, and
+diagrams — flows, architectures, sequences, hierarchies and phase axes, placed
+by the app and then edited where you read them — and a model-facing document
+format that is markdown rather than raw JSON, which cut what an AI call carries
+to a third of the characters in both directions. Next up: comments, suggestions
+and version history; then multi-tenant workspaces with per-user permissions, and
 print-quality PDF through headless Chromium — today's PDF goes through the
 browser print dialog on purpose.
 

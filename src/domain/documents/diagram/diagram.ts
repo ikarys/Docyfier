@@ -40,6 +40,17 @@ export interface DiagramNode {
   /** Palette slot 1-4, mapped to the theme's diagram colours. */
   accent?: number;
   group?: string;
+  /**
+   * Where a hand dropped this box, in the drawing's own units — absent for
+   * every box nobody moved, which is what `layout/` still places.
+   *
+   * A diagram is declared as meaning and a place is not meaning: it is written
+   * only by someone dragging the box, never by a model, and `realign` takes it
+   * away again. That is what keeps the escape hatch open — a drawing pulled
+   * into a mess is one click from the layout that knows how to place it.
+   */
+  x?: number;
+  y?: number;
 }
 
 export interface DiagramEdge {
@@ -74,6 +85,16 @@ export interface DiagramAttrs {
   caption: string | null;
 }
 
+/**
+ * How far from the origin a hand may drop a box, in the drawing's own units.
+ *
+ * The canvas is measured from what it holds, so a coordinate nobody bounded is
+ * a figure a megapixel wide — in the editor, and again in every export that
+ * rasterises it. Well past what the widest layout needs for `MAX_NODES` boxes,
+ * and far short of a number that means someone made a mistake.
+ */
+export const MAX_PLACE = 4000;
+
 export const MAX_NODES = 24;
 export const MAX_EDGES = 40;
 export const MAX_LABEL = 80;
@@ -85,3 +106,17 @@ export const ACCENT_SLOTS = 4;
  * all four sides, so past this the innermost boxes are a stripe.
  */
 export const MAX_GROUP_DEPTH = 4;
+
+/**
+ * Whether a hand may place a box in this kind of drawing.
+ *
+ * A sequence hangs a lifeline under each participant and a phase axis hangs a
+ * tick under each milestone: a box dragged out of its column would leave its
+ * own line behind. Those kinds draw where the layout said and nowhere else —
+ * stated here rather than where a place is stored, drawn or offered, because
+ * three spellings of one rule is how a gesture comes to write a coordinate that
+ * the drawing then ignores.
+ */
+export function acceptsPlaces(kind: DiagramKind): boolean {
+  return kind !== "sequence" && kind !== "timeline";
+}

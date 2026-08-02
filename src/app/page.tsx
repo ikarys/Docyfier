@@ -33,6 +33,10 @@ export default async function HomePage() {
         <h2 className="picker-heading">Recent documents</h2>
         <DocumentList docs={docs} />
       </main>
+
+      <footer className="app-footer">
+        <Link href="/legal/third-party">Third-party notices</Link>
+      </footer>
     </>
   );
 }

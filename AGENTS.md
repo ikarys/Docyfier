@@ -88,14 +88,28 @@ The diagram half of STEP 10 is in, ahead of U8–U12 at the maintainer's call:
 five kinds (flow, architecture, sequence, hierarchy, phase axis) under
 `src/domain/documents/diagram/`, copying `chart`'s shape exactly — an atom node
 whose attrs are the graph, a `diagramError` shared by the node view, the panel
-and `schema.ts`. Three rules carry it: a diagram declares **meaning, never
-coordinates** (`layout/` places every box, so nothing can be dragged out of
-place); there is **no layout library and no mermaid** (the STEP U6 rejection
-stands); and one **scene** feeds two emitters — the editor paints theme tokens,
+and `schema.ts`. Three rules carry it: a diagram declares **meaning first,
+coordinates only where a hand insisted** — `layout/` places every box, and a box
+the writer dragged overrides the layout for itself and nothing else
+(`layout/moved.ts`), so moving one box never rearranges the picture around it
+and `realign` drops every place at once; there is **no layout library and no
+mermaid** (the STEP U6 rejection stands — `@xyflow/react` is the editing canvas,
+never the placer, and `components/diagram/react-flow/placement-to-flow.ts` is
+the whole of what ties Docyfier to it); and one **scene** feeds two emitters —
+the editor paints theme tokens,
 `infrastructure/rendering/svg/scene-to-svg.ts` paints literal values, because
 librsvg resolves no CSS variable. `sharp` is a declared dependency for that one
 purpose: rasterising a figure for Word, Confluence and Trilium without a
 headless Chromium.
+
+Direct editing rests on `acceptsPlaces` (`diagram.ts`), and that is the rule to
+read before touching the folder: which kinds may be placed by hand is stated
+once and read by the edit that stores a place, the layout that honours one and
+the canvas that offers the gesture. Spelling it a second time is how a drag came
+to write a coordinate the drawing then ignored. Two consequences it carries:
+`setKind` drops every place the new kind will not honour, and `realign` — the
+escape hatch that let the "never coordinates" rule be relaxed at all — is
+offered in the panel exactly when a hand has placed something.
 
 STEPS U8 and U9 are in and were released as v0.5.0 and v0.6.0: find and
 replace with one undo, paste that reads a spreadsheet range or a markdown
@@ -282,8 +296,13 @@ from Settings. `src/lib/doc/` is gone: its rules went to the domain (`beautify`,
 and its browser halves next to the editor components. The Tiptap node
 definitions and the schema AI output is validated against are adapters too, and
 live in `infrastructure/editor/`; what stays in `app/` is what renders — the
-React node views and the slash menu. Editor state still lives in components,
-and pulling those state machines into testable modules is the next step.
+React node views and the slash menu. Editor state is mostly out of the
+components now: sixteen rules under `components/editor/` are plain modules with
+a test beside them and no DOM to drive them (`caret-context`, `ghost-suggestion`,
+`paste-conversion`, `search-session`, `insert-streamed-passage`, `page-view`…),
+and `components/diagram/react-flow/` was written the same way from the start.
+What is left in a component is what a hook must hold; a new rule goes in a
+module beside its component, not in the component.
 
 - **The domain imports nothing.** No `next/*`, no `@tiptap/*`, no `react`, no
   `pg`/`mysql2`, no `ai`, no `node:fs`. If a domain file needs an import from
