@@ -7,6 +7,8 @@ import {
 } from "@/domain/documents/diagram/diagram";
 import {
   flipDirection,
+  hasHandPlaces,
+  realign,
   setCaption,
   setKind,
   setTitle,
@@ -50,6 +52,20 @@ export function DiagramOptions({
       >
         {attrs.direction === "down" ? "↓ Down" : "→ Across"}
       </button>
+      {/*
+        The way out of a drawing pulled into a mess, and the reason a box may be
+        dragged at all: shown only once a hand has placed something, because a
+        diagram the layout still owns has nothing to give back.
+      */}
+      {hasHandPlaces(attrs) && (
+        <button
+          className="tb-btn"
+          onClick={() => update(realign(attrs))}
+          title="Give every box back to the layout"
+        >
+          Realign
+        </button>
+      )}
       <input
         className="diagram-input"
         placeholder="Title"

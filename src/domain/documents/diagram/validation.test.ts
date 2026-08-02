@@ -5,6 +5,7 @@ import {
   MAX_LABEL,
   MAX_NODES,
   MAX_NOTE,
+  MAX_PLACE,
   type DiagramAttrs,
 } from "./diagram";
 import { diagramError, isDiagramAttrs } from "./validation";
@@ -227,6 +228,22 @@ describe("diagramError", () => {
     expect(diagramError(placed({ y: 20 }))).toMatch(/needs both "x" and "y", or neither/);
     expect(diagramError(placed({ x: "10", y: 20 }))).toMatch(/place must be finite numbers/);
     expect(diagramError(placed({ x: Number.NaN, y: 20 }))).toMatch(/place must be finite numbers/);
+  });
+
+  /**
+   * `moveNode` keeps a dropped box on the paper, but it is not the only way a
+   * place reaches a document: an import, a paste or a model that ignored its
+   * instructions all arrive here. A canvas is sized from what it holds, so one
+   * absurd coordinate is a figure a megapixel wide in every export.
+   */
+  it("rejects a place outside the paper a drawing can cover", () => {
+    const placed = (place: object) => ({
+      ...valid,
+      nodes: [{ id: "a", label: "Demande", ...place }, valid.nodes[1]],
+    });
+    expect(diagramError(placed({ x: -1, y: 20 }))).toMatch(/place must be between 0 and/);
+    expect(diagramError(placed({ x: 10, y: MAX_PLACE + 1 }))).toMatch(/place must be between 0 and/);
+    expect(diagramError(placed({ x: MAX_PLACE, y: MAX_PLACE }))).toBeNull();
   });
 
   it("rejects a title or caption that is neither text nor absent", () => {

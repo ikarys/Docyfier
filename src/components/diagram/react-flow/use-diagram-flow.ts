@@ -21,7 +21,7 @@ export function useDiagramFlow(
   attrs: DiagramAttrs,
   update: (attrs: Partial<DiagramAttrs>) => void,
 ) {
-  const model = useMemo(() => toFlow(placeNodes(attrs), attrs.direction), [attrs]);
+  const model = useMemo(() => toFlow(placeNodes(attrs), attrs.direction, attrs.kind), [attrs]);
   const [nodes, setNodes, onNodesChange] = useNodesState(model.nodes as unknown as Node[]);
   const [edges, setEdges, onEdgesChange] = useEdgesState(model.edges as unknown as Edge[]);
 

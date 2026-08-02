@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { MAX_LABEL, type DiagramAttrs } from "./diagram";
+import { MAX_LABEL, MAX_PLACE, type DiagramAttrs } from "./diagram";
 import {
   addEdge,
   addNode,
+  hasHandPlaces,
   setCaption,
   setEdgeStyle,
   setTitle,
@@ -209,5 +210,38 @@ describe("texts and lines", () => {
   it("hands every box back to the layout when realigning", () => {
     const moved = moveNode(moveNode(flow(), "review", 240, 90), "approved", 10, 10);
     expect(realign(moved).nodes.every((n) => n.x === undefined && n.y === undefined)).toBe(true);
+  });
+
+  /**
+   * A lifeline hangs under its participant, so those kinds draw the place the
+   * layout computed and never the one a hand asked for. Storing it anyway would
+   * write to the document for a drawing that does not change — and leave a dead
+   * coordinate for a later change of kind to resurrect.
+   */
+  it("refuses a place on a kind whose drawing hangs a rail off the box", () => {
+    for (const kind of ["sequence", "timeline"] as const) {
+      const attrs = sampleDiagram(kind);
+      expect(moveNode(attrs, attrs.nodes[0].id, 300, 300)).toBe(attrs);
+    }
+  });
+
+  it("drops every place when the new kind does not honour one", () => {
+    const moved = moveNode(flow(), "review", 240, 90);
+    expect(setKind(moved, "sequence").nodes.every((n) => n.x === undefined)).toBe(true);
+  });
+
+  it("keeps a place further out than a drawing can be on the paper", () => {
+    const next = moveNode(flow(), "review", MAX_PLACE + 1_000_000, MAX_PLACE + 1);
+    expect(next.nodes.find((n) => n.id === "review")).toMatchObject({
+      x: MAX_PLACE,
+      y: MAX_PLACE,
+    });
+  });
+
+  /** What the panel needs to know before offering the way back. */
+  it("says whether a hand placed anything", () => {
+    expect(hasHandPlaces(flow())).toBe(false);
+    expect(hasHandPlaces(moveNode(flow(), "review", 240, 90))).toBe(true);
+    expect(hasHandPlaces(realign(moveNode(flow(), "review", 240, 90)))).toBe(false);
   });
 });

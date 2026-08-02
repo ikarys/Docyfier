@@ -20,7 +20,7 @@ const bands = (nodes: FlowNode[]) => nodes.filter((node) => node.type === "band"
 describe("a placement handed to the editing surface", () => {
   it("gives one draggable node per box, where the layout put it", () => {
     const placement = flow();
-    const { nodes } = toFlow(placement, "down");
+    const { nodes } = toFlow(placement, "down", "flow");
     expect(boxes(nodes)).toHaveLength(placement.boxes.length);
     for (const box of placement.boxes) {
       const node = nodes.find((n) => boxIdOf(n.id) === box.id) as FlowNode;
@@ -35,14 +35,14 @@ describe("a placement handed to the editing surface", () => {
     const attrs = sampleDiagram("architecture");
     attrs.groups = [{ id: "web", label: "Front" }];
     attrs.nodes = attrs.nodes.map((node) => ({ ...node, group: "web" }));
-    const { nodes } = toFlow(placeNodes(attrs), "down");
+    const { nodes } = toFlow(placeNodes(attrs), "down", "flow");
     expect(new Set(nodes.map((n) => n.id)).size).toBe(nodes.length);
     expect(boxIdOf("box:web")).toBe("web");
     expect(boxIdOf("band:web")).toBeNull();
   });
 
   it("lays the bands behind the boxes, out of reach", () => {
-    const { nodes } = toFlow(placeNodes(sampleDiagram("architecture")), "down");
+    const { nodes } = toFlow(placeNodes(sampleDiagram("architecture")), "down", "architecture");
     expect(bands(nodes)).not.toHaveLength(0);
     for (const band of bands(nodes)) {
       expect(band.draggable).toBe(false);
@@ -53,7 +53,7 @@ describe("a placement handed to the editing surface", () => {
 
   it("carries the route the layout drew, not one of the library's own", () => {
     const placement = flow();
-    const { edges } = toFlow(placement, "down");
+    const { edges } = toFlow(placement, "down", "flow");
     expect(edges).toHaveLength(placement.edges.length);
     expect(edges[0].data.points).toEqual(placement.edges[0].points);
     expect(edges[0].source).toBe("box:request");
@@ -63,7 +63,7 @@ describe("a placement handed to the editing surface", () => {
   it("tells two arrows between the same pair apart", () => {
     const attrs = sampleDiagram("flow");
     attrs.edges = [...attrs.edges, { ...attrs.edges[0], label: "again", style: "dashed" }];
-    const { edges } = toFlow(placeNodes(attrs), "down");
+    const { edges } = toFlow(placeNodes(attrs), "down", "flow");
     expect(new Set(edges.map((e) => e.id)).size).toBe(edges.length);
   });
 
@@ -72,16 +72,28 @@ describe("a placement handed to the editing surface", () => {
    * diagram where nobody wrote one has nowhere to put it.
    */
   it("says whether a box has room for a note", () => {
-    const withNotes = toFlow(placeNodes(sampleDiagram("architecture")), "down");
-    const without = toFlow(flow(), "down");
+    const withNotes = toFlow(placeNodes(sampleDiagram("architecture")), "down", "architecture");
+    const without = toFlow(flow(), "down", "flow");
     expect(boxes(withNotes.nodes).every((n) => (n.data as BoxData).roomForNote)).toBe(true);
     expect(boxes(without.nodes).some((n) => (n.data as BoxData).roomForNote)).toBe(false);
   });
 
   it("hands back the place a moved box was left in", () => {
     const attrs = moveNode(sampleDiagram("flow"), "rejected", 400, 320);
-    const { nodes } = toFlow(placeNodes(attrs), "down");
+    const { nodes } = toFlow(placeNodes(attrs), "down", "flow");
     const node = nodes.find((n) => n.id === "box:rejected") as FlowNode;
     expect(node.position).toEqual({ x: 400, y: 320 });
+  });
+
+  /**
+   * A gesture that is offered and then ignored is worse than no gesture: the
+   * box snaps back and the document has been written to all the same.
+   */
+  it("offers no drag where the drawing hangs a rail off the box", () => {
+    for (const kind of ["sequence", "timeline"] as const) {
+      const { nodes } = toFlow(placeNodes(sampleDiagram(kind)), "down", kind);
+      expect(boxes(nodes)).not.toHaveLength(0);
+      expect(boxes(nodes).every((node) => node.draggable)).toBe(false);
+    }
   });
 });

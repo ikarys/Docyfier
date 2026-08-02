@@ -8,6 +8,7 @@ import {
   MAX_LABEL,
   MAX_NODES,
   MAX_NOTE,
+  MAX_PLACE,
   type DiagramAttrs,
   type DiagramDirection,
   type DiagramEdge,
@@ -102,7 +103,14 @@ function placeError(n: Partial<DiagramNode>): string | null {
   if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) {
     return `diagram node "${n.id}" place must be finite numbers`;
   }
+  if (!inPaper(n.x) || !inPaper(n.y)) {
+    return `diagram node "${n.id}" place must be between 0 and ${MAX_PLACE}`;
+  }
   return null;
+}
+
+function inPaper(value: number): boolean {
+  return value >= 0 && value <= MAX_PLACE;
 }
 
 function isAccentSlot(value: unknown): boolean {

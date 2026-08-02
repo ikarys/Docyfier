@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { moveNode, realign } from "../diagram-edits";
 import { sampleDiagram } from "../sample";
-import type { PlacedBox, PlacedGroup, Point, Placement } from "./geometry";
+import { GROUP_HEADER, type PlacedBox, type PlacedGroup, type Point, type Placement } from "./geometry";
 import { placeNodes } from "./place";
 
 /**
@@ -71,6 +71,28 @@ describe("a box someone moved", () => {
     expect(after.height).toBeGreaterThan(before.height);
     expect(after.width).toBeGreaterThanOrEqual(box.x + box.width);
     expect(after.height).toBeGreaterThanOrEqual(box.y + box.height);
+  });
+
+  /**
+   * Growing the canvas only answers the right and the bottom. A box dropped at
+   * the top-left drags its band above and to the left of it, and the band's
+   * name a further header above that — and every renderer emits
+   * `viewBox="0 0 …"`, so what lands at a negative coordinate is not small, it
+   * is absent, in the editor and in every export alike.
+   */
+  it("keeps the whole drawing inside the canvas when a box is dropped at the corner", () => {
+    const attrs = sampleDiagram("architecture");
+    const placement = placeNodes(moveNode(attrs, attrs.nodes[0].id, 0, 0));
+    for (const box of placement.boxes) {
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.y).toBeGreaterThanOrEqual(0);
+    }
+    for (const band of placement.groups) {
+      expect(band.x).toBeGreaterThanOrEqual(0);
+      expect(band.y - GROUP_HEADER).toBeGreaterThanOrEqual(0);
+      expect(band.x + band.width).toBeLessThanOrEqual(placement.width);
+      expect(band.y + band.height).toBeLessThanOrEqual(placement.height);
+    }
   });
 
   it("is given back to the layout by realigning", () => {

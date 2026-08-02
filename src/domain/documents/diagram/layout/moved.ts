@@ -1,7 +1,7 @@
-import type { DiagramAttrs, DiagramDirection, DiagramNode } from "../diagram";
+import { acceptsPlaces, type DiagramAttrs, type DiagramDirection, type DiagramNode } from "../diagram";
 import { bandsFor } from "./bands";
 import { labelAnchor, routeForward } from "./edges";
-import { canvasSize, type PlacedBox, type PlacedEdge, type Placement } from "./geometry";
+import { frame, type PlacedBox, type PlacedEdge, type Placement } from "./geometry";
 
 /**
  * The boxes a hand moved, laid over the drawing the layout computed.
@@ -14,32 +14,30 @@ import { canvasSize, type PlacedBox, type PlacedEdge, type Placement } from "./g
  *
  * `realign` (`diagram-edits.ts`) drops every place, which is the way back: a
  * drawing dragged into a mess is one edit from the layout that knows how to
- * place it.
+ * place it. `acceptsPlaces` (`diagram.ts`) says which kinds have that hand at
+ * all — a sequence and a phase axis draw where the layout said, and refuse the
+ * place rather than storing one they would ignore.
  */
-
-/**
- * Kinds whose drawing hangs a rail off each box — a lifeline under a sequence
- * participant, a tick under a milestone. A box dragged out of its column would
- * leave its own line behind, so those keep the place their layout computed.
- */
-const RAILED: ReadonlySet<string> = new Set(["sequence", "timeline"]);
 
 export function withMovedBoxes(attrs: DiagramAttrs, placement: Placement): Placement {
   const moved = new Map(attrs.nodes.filter(isMoved).map((node) => [node.id, node]));
-  if (moved.size === 0 || RAILED.has(attrs.kind)) return placement;
+  if (moved.size === 0 || !acceptsPlaces(attrs.kind)) return placement;
 
   const boxes = placement.boxes.map((box) => {
     const at = moved.get(box.id);
     return at ? { ...box, x: at.x, y: at.y } : box;
   });
   const placed = new Map(boxes.map((box) => [box.id, box]));
-  const parts = {
+  // Framed, not merely resized: growing the canvas answers a box dropped past
+  // the right or the bottom, and says nothing about one dropped at the corner,
+  // whose band — and the name drawn a header above that band — land at negative
+  // coordinates that every `viewBox="0 0 …"` renderer drops on the floor.
+  return frame({
     boxes,
     groups: bandsFor(attrs, placed),
     rails: placement.rails,
     edges: placement.edges.map((edge) => reroute(edge, moved, placed, attrs.direction)),
-  };
-  return { ...parts, ...canvasSize(parts) };
+  });
 }
 
 function isMoved(node: DiagramNode): node is DiagramNode & { x: number; y: number } {

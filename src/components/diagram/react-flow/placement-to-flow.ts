@@ -1,5 +1,16 @@
-import type { DiagramDirection, EdgeHead } from "@/domain/documents/diagram/diagram";
-import type { Placement, Point } from "@/domain/documents/diagram/layout/geometry";
+import {
+  acceptsPlaces,
+  type DiagramDirection,
+  type DiagramKind,
+  type EdgeHead,
+} from "@/domain/documents/diagram/diagram";
+import type {
+  PlacedBox,
+  PlacedEdge,
+  PlacedGroup,
+  Placement,
+  Point,
+} from "@/domain/documents/diagram/layout/geometry";
 
 /**
  * The placement, in the shape the editing library expects.
@@ -74,57 +85,83 @@ export interface FlowEdge {
 export function toFlow(
   placement: Placement,
   direction: DiagramDirection,
+  kind: DiagramKind,
 ): { nodes: FlowNode[]; edges: FlowEdge[] } {
   const roomForNote = placement.boxes.some((box) => box.note !== null);
+  const movable = acceptsPlaces(kind);
   return {
     nodes: [
-      ...placement.groups.map((band) => ({
-        id: `${BAND}${band.id}`,
-        type: "band" as const,
-        position: { x: band.x, y: band.y },
-        width: band.width,
-        height: band.height,
-        data: { label: band.label },
-        draggable: false,
-        selectable: false,
-        zIndex: 0,
-      })),
-      ...placement.boxes.map((box) => ({
-        id: `${BOX}${box.id}`,
-        type: "box" as const,
-        position: { x: box.x, y: box.y },
-        width: box.width,
-        height: box.height,
-        data: {
-          label: box.label,
-          lines: box.lines,
-          note: box.note,
-          accent: box.accent,
-          direction,
-          roomForNote,
-        },
-        draggable: true,
-        selectable: true,
-        zIndex: 2,
-      })),
+      ...placement.groups.map(bandNode),
+      ...placement.boxes.map((box) => boxNode(box, { direction, roomForNote, movable })),
     ],
-    // Indexed, because a diagram may state the same link twice — once dashed
-    // and once not — and two nodes sharing an id is a drawing that loses one.
-    edges: placement.edges.map((edge, i) => ({
-      id: `wire:${i}`,
-      source: `${BOX}${edge.from}`,
-      target: `${BOX}${edge.to}`,
-      type: "wire" as const,
-      data: {
-        points: edge.points,
-        dashed: edge.style === "dashed",
-        head: edge.head,
-        label: edge.label,
-        direction,
-        index: i,
-      },
-      zIndex: 1,
-    })),
+    edges: placement.edges.map((edge, index) => wireEdge(edge, index, direction)),
+  };
+}
+
+/** A band is scenery: it is drawn behind the boxes and answers to no gesture. */
+function bandNode(band: PlacedGroup): FlowNode {
+  return {
+    id: `${BAND}${band.id}`,
+    type: "band",
+    position: { x: band.x, y: band.y },
+    width: band.width,
+    height: band.height,
+    data: { label: band.label },
+    draggable: false,
+    selectable: false,
+    zIndex: 0,
+  };
+}
+
+function boxNode(
+  box: PlacedBox,
+  { direction, roomForNote, movable }: BoxContext,
+): FlowNode {
+  return {
+    id: `${BOX}${box.id}`,
+    type: "box",
+    position: { x: box.x, y: box.y },
+    width: box.width,
+    height: box.height,
+    data: {
+      label: box.label,
+      lines: box.lines,
+      note: box.note,
+      accent: box.accent,
+      direction,
+      roomForNote,
+    },
+    draggable: movable,
+    selectable: true,
+    zIndex: 2,
+  };
+}
+
+interface BoxContext {
+  direction: DiagramDirection;
+  roomForNote: boolean;
+  movable: boolean;
+}
+
+/**
+ * Indexed, because a diagram may state the same link twice — once dashed and
+ * once not — and two nodes sharing an id is a drawing that loses one.
+ */
+function wireEdge(edge: PlacedEdge, index: number, direction: DiagramDirection): FlowEdge {
+  return {
+    id: `wire:${index}`,
+    source: `${BOX}${edge.from}`,
+    target: `${BOX}${edge.to}`,
+    type: "wire",
+    data: {
+      points: edge.points,
+      dashed: edge.style === "dashed",
+      head: edge.head,
+      label: edge.label,
+      direction,
+      index,
+    },
+    zIndex: 1,
   };
 }
 
