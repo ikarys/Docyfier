@@ -116,13 +116,9 @@ function findOneBox(lines: readonly string[], row: number, span: Span): Box | nu
  */
 export function findBoxes(lines: readonly string[]): Box[] | null {
   const boxes: Box[] = [];
-  const claimed = new Set<string>();
 
   for (let row = 0; row < lines.length; row++) {
     for (const span of findSpans(lines[row], TOP_LEFT, TOP_RIGHT)) {
-      const key = `${row}:${span[0]}`;
-      if (claimed.has(key)) continue;
-      claimed.add(key);
       const box = findOneBox(lines, row, span);
       if (!box) return null;
       boxes.push(box);
