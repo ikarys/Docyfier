@@ -7,6 +7,7 @@ import { agentSystem, selectionBlocksPrompt } from "@/domain/authoring/prompts";
 import type { DocumentNode } from "@/domain/documents/body";
 import { parseAsciiDiagram } from "@/domain/documents/diagram/ascii-parse";
 import { blockStreamResponse } from "@/lib/ai/block-stream-response";
+import { authoringDeps } from "@/lib/ai/service";
 import { isAuthorized } from "@/lib/auth";
 import { getStyleParameters } from "@/lib/settings";
 
@@ -43,6 +44,7 @@ export async function POST(req: Request): Promise<Response> {
   const assignment = routeSurface(surface ?? { kind: "free-prompt" });
   const agent = agentById(assignment.steps[0] ?? "writer");
   const style = await getStyleParameters();
+  const { generator } = await authoringDeps();
   const excerpt = blocksToModelMarkdown(passage);
   const skeleton =
     surface?.kind === "block-action" && surface.actionId === "into-diagram"
@@ -56,6 +58,7 @@ export async function POST(req: Request): Promise<Response> {
     effort: effortFor("passage"),
     maxTokens: tokensFor("passage"),
     style,
+    generator,
     // Said before the first block, so the user reads who is working while they work.
     prelude: { reason: assignment.reason },
     verdict: (written) => charterBreach(agent, passage, written),

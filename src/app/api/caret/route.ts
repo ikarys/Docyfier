@@ -1,6 +1,7 @@
 import { caretPrompt, caretSystem } from "@/domain/authoring/prompts";
 import { effortFor, tokensFor } from "@/domain/authoring/thinking";
 import { blockStreamResponse } from "@/lib/ai/block-stream-response";
+import { authoringDeps } from "@/lib/ai/service";
 import { getStyleParameters } from "@/lib/settings";
 import { isAuthorized } from "@/lib/auth";
 
@@ -27,6 +28,7 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   const style = await getStyleParameters();
+  const { generator } = await authoringDeps();
   return blockStreamResponse({
     system: caretSystem(style),
     prompt: caretPrompt(
@@ -39,5 +41,6 @@ export async function POST(req: Request): Promise<Response> {
     effort: effortFor("block"),
     maxTokens: tokensFor("block"),
     style,
+    generator,
   });
 }

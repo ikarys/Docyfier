@@ -3,7 +3,7 @@ import { writerSystem } from "@/domain/authoring/prompts";
 import { DEFAULT_RECIPE, findRecipe } from "@/domain/authoring/recipes/catalog";
 import { effortFor, tokensFor } from "@/domain/authoring/thinking";
 import { blockStreamResponse } from "@/lib/ai/block-stream-response";
-import { planDocument } from "@/lib/ai/service";
+import { authoringDeps, planDocument } from "@/lib/ai/service";
 import { getStyleParameters } from "@/lib/settings";
 import { isAuthorized } from "@/lib/auth";
 
@@ -30,6 +30,7 @@ export async function POST(req: Request): Promise<Response> {
   const brief = await planDocument(prompt);
   const recipe = findRecipe(brief.kind) ?? DEFAULT_RECIPE;
   const style = await getStyleParameters();
+  const { generator } = await authoringDeps();
   // The dress before the first block: the document is styled while it is still
   // being written, rather than changing look once it is done.
   const theme = themeFromArt(brief.art);
@@ -41,6 +42,7 @@ export async function POST(req: Request): Promise<Response> {
     effort: effortFor("document"),
     maxTokens: tokensFor("document"),
     style,
+    generator,
     ...(theme ? { prelude: { theme } } : {}),
   });
 }

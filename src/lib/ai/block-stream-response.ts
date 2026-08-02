@@ -2,11 +2,11 @@ import "server-only";
 import { streamText } from "ai";
 import type { StyleParameters } from "@/domain/authoring/style-parameters";
 import type { DocumentNode } from "@/domain/documents/body";
-import type { ThinkingEffort } from "@/domain/authoring/text-generator";
+import type { TextGenerator, ThinkingEffort } from "@/domain/authoring/text-generator";
 import { reasoningOptions } from "@/infrastructure/authoring/openai-compatible/endpoint";
 import { logUsage } from "@/infrastructure/authoring/openai-compatible/usage-log";
 import { line, providerMessage as message } from "./ndjson";
-import { emptyRead, readAnswer, type Part } from "./read-block-stream";
+import { emptyRead, readAnswer, repairFailedBlocks, type Part } from "./read-block-stream";
 import { callOptions, isTimeout, languageModel, timeoutMessage } from "./provider";
 import { getAiSettings } from "@/lib/settings";
 
@@ -32,6 +32,10 @@ export interface BlockStream {
   readonly maxTokens?: number;
   /** The instance's writing style: the same pass the blocking path applies. */
   readonly style: StyleParameters;
+  /** What a failed block is repaired with — injected, never fetched: this
+   * module stays a pure function of its request, testable without a
+   * provider or Settings. */
+  readonly generator: TextGenerator;
   /** An NDJSON line to send before the first block — the document's dress. */
   readonly prelude?: Record<string, unknown>;
   /**
@@ -132,6 +136,9 @@ export async function blockStreamResponse(request: BlockStream): Promise<Respons
       try {
         if (request.prelude) controller.enqueue(encoder.encode(line(request.prelude)));
         await readAnswer({ parts, firstText }, request.style, send, read);
+        if (read.retriable.length > 0) {
+          await repairFailedBlocks(request.generator, request, read, request.style, send);
+        }
 
         const breach = read.stopped ? "" : (request.verdict?.(read.written) ?? "");
         const failed = read.stopped ?? (breach || null);
