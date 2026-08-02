@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
+import { MAX_LABEL, MAX_NODES, MAX_NOTE } from "./diagram";
 import { parseAsciiDiagram } from "./ascii-parse";
+
+function boxLines(...content: string[]): string[] {
+  const width = Math.max(...content.map((line) => line.length)) + 4;
+  const top = `┌${"─".repeat(width - 2)}┐`;
+  const bottom = `└${"─".repeat(width - 2)}┘`;
+  const body = content.map((line) => `│ ${line}${" ".repeat(width - 4 - line.length)} │`);
+  return [top, ...body, bottom];
+}
+
+function manyBoxes(count: number): string {
+  const lines: string[] = [];
+  for (let i = 0; i < count; i++) lines.push(...boxLines(`Box ${i}`), "");
+  return lines.join("\n");
+}
 
 // The exact drawing that shipped without a "parent" chain on every group —
 // verbatim, including the column drift a hand-typed drawing really has.
@@ -96,6 +111,26 @@ describe("parseAsciiDiagram", () => {
     expect(byId.get("prd-cluster-subscription-astro-shared-prd-westeurope-separate")?.group).toBeUndefined();
 
     expect(parsed!.edges).toEqual([]);
+  });
+
+  /**
+   * A skeleton the model is told to reproduce exactly ("use these ids,
+   * labels, groups and edges — invent none, drop none") can never validate
+   * once it breaks a hard limit `diagramError` itself enforces: the parser
+   * must refuse before handing over something no correction can fix.
+   */
+  it("returns null when the drawing holds more boxes than a diagram may declare", () => {
+    expect(parseAsciiDiagram(manyBoxes(MAX_NODES + 2))).toBeNull();
+  });
+
+  it("returns null when a box's heading is longer than the label limit", () => {
+    const source = boxLines("L".repeat(MAX_LABEL + 5)).join("\n");
+    expect(parseAsciiDiagram(source)).toBeNull();
+  });
+
+  it("returns null when a box's note is longer than the note limit", () => {
+    const source = boxLines("Heading", "x".repeat(MAX_NOTE + 5)).join("\n");
+    expect(parseAsciiDiagram(source)).toBeNull();
   });
 
   it("resolves an arrow to the two node ids it connects", () => {

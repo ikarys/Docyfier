@@ -1,4 +1,4 @@
-import type { DiagramEdge, DiagramGroup, DiagramNode } from "./diagram";
+import { MAX_LABEL, MAX_NODES, MAX_NOTE, type DiagramEdge, type DiagramGroup, type DiagramNode } from "./diagram";
 import { findBoxes, ownTextLines, type Box } from "./ascii-boxes";
 import { findHorizontalEdges, findVerticalEdges } from "./ascii-arrows";
 
@@ -79,6 +79,21 @@ function assembleBox(
   }
 }
 
+/**
+ * A skeleton the model is told to reproduce verbatim can never validate once
+ * it breaks a hard limit `diagramError` itself enforces — "use these ids,
+ * labels, groups and edges, invent none, drop none" contradicts "at most
+ * `MAX_NODES` nodes". Refusing here is the parser's own "returns null
+ * whenever the input doesn't parse with confidence": a drawing that cannot
+ * possibly fit is not a confident parse of one that can.
+ */
+function exceedsSchemaLimits(nodes: ParsedSkeleton["nodes"]): boolean {
+  if (nodes.length > MAX_NODES) return true;
+  return nodes.some(
+    (node) => node.label.length > MAX_LABEL || (node.note?.length ?? 0) > MAX_NOTE,
+  );
+}
+
 export function parseAsciiDiagram(source: string): ParsedSkeleton | null {
   const lines = source.replace(/\r\n/g, "\n").split("\n");
   const boxes = findBoxes(lines);
@@ -94,6 +109,7 @@ export function parseAsciiDiagram(source: string): ParsedSkeleton | null {
     if (text.length === 0) return null;
     assembleBox(box, text, slug, idOf, nodes, groups);
   }
+  if (exceedsSchemaLimits(nodes)) return null;
 
   const edges = [...findVerticalEdges(lines, boxes), ...findHorizontalEdges(lines, boxes)].map(
     (edge) => ({
