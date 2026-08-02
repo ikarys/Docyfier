@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DiagramNode } from "../diagram";
-import { MAX_BOX_WIDTH, MIN_BOX_WIDTH, uniformBoxSize, wrapLabel } from "./geometry";
+import { boxFrom, MAX_BOX_WIDTH, MIN_BOX_WIDTH, uniformBoxSize, wrapLabel } from "./geometry";
 
 const node = (label: string, note?: string): DiagramNode => ({ id: label, label, note });
 
@@ -53,6 +53,17 @@ describe("uniformBoxSize", () => {
     const plain = uniformBoxSize([node("API"), node("DB")]);
     const noted = uniformBoxSize([node("API"), node("DB", "PostgreSQL")]);
     expect(noted.height).toBeGreaterThan(plain.height);
+  });
+
+  /**
+   * An empty note is no note. `diagramError` accepts one, so a box carrying
+   * `""` reaches the layout — and anything reading the placement back has to
+   * reach the same verdict, or it offers a note field the box has no room for.
+   */
+  it("treats a note nobody wrote as no note at all", () => {
+    const plain = uniformBoxSize([node("API"), node("DB")]);
+    expect(uniformBoxSize([node("API"), node("DB", "")]).height).toBe(plain.height);
+    expect(boxFrom(node("DB", ""), { x: 0, y: 0 }, plain).note).toBeNull();
   });
 
   it("grows tall enough for a label that wraps", () => {

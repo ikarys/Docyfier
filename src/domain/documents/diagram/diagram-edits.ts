@@ -202,7 +202,7 @@ export function setKind(attrs: DiagramAttrs, kind: DiagramKind): DiagramAttrs {
 }
 
 /** The first edge that claims each node, which is a tree whenever one exists. */
-function spanningTree(edges: DiagramEdge[]): DiagramEdge[] {
+function spanningTree(edges: readonly DiagramEdge[]): DiagramEdge[] {
   const claimed = new Set<string>();
   return edges.filter((e) => {
     if (claimed.has(e.to)) return false;
@@ -219,7 +219,7 @@ function sameEnds(edge: DiagramEdge): (other: DiagramEdge) => boolean {
   return (other) => other.from === edge.from && other.to === edge.to;
 }
 
-function freeId(nodes: DiagramNode[]): string {
+function freeId(nodes: readonly DiagramNode[]): string {
   const taken = new Set(nodes.map((n) => n.id));
   for (let i = nodes.length + 1; ; i++) {
     const id = `n${i}`;

@@ -55,5 +55,10 @@ export function useDiagramEditing(
 /** Whether these two name the same piece of text. */
 export function isSameTarget(a: EditingTarget | null, b: EditingTarget): boolean {
   if (!a || a.of !== b.of) return false;
-  return a.of === "wire" && b.of === "wire" ? a.index === b.index : "id" in a && "id" in b && a.id === b.id;
+  switch (a.of) {
+    case "wire":
+      return a.index === (b as typeof a).index;
+    default:
+      return a.id === (b as typeof a).id;
+  }
 }

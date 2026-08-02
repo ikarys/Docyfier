@@ -1,6 +1,6 @@
 "use client";
 
-import { EdgeLabelRenderer, type EdgeProps } from "@xyflow/react";
+import { EdgeLabelRenderer, type Edge, type EdgeProps } from "@xyflow/react";
 import { labelAnchor, routeBetween } from "@/domain/documents/diagram/layout/edges";
 import type { Point } from "@/domain/documents/diagram/layout/geometry";
 import { arrowheadPath, polyline } from "@/domain/documents/diagram/scene";
@@ -16,8 +16,16 @@ import type { WireData } from "./placement-to-flow";
  * is redrawn by the same rule the layout uses. On drop the placement is computed
  * again and the full route comes back.
  */
-export function WireEdge({ sourceX, sourceY, targetX, targetY, data }: EdgeProps) {
-  const wire = data as unknown as WireData;
+export function WireEdge({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  data: wire,
+}: EdgeProps<Edge<WireData, "wire">>) {
+  // The library declares an edge's data optional; every arrow this surface
+  // builds carries it. Answering its contract beats asserting past it.
+  if (!wire) return null;
   const start = { x: sourceX, y: sourceY };
   const end = { x: targetX, y: targetY };
   const points = ends(wire.points, start, end)
@@ -43,7 +51,7 @@ export function WireEdge({ sourceX, sourceY, targetX, targetY, data }: EdgeProps
             style={{ transform: `translate(-50%, -50%) translate(${at.x}px, ${at.y}px)` }}
           >
             <InlineText
-              target={{ of: "wire", index: wire.index }}
+              target={{ of: "wire", index: wire.index, from: wire.from, to: wire.to }}
               value={wire.label}
               className="diagram-wire-label"
             />

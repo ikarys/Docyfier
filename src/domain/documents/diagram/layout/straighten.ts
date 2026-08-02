@@ -31,7 +31,7 @@ const PASSES = 4;
 export function straightenAlong(
   boxes: PlacedBox[],
   ranks: string[][],
-  edges: DiagramEdge[],
+  edges: readonly DiagramEdge[],
   axis: "down" | "right",
 ): PlacedBox[] {
   const at = new Map(boxes.map((box) => [box.id, { ...box }]));

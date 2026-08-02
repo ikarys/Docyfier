@@ -24,7 +24,7 @@ function seats(ranks: string[][]): Map<string, Seat> {
 }
 
 /** Pairs of edges whose endpoints sit in opposite order between two ranks. */
-export function countCrossings(ranks: string[][], edges: DiagramEdge[]): number {
+export function countCrossings(ranks: string[][], edges: readonly DiagramEdge[]): number {
   const at = seats(ranks);
   const spans = edges
     .map((edge) => ({ from: at.get(edge.from), to: at.get(edge.to) }))
@@ -55,7 +55,7 @@ export function countCrossings(ranks: string[][], edges: DiagramEdge[]): number 
  */
 export function transposeRanks(
   ranks: string[][],
-  edges: DiagramEdge[],
+  edges: readonly DiagramEdge[],
   groupOf: Map<string, string>,
 ): string[][] {
   const best = ranks.map((rank) => [...rank]);

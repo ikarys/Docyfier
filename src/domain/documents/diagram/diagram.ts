@@ -75,14 +75,20 @@ export interface DiagramGroup {
   parent?: string;
 }
 
+/**
+ * Read-only on purpose: `diagram-edits.ts` is the only way a diagram changes,
+ * and every edit there returns a whole new set of attributes that
+ * `diagramError` has accepted. `attrs.nodes.push(…)` would be a change nothing
+ * validated — the protocol held by convention until the compiler held it.
+ */
 export interface DiagramAttrs {
-  kind: DiagramKind;
-  direction: DiagramDirection;
-  nodes: DiagramNode[];
-  edges: DiagramEdge[];
-  groups: DiagramGroup[];
-  title: string | null;
-  caption: string | null;
+  readonly kind: DiagramKind;
+  readonly direction: DiagramDirection;
+  readonly nodes: readonly DiagramNode[];
+  readonly edges: readonly DiagramEdge[];
+  readonly groups: readonly DiagramGroup[];
+  readonly title: string | null;
+  readonly caption: string | null;
 }
 
 /**

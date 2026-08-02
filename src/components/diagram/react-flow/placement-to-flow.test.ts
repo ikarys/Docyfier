@@ -32,9 +32,12 @@ describe("a placement handed to the editing surface", () => {
   });
 
   it("names its nodes so a group and a box may share an id", () => {
-    const attrs = sampleDiagram("architecture");
-    attrs.groups = [{ id: "web", label: "Front" }];
-    attrs.nodes = attrs.nodes.map((node) => ({ ...node, group: "web" }));
+    const sample = sampleDiagram("architecture");
+    const attrs = {
+      ...sample,
+      groups: [{ id: "web", label: "Front" }],
+      nodes: sample.nodes.map((node) => ({ ...node, group: "web" })),
+    };
     const { nodes } = toFlow(placeNodes(attrs), "down", "flow");
     expect(new Set(nodes.map((n) => n.id)).size).toBe(nodes.length);
     expect(boxIdOf("box:web")).toBe("web");
@@ -61,8 +64,11 @@ describe("a placement handed to the editing surface", () => {
   });
 
   it("tells two arrows between the same pair apart", () => {
-    const attrs = sampleDiagram("flow");
-    attrs.edges = [...attrs.edges, { ...attrs.edges[0], label: "again", style: "dashed" }];
+    const sample = sampleDiagram("flow");
+    const attrs = {
+      ...sample,
+      edges: [...sample.edges, { ...sample.edges[0], label: "again", style: "dashed" as const }],
+    };
     const { edges } = toFlow(placeNodes(attrs), "down", "flow");
     expect(new Set(edges.map((e) => e.id)).size).toBe(edges.length);
   });

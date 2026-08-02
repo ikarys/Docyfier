@@ -122,7 +122,7 @@ export interface BoxSize {
  * Boxes of differing widths read as an accident; a single measured size reads
  * as a decision, and it is what lets the layouts place on a plain grid.
  */
-export function uniformBoxSize(nodes: DiagramNode[]): BoxSize {
+export function uniformBoxSize(nodes: readonly DiagramNode[]): BoxSize {
   const widest = Math.max(
     ...nodes.map((n) =>
       Math.max(textWidth(n.label, LABEL_SIZE) / 2, textWidth(n.note ?? "", NOTE_SIZE)),
@@ -131,9 +131,20 @@ export function uniformBoxSize(nodes: DiagramNode[]): BoxSize {
   const width = clamp(Math.ceil(widest) + BOX_PAD_X * 2, MIN_BOX_WIDTH, MAX_BOX_WIDTH);
   const inner = width - BOX_PAD_X * 2;
   const lines = Math.max(...nodes.map((n) => wrapLabel(n.label, inner).length));
-  const hasNote = nodes.some((n) => (n.note ?? "") !== "");
+  const hasNote = nodes.some((n) => noteOf(n) !== null);
   const height = BOX_PAD_Y * 2 + lines * LINE_HEIGHT + (hasNote ? NOTE_HEIGHT : 0);
   return { width, height };
+}
+
+/**
+ * The second line a box actually carries, or nothing.
+ *
+ * `diagramError` accepts an empty note, so "has a note" is a judgement rather
+ * than a field test — and it is made here alone. Sized one way and read back
+ * another is a box offering a note line it has no height for.
+ */
+export function noteOf(node: DiagramNode): string | null {
+  return node.note ? node.note : null;
 }
 
 export function boxFrom(node: DiagramNode, at: Point, size: BoxSize): PlacedBox {
@@ -145,7 +156,7 @@ export function boxFrom(node: DiagramNode, at: Point, size: BoxSize): PlacedBox 
     height: size.height,
     label: node.label,
     lines: wrapLabel(node.label, size.width - BOX_PAD_X * 2),
-    note: node.note ?? null,
+    note: noteOf(node),
     icon: node.icon ?? null,
     accent: node.accent ?? null,
   };

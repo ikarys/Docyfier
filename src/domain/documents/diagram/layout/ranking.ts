@@ -19,8 +19,8 @@ import { countCrossings, transposeRanks } from "./crossings";
  * routed around the drawing instead of through the ranks.
  */
 export function splitBackEdges(
-  nodes: DiagramNode[],
-  edges: DiagramEdge[],
+  nodes: readonly DiagramNode[],
+  edges: readonly DiagramEdge[],
 ): { forward: DiagramEdge[]; back: DiagramEdge[] } {
   const out = new Map<string, DiagramEdge[]>(nodes.map((n) => [n.id, []]));
   for (const e of edges) out.get(e.from)?.push(e);
@@ -47,7 +47,7 @@ export function splitBackEdges(
 }
 
 /** Group node ids by rank, a node coming one past the furthest that leads to it. */
-export function rankNodes(nodes: DiagramNode[], forward: DiagramEdge[]): string[][] {
+export function rankNodes(nodes: readonly DiagramNode[], forward: readonly DiagramEdge[]): string[][] {
   const rank = new Map<string, number>(nodes.map((n) => [n.id, 0]));
   const pending = new Map<string, number>(nodes.map((n) => [n.id, 0]));
   const out = new Map<string, DiagramEdge[]>(nodes.map((n) => [n.id, []]));
@@ -80,9 +80,9 @@ export function rankNodes(nodes: DiagramNode[], forward: DiagramEdge[]): string[
  */
 export function orderRanks(
   ranks: string[][],
-  nodes: DiagramNode[],
-  forward: DiagramEdge[],
-  groups: DiagramGroup[] = [],
+  nodes: readonly DiagramNode[],
+  forward: readonly DiagramEdge[],
+  groups: readonly DiagramGroup[] = [],
 ): string[][] {
   const groupOf = new Map(nodes.map((n) => [n.id, n.group ?? ""]));
   const rank = groupRank(nodes, groups);
@@ -117,7 +117,7 @@ const SWEEPS = 8;
  * gets a place: ordering is a tidiness rule, and it may not stop working
  * because a declaration is missing.
  */
-function groupRank(nodes: DiagramNode[], groups: DiagramGroup[]): Map<string, number> {
+function groupRank(nodes: readonly DiagramNode[], groups: readonly DiagramGroup[]): Map<string, number> {
   const rank = groupOrder(groups);
   for (const node of nodes) {
     const id = node.group ?? "";
@@ -127,7 +127,7 @@ function groupRank(nodes: DiagramNode[], groups: DiagramGroup[]): Map<string, nu
 }
 
 /** One pass over the ranks, each box moved towards the neighbours it is tied to. */
-function medianPass(ranks: string[][], edges: DiagramEdge[], downward: boolean): string[][] {
+function medianPass(ranks: string[][], edges: readonly DiagramEdge[], downward: boolean): string[][] {
   const out = ranks.map((ids) => [...ids]);
   const steps = out.map((_, r) => r).slice(1);
   for (const r of downward ? steps : [...steps].reverse().map((s) => s - 1)) {
@@ -160,8 +160,8 @@ export const MAX_PER_ROW = 4;
  */
 export function wrapWideRanks(
   ranks: string[][],
-  edges: DiagramEdge[],
-  nodes: DiagramNode[] = [],
+  edges: readonly DiagramEdge[],
+  nodes: readonly DiagramNode[] = [],
 ): string[][] {
   const tied = new Set(edges.flatMap((e) => [e.from, e.to]));
   const groupOf = new Map(nodes.map((n) => [n.id, n.group ?? ""]));
@@ -201,7 +201,7 @@ function evenRows(run: string[]): string[][] {
  */
 export function medianOfNeighbours(
   id: string,
-  edges: DiagramEdge[],
+  edges: readonly DiagramEdge[],
   fixed: Map<string, number>,
   downward: boolean,
 ): number | null {

@@ -111,6 +111,20 @@ to write a coordinate the drawing then ignored. Two consequences it carries:
 escape hatch that let the "never coordinates" rule be relaxed at all — is
 offered in the panel exactly when a hand has placed something.
 
+Three traps in that folder are worth knowing before touching it. The canvas
+owns its stylesheet — `react-flow/diagram-canvas.css`, imported by
+`DiagramCanvas` beside the library's own, so it travels with the lazy chunk;
+`globals.css` keeps only the placeholder drawn before that chunk arrives.
+React Flow renders edge labels into a `pointer-events: none` layer, so anything
+edited in place there must take the click back or the double-click reaches the
+wire underneath and opens nothing. And an arrow is addressed by its position in
+a list that edits naming no arrow rebuild — `removeNode` drops what touched a
+box and bridges what it stood between — so an `EditingTarget` on a wire carries
+the endpoints it was opened on, and refuses when the position now means another
+arrow. An `id` on `DiagramEdge` would be the other answer, and it is the wrong
+one: it puts an identity into the model-facing contract that every model would
+have to invent, and that no diagram already saved carries.
+
 STEPS U8 and U9 are in and were released as v0.5.0 and v0.6.0: find and
 replace with one undo, paste that reads a spreadsheet range or a markdown
 snippet (`components/editor/paste-conversion.ts` decides, `paste-insert.ts`

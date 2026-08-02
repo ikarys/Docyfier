@@ -16,14 +16,14 @@ import { MAX_GROUP_DEPTH, type DiagramGroup } from "./diagram";
  */
 
 /** A parent nobody declared is no parent: the group stands at the top. */
-function parentOf(groups: DiagramGroup[], id: string): string | null {
+function parentOf(groups: readonly DiagramGroup[], id: string): string | null {
   const parent = groups.find((group) => group.id === id)?.parent;
   if (parent === undefined) return null;
   return groups.some((group) => group.id === parent) ? parent : null;
 }
 
 /** Every group above one, outermost first, ending with the group itself. */
-export function groupPath(groups: DiagramGroup[], id: string): string[] {
+export function groupPath(groups: readonly DiagramGroup[], id: string): string[] {
   const path: string[] = [];
   const seen = new Set<string>();
   let at: string | null = id;
@@ -36,12 +36,12 @@ export function groupPath(groups: DiagramGroup[], id: string): string[] {
 }
 
 /** How many groups a group sits inside. Zero at the top. */
-export function groupDepth(groups: DiagramGroup[], id: string): number {
+export function groupDepth(groups: readonly DiagramGroup[], id: string): number {
   return groupPath(groups, id).length - 1;
 }
 
 /** The id of a group that contains itself, however far around, or null. */
-export function groupCycle(groups: DiagramGroup[]): string | null {
+export function groupCycle(groups: readonly DiagramGroup[]): string | null {
   for (const group of groups) {
     const seen = new Set<string>();
     let at: string | null = group.id;
@@ -62,7 +62,7 @@ export function groupCycle(groups: DiagramGroup[]): string | null {
  * group holding it — and it is stable, so siblings keep the order they were
  * declared in.
  */
-export function outermostFirst(groups: DiagramGroup[]): DiagramGroup[] {
+export function outermostFirst(groups: readonly DiagramGroup[]): DiagramGroup[] {
   return [...groups].sort(
     (one, other) => groupDepth(groups, one.id) - groupDepth(groups, other.id),
   );
@@ -76,7 +76,7 @@ export function outermostFirst(groups: DiagramGroup[]): DiagramGroup[] {
  * two branches interleaved would make every band a comb. Numbering depth first,
  * in the order the groups were declared, is what makes a subtree a run.
  */
-export function groupOrder(groups: DiagramGroup[]): Map<string, number> {
+export function groupOrder(groups: readonly DiagramGroup[]): Map<string, number> {
   const order = new Map<string, number>();
   const walk = (parent: string | null): void => {
     for (const group of groups) {
@@ -103,7 +103,7 @@ export function groupOrder(groups: DiagramGroup[]): Map<string, number> {
  * Depth is capped for a plainer reason: every level costs the drawing padding
  * on all four sides, so past a few the innermost boxes are a stripe.
  */
-export function groupTreeError(groups: DiagramGroup[]): string | null {
+export function groupTreeError(groups: readonly DiagramGroup[]): string | null {
   const declared = new Set(groups.map((group) => group.id));
   for (const group of groups) {
     if (group.parent !== undefined && !declared.has(group.parent)) {

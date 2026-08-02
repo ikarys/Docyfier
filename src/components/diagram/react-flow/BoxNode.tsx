@@ -1,6 +1,6 @@
 "use client";
 
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { BoxToolbar } from "./BoxToolbar";
 import { InlineText } from "./InlineText";
 import { boxIdOf, type BoxData } from "./placement-to-flow";
@@ -18,8 +18,7 @@ import { boxIdOf, type BoxData } from "./placement-to-flow";
  * while it is selected: an empty line nobody can see is a feature nobody finds.
  * Selecting it also raises the bar that holds its colour and its deletion.
  */
-export function BoxNode({ id, data, selected }: NodeProps) {
-  const box = data as unknown as BoxData;
+export function BoxNode({ id, data: box, selected }: NodeProps<Node<BoxData, "box">>) {
   const node = boxIdOf(id) ?? id;
   const along = box.direction === "down";
 

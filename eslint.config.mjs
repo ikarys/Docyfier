@@ -42,6 +42,12 @@ const UPWARD_PATTERNS = [
 ];
 
 const eslintConfig = [
+  /**
+   * What is not ours to lint. `next lint` knew these by heart; running ESLint
+   * directly means saying them, or a coverage report and Next's own generated
+   * types answer for the source.
+   */
+  { ignores: [".next/**", "out/**", "coverage/**", "next-env.d.ts"] },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     files: ["src/domain/**/*.ts"],

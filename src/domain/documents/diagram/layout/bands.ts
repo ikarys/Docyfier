@@ -75,8 +75,8 @@ export function bandsFor(attrs: DiagramAttrs, placed: Map<string, PlacedBox>): P
  */
 export function headroomBefore(
   ranks: string[][],
-  nodes: DiagramNode[],
-  groups: DiagramGroup[],
+  nodes: readonly DiagramNode[],
+  groups: readonly DiagramGroup[],
 ): number[] {
   const groupOf = new Map(nodes.map((node) => [node.id, node.group ?? ""]));
   const open = new Set<string>();

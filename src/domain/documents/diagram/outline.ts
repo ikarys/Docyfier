@@ -31,11 +31,11 @@ function describe(node: DiagramNode): string {
   return node.note ? `${node.label} — ${node.note}` : node.label;
 }
 
-function labelOf(id: string, nodes: DiagramNode[]): string {
+function labelOf(id: string, nodes: readonly DiagramNode[]): string {
   return nodes.find((n) => n.id === id)?.label ?? id;
 }
 
-function edgeLine(edge: DiagramEdge, nodes: DiagramNode[]): string {
+function edgeLine(edge: DiagramEdge, nodes: readonly DiagramNode[]): string {
   const arrow = `${labelOf(edge.from, nodes)} → ${labelOf(edge.to, nodes)}`;
   return edge.label ? `${arrow} (${edge.label})` : arrow;
 }

@@ -137,7 +137,7 @@ function groupsError(groups: unknown): string | null {
   return groupTreeError(groups as DiagramGroup[]);
 }
 
-function membershipError(nodes: DiagramNode[], groups: DiagramGroup[]): string | null {
+function membershipError(nodes: readonly DiagramNode[], groups: readonly DiagramGroup[]): string | null {
   const declared = new Set(groups.map((g) => g.id));
   for (const n of nodes) {
     if (n.group !== undefined && !declared.has(n.group)) {
@@ -147,7 +147,7 @@ function membershipError(nodes: DiagramNode[], groups: DiagramGroup[]): string |
   return null;
 }
 
-function edgesError(edges: unknown, nodes: DiagramNode[]): string | null {
+function edgesError(edges: unknown, nodes: readonly DiagramNode[]): string | null {
   if (!Array.isArray(edges)) return 'diagram "edges" must be an array';
   if (edges.length > MAX_EDGES) {
     return `diagram holds at most ${MAX_EDGES} edges, got ${edges.length}`;

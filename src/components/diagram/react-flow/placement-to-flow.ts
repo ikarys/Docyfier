@@ -29,7 +29,7 @@ import type {
 const BOX = "box:";
 const BAND = "band:";
 
-export interface BoxData {
+export type BoxData = {
   /** The label as written; `lines` is the same text broken to the box's width. */
   label: string;
   lines: string[];
@@ -45,25 +45,35 @@ export interface BoxData {
    * growing the box would draw something the exported SVG does not.
    */
   roomForNote: boolean;
-}
+};
 
-export interface BandData {
+export type BandData = {
   label: string;
-}
+};
 
-export interface FlowNode {
+interface Placed {
   id: string;
-  type: "box" | "band";
   position: Point;
   width: number;
   height: number;
-  data: BoxData | BandData;
   draggable: boolean;
   selectable: boolean;
   zIndex: number;
 }
 
-export interface WireData {
+/**
+ * A node is a box or a band, and which one it is decides what it carries.
+ *
+ * Stated as one arm per kind rather than as a `type` beside a `data` that could
+ * be either: the pair `{ type: "band", data: BoxData }` is not a node this
+ * surface can draw, and a shape that admits it makes every node view narrow by
+ * assertion — which survives a renamed field in silence.
+ */
+export type FlowNode =
+  | (Placed & { type: "box"; data: BoxData })
+  | (Placed & { type: "band"; data: BandData });
+
+export type WireData = {
   points: Point[];
   dashed: boolean;
   head: EdgeHead;
@@ -71,7 +81,10 @@ export interface WireData {
   direction: DiagramDirection;
   /** Where the arrow sits in the diagram's own list, which is how an edit names it. */
   index: number;
-}
+  /** The boxes it runs between — what says the position still means this arrow. */
+  from: string;
+  to: string;
+};
 
 export interface FlowEdge {
   id: string;
@@ -160,6 +173,8 @@ function wireEdge(edge: PlacedEdge, index: number, direction: DiagramDirection):
       label: edge.label,
       direction,
       index,
+      from: edge.from,
+      to: edge.to,
     },
     zIndex: 1,
   };

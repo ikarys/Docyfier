@@ -2,6 +2,7 @@
 
 import { ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import "./diagram-canvas.css";
 import type { DiagramAttrs } from "@/domain/documents/diagram/diagram";
 import { placeNodes } from "@/domain/documents/diagram/layout/place";
 import { BandNode } from "./BandNode";
