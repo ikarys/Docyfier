@@ -730,6 +730,60 @@ body {
 .doc .diagram-band-label.diagram-inline-input {
   width: 12rem;
 }
+/* The bar over the selected box. Drawn in page pixels, not in the drawing's
+   own units: it is a control, and a control that shrinks with the picture is
+   one nobody can hit. */
+.doc .diagram-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
+}
+.doc .diagram-swatch {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: 5px;
+  background: var(--diagram-surface);
+  cursor: pointer;
+}
+.doc .diagram-swatch[data-accent="1"] {
+  background: var(--diagram-accent-1);
+}
+.doc .diagram-swatch[data-accent="2"] {
+  background: var(--diagram-accent-2);
+}
+.doc .diagram-swatch[data-accent="3"] {
+  background: var(--diagram-accent-3);
+}
+.doc .diagram-swatch[data-accent="4"] {
+  background: var(--diagram-accent-4);
+}
+.doc .diagram-swatch[data-on="true"] {
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--accent);
+}
+.doc .diagram-bar-remove {
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
+  padding: 0;
+  border: none;
+  border-left: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.doc .diagram-bar-remove:hover {
+  color: var(--danger);
+}
 .doc .diagram-canvas .react-flow__handle {
   width: 7px;
   height: 7px;

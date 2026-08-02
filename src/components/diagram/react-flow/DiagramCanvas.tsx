@@ -6,7 +6,7 @@ import type { DiagramAttrs } from "@/domain/documents/diagram/diagram";
 import { placeNodes } from "@/domain/documents/diagram/layout/place";
 import { BandNode } from "./BandNode";
 import { BoxNode } from "./BoxNode";
-import { EditingProvider, useLabelEditing } from "./editing-context";
+import { EditingProvider, useDiagramEditing } from "./editing-context";
 import { useDiagramFlow } from "./use-diagram-flow";
 import { WireEdge } from "./WireEdge";
 
@@ -34,14 +34,17 @@ export function DiagramCanvas({
 }) {
   const placement = placeNodes(attrs);
   const flow = useDiagramFlow(attrs, update);
-  const editing = useLabelEditing(attrs, update);
+  const editing = useDiagramEditing(attrs, update);
 
   return (
     <div
       className="diagram-canvas"
       style={{ aspectRatio: `${placement.width} / ${placement.height}` }}
       contentEditable={false}
-      onKeyDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        flow.onKeyDown(e);
+      }}
       onMouseDown={(e) => e.stopPropagation()}
     >
       <EditingProvider value={editing}>
@@ -64,6 +67,7 @@ export function DiagramCanvas({
           panOnScroll={false}
           panOnDrag={false}
           preventScrolling={false}
+          deleteKeyCode={null}
           proOptions={{ hideAttribution: true }}
         />
       </EditingProvider>

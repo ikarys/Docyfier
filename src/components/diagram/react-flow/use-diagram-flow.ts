@@ -1,10 +1,11 @@
 "use client";
 
 import { useEdgesState, useNodesState, type Connection, type Edge, type Node } from "@xyflow/react";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, type KeyboardEvent } from "react";
 import type { DiagramAttrs } from "@/domain/documents/diagram/diagram";
-import { addEdge, moveNode } from "@/domain/documents/diagram/diagram-edits";
+import { addEdge, moveNode, removeNode } from "@/domain/documents/diagram/diagram-edits";
 import { placeNodes } from "@/domain/documents/diagram/layout/place";
+import { removesBox } from "./box-toolbar";
 import { boxIdOf, toFlow } from "./placement-to-flow";
 
 /**
@@ -46,5 +47,23 @@ export function useDiagramFlow(
     [attrs, update],
   );
 
-  return { nodes, edges, onNodesChange, onEdgesChange, onNodeDragStop, onConnect };
+  /**
+   * Delete removes the selected box from the document, not from the copy.
+   *
+   * The library's own delete key is off (`deleteKeyCode`): it would take the
+   * box out of its node list and leave the diagram holding it, so the box would
+   * come back the next time anything else was edited.
+   */
+  const onKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLElement>) => {
+      if (!removesBox(event.key)) return;
+      const id = boxIdOf(nodes.find((node) => node.selected)?.id ?? "");
+      if (!id) return;
+      event.preventDefault();
+      update(removeNode(attrs, id));
+    },
+    [attrs, nodes, update],
+  );
+
+  return { nodes, edges, onNodesChange, onEdgesChange, onNodeDragStop, onConnect, onKeyDown };
 }

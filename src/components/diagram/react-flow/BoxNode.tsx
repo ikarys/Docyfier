@@ -1,6 +1,7 @@
 "use client";
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { BoxToolbar } from "./BoxToolbar";
 import { InlineText } from "./InlineText";
 import { boxIdOf, type BoxData } from "./placement-to-flow";
 
@@ -15,6 +16,7 @@ import { boxIdOf, type BoxData } from "./placement-to-flow";
  *
  * The label and the note are edited in place. A box with no note offers one
  * while it is selected: an empty line nobody can see is a feature nobody finds.
+ * Selecting it also raises the bar that holds its colour and its deletion.
  */
 export function BoxNode({ id, data, selected }: NodeProps) {
   const box = data as unknown as BoxData;
@@ -23,6 +25,7 @@ export function BoxNode({ id, data, selected }: NodeProps) {
 
   return (
     <div className="diagram-box" data-accent={box.accent ?? undefined} data-selected={selected}>
+      {selected && <BoxToolbar flowId={id} />}
       <Handle type="target" position={along ? Position.Top : Position.Left} />
 
       <InlineText

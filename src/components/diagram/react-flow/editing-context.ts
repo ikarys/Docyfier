@@ -5,35 +5,37 @@ import type { DiagramAttrs } from "@/domain/documents/diagram/diagram";
 import { commitLabel, type EditingTarget } from "./label-editing";
 
 /**
- * Which piece of text is open for editing, shared with the nodes that draw it.
+ * The diagram and what may be done to it, shared with the nodes that draw it.
  *
  * Through a context rather than through each node's data: React Flow hands a
- * node its data and nothing else, and functions stuffed in there would be
- * rebuilt on every render of the drawing. Only one thing is ever open, so one
- * value at the top is the whole state.
+ * node its data and nothing else, and the diagram stuffed in there would be
+ * copied onto every box on every render. Only one piece of text is ever open,
+ * so one value at the top is the whole editing state.
  */
 
-export interface LabelEditing {
+export interface DiagramEditing {
+  attrs: DiagramAttrs;
+  update: (attrs: Partial<DiagramAttrs>) => void;
   editing: EditingTarget | null;
   open: (target: EditingTarget) => void;
   close: () => void;
   commit: (text: string) => void;
 }
 
-const EditingContext = createContext<LabelEditing | null>(null);
+const EditingContext = createContext<DiagramEditing | null>(null);
 
 export const EditingProvider = EditingContext.Provider;
 
-export function useEditing(): LabelEditing {
+export function useEditing(): DiagramEditing {
   const editing = useContext(EditingContext);
   if (!editing) throw new Error("a diagram label was drawn outside the editing surface");
   return editing;
 }
 
-export function useLabelEditing(
+export function useDiagramEditing(
   attrs: DiagramAttrs,
   update: (attrs: Partial<DiagramAttrs>) => void,
-): LabelEditing {
+): DiagramEditing {
   const [editing, setEditing] = useState<EditingTarget | null>(null);
   const close = useCallback(() => setEditing(null), []);
 
@@ -47,7 +49,7 @@ export function useLabelEditing(
     [attrs, editing, update],
   );
 
-  return { editing, open: setEditing, close, commit };
+  return { attrs, update, editing, open: setEditing, close, commit };
 }
 
 /** Whether these two name the same piece of text. */
