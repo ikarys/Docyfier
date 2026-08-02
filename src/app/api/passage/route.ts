@@ -2,6 +2,7 @@ import { agentById } from "@/domain/authoring/agents/catalog";
 import { blocksToModelMarkdown } from "@/infrastructure/rendering/model-markdown";
 import { effortFor, tokensFor } from "@/domain/authoring/thinking";
 import { charterBreach } from "@/domain/authoring/agents/charter-breach";
+import { wantsAsciiDiagramSkeleton } from "@/domain/authoring/agents/into-diagram";
 import { routeSurface, type Surface } from "@/domain/authoring/agents/routing";
 import { agentSystem, selectionBlocksPrompt } from "@/domain/authoring/prompts";
 import type { DocumentNode } from "@/domain/documents/body";
@@ -46,10 +47,7 @@ export async function POST(req: Request): Promise<Response> {
   const style = await getStyleParameters();
   const { generator } = await authoringDeps();
   const excerpt = blocksToModelMarkdown(passage);
-  const skeleton =
-    surface?.kind === "block-action" && surface.actionId === "into-diagram"
-      ? parseAsciiDiagram(excerpt)
-      : null;
+  const skeleton = wantsAsciiDiagramSkeleton(surface) ? parseAsciiDiagram(excerpt) : null;
 
   return blockStreamResponse({
     system: agentSystem(agent, style),
