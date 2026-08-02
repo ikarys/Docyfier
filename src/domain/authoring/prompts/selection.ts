@@ -16,8 +16,11 @@ When the instruction is about design ("make it pretty", "improve the design", "b
 export const SELECTION_TEXT_SYSTEM = `You rewrite text fragments inside a document.
 Return ONLY the rewritten fragment as plain text — no quotes, no markdown, no commentary, no surrounding sentence. Keep the language of the fragment. It must fit grammatically where the original stood.`;
 
-export function selectionBlocksPrompt(excerpt: string, instruction: string): string {
-  return `Excerpt:\n${excerpt}\n\nInstruction: ${instruction}`;
+export function selectionBlocksPrompt(excerpt: string, instruction: string, skeleton?: string): string {
+  const given = skeleton
+    ? `\n\nThe diagram's structure was already read off the drawing below — use these ids, labels, groups and edges exactly as given; invent none, drop none, rename none. Add only "kind", "direction", and per-node "accent"/"icon":\n${skeleton}`
+    : "";
+  return `Excerpt:\n${excerpt}\n\nInstruction: ${instruction}${given}`;
 }
 
 export function selectionTextPrompt(text: string, instruction: string): string {
