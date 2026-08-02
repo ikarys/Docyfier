@@ -1,4 +1,4 @@
-import { MAX_GROUP_DEPTH, type DiagramGroup, type DiagramNode } from "./diagram";
+import { MAX_GROUP_DEPTH, type DiagramAttrs, type DiagramGroup, type DiagramNode } from "./diagram";
 
 /**
  * What "inside" means for a group (PLAN.md STEP 10).
@@ -138,4 +138,28 @@ export function deadGroupError(
   );
   const dead = groups.find((group) => !hasMember.has(group.id) && !hasChild.has(group.id));
   return dead ? `diagram group "${dead.id}" holds no node and no group` : null;
+}
+
+/**
+ * Drop every group with no member and no child, repeating until none are
+ * left: removing one dead leaf group can make its own parent newly dead too,
+ * if that parent had no other child and no direct member of its own.
+ *
+ * What `deadGroupError` refuses, an edit can leave behind as a side effect —
+ * `diagram-edits.ts` calls this so that edit self-heals rather than being
+ * discarded whole by `kept()`.
+ */
+export function pruneDeadGroups(attrs: DiagramAttrs): DiagramAttrs {
+  let groups = attrs.groups;
+  for (;;) {
+    const hasMember = new Set(
+      attrs.nodes.map((n) => n.group).filter((g): g is string => g !== undefined),
+    );
+    const hasChild = new Set(
+      groups.map((g) => g.parent).filter((p): p is string => p !== undefined),
+    );
+    const next = groups.filter((g) => hasMember.has(g.id) || hasChild.has(g.id));
+    if (next.length === groups.length) return { ...attrs, groups };
+    groups = next;
+  }
 }

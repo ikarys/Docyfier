@@ -245,3 +245,58 @@ describe("texts and lines", () => {
     expect(hasHandPlaces(realign(moveNode(flow(), "review", 240, 90)))).toBe(false);
   });
 });
+
+/**
+ * `deadGroupError` (Task 4/5) rejects a group with no member and no child.
+ * Every edit funnels through `kept()`, which discards the whole edit and
+ * hands back the diagram unchanged whenever the result fails `diagramError`
+ * — so without self-healing, removing the last node of a group or moving it
+ * out silently did nothing at all: no error, no visible feedback. Pruning a
+ * group left dead by the edit, inside `kept()` itself, is what keeps the
+ * edit from being discarded.
+ */
+describe("an edit that leaves a group dead", () => {
+  it("removes a group emptied by removing its last node", () => {
+    const attrs = sampleDiagram("architecture");
+    const next = removeNode(attrs, "web");
+    expect(next.nodes.some((n) => n.id === "web")).toBe(false);
+    expect(next.groups.map((g) => g.id)).toEqual(["back"]);
+  });
+
+  it("removes a group emptied by moving its last node out", () => {
+    const attrs = sampleDiagram("architecture");
+    const next = moveToGroup(attrs, "web", null);
+    expect(next.nodes.find((n) => n.id === "web")?.group).toBeUndefined();
+    expect(next.groups.map((g) => g.id)).toEqual(["back"]);
+  });
+
+  it("keeps a group that still has another member after the edit", () => {
+    const attrs = sampleDiagram("architecture");
+    const next = removeNode(attrs, "api");
+    expect(next.groups.map((g) => g.id)).toEqual(["front", "back"]);
+  });
+
+  it("cascades: pruning a leaf group's last member also prunes its now-empty parent", () => {
+    const attrs: DiagramAttrs = {
+      kind: "architecture",
+      direction: "down",
+      nodes: [
+        { id: "leaf", label: "Leaf", group: "inner" },
+        { id: "other", label: "Other", group: "sibling" },
+      ],
+      edges: [],
+      groups: [
+        { id: "outer", label: "Outer" },
+        { id: "middle", label: "Middle", parent: "outer" },
+        { id: "inner", label: "Inner", parent: "middle" },
+        { id: "sibling", label: "Sibling", parent: "outer" },
+      ],
+      title: null,
+      caption: null,
+    };
+    expect(diagramError(attrs)).toBeNull();
+
+    const next = removeNode(attrs, "leaf");
+    expect(next.groups.map((g) => g.id).sort()).toEqual(["outer", "sibling"]);
+  });
+});

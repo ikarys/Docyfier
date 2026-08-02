@@ -7,6 +7,7 @@ import {
   type DiagramNode,
   type EdgeStyle,
 } from "./diagram";
+import { pruneDeadGroups } from "./group-tree";
 import { diagramError } from "./validation";
 
 /**
@@ -16,9 +17,14 @@ import { diagramError } from "./validation";
  * `diagramError` rejects is not made, and the caller gets the diagram back
  * unchanged. No edit restates an invariant of its own, and the panel has
  * nothing to check before calling one.
+ *
+ * A dead group — no member, no child — is healed here rather than left to
+ * fail `diagramError` and discard the whole edit: removing the last node of
+ * a group, or moving it out, would otherwise silently do nothing at all.
  */
 function kept(before: DiagramAttrs, after: DiagramAttrs): DiagramAttrs {
-  return diagramError(after) === null ? after : before;
+  const healed = pruneDeadGroups(after);
+  return diagramError(healed) === null ? healed : before;
 }
 
 function mapNode(
