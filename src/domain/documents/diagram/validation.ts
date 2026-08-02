@@ -18,7 +18,7 @@ import {
   type EdgeHead,
   type EdgeStyle,
 } from "./diagram";
-import { groupTreeError } from "./group-tree";
+import { deadGroupError, groupTreeError } from "./group-tree";
 
 /**
  * Describe why `value` is not a drawable diagram, or null when it is.
@@ -42,6 +42,7 @@ export function diagramError(value: unknown): string | null {
     nodesError(a.nodes) ??
     groupsError(a.groups) ??
     membershipError(a.nodes as DiagramNode[], a.groups as DiagramGroup[]) ??
+    deadGroupError(a.nodes as DiagramNode[], a.groups as DiagramGroup[]) ??
     edgesError(a.edges, a.nodes as DiagramNode[]) ??
     textError("title", a.title) ??
     textError("caption", a.caption) ??

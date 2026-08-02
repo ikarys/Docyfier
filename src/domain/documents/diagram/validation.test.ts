@@ -159,6 +159,13 @@ describe("diagramError", () => {
     expect(diagramError({ ...valid, nodes, groups })).toBeNull();
   });
 
+  it("rejects a group that holds no node and no group", () => {
+    const groups = [{ id: "empty", label: "Empty" }];
+    expect(diagramError({ ...valid, groups })).toBe(
+      'diagram group "empty" holds no node and no group',
+    );
+  });
+
   it("rejects a parent that was never declared", () => {
     const groups = [{ id: "aks", label: "AKS cluster", parent: "sub" }];
     expect(diagramError({ ...valid, groups })).toBe(
