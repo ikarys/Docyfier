@@ -5,6 +5,7 @@ import { charterBreach } from "@/domain/authoring/agents/charter-breach";
 import { routeSurface, type Surface } from "@/domain/authoring/agents/routing";
 import { agentSystem, selectionBlocksPrompt } from "@/domain/authoring/prompts";
 import type { DocumentNode } from "@/domain/documents/body";
+import { parseAsciiDiagram } from "@/domain/documents/diagram/ascii-parse";
 import { blockStreamResponse } from "@/lib/ai/block-stream-response";
 import { isAuthorized } from "@/lib/auth";
 import { getStyleParameters } from "@/lib/settings";
@@ -42,10 +43,15 @@ export async function POST(req: Request): Promise<Response> {
   const assignment = routeSurface(surface ?? { kind: "free-prompt" });
   const agent = agentById(assignment.steps[0] ?? "writer");
   const style = await getStyleParameters();
+  const excerpt = blocksToModelMarkdown(passage);
+  const skeleton =
+    surface?.kind === "block-action" && surface.actionId === "into-diagram"
+      ? parseAsciiDiagram(excerpt)
+      : null;
 
   return blockStreamResponse({
     system: agentSystem(agent, style),
-    prompt: selectionBlocksPrompt(blocksToModelMarkdown(passage), instruction),
+    prompt: selectionBlocksPrompt(excerpt, instruction, skeleton ? JSON.stringify(skeleton) : undefined),
     temperature: agent.temperature,
     effort: effortFor("passage"),
     maxTokens: tokensFor("passage"),
