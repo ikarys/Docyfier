@@ -136,7 +136,11 @@ export async function blockStreamResponse(request: BlockStream): Promise<Respons
       try {
         if (request.prelude) controller.enqueue(encoder.encode(line(request.prelude)));
         await readAnswer({ parts, firstText }, request.style, send, read);
-        if (read.retriable.length > 0) {
+        // A repair call is a full extra blocking model request. Firing it once
+        // the whole answer has already failed (a length cap, a provider error)
+        // only delays telling the user that — wasted latency on a surface
+        // where speed is P0.
+        if (!read.stopped && read.retriable.length > 0) {
           await repairFailedBlocks(request.generator, request, read, request.style, send);
         }
 
