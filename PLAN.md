@@ -291,16 +291,37 @@ Acceptance:
   Five kinds — flow, architecture, sequence, hierarchy, phase axis — as one
   atom node whose attrs are the graph. Three decisions carry the rest:
 
-  - **Meaning, never coordinates.** The AI and the panel declare nodes, edges
-    and groups; `domain/documents/diagram/layout/` computes where every box
-    lands. Nothing can be dragged, so nothing can be dragged out of place, and
-    a model that cannot place a diagram well never has to.
+  - **Meaning first, coordinates only where a hand insisted.** The AI and the
+    panel declare nodes, edges and groups; `domain/documents/diagram/layout/`
+    computes where every box lands, so a model that cannot place a diagram well
+    never has to. Direct editing (below) adds the one exception: a box the
+    writer dragged keeps its place, and only its own — the rest of the drawing
+    keeps the coordinates the layout gave it, what the box owns follows it (its
+    band, the arrows that touch it), and `realign` drops every place at once.
+    Sequence and phase-axis boxes hang a rail off each box and are never moved.
+
+    The exception is what relaxed this decision, so it pays for itself in four
+    places. `acceptsPlaces` (`diagram.ts`) says which kinds have a hand at all,
+    and it is read three times rather than spelled three ways: `moveNode`
+    refuses a place a railed kind would ignore, `setKind` drops the places the
+    new kind will not honour, and the canvas offers no drag where none is
+    honoured. A place is bounded to `MAX_PLACE`, because a canvas measured from
+    what it holds turns one absurd coordinate into a megapixel figure in every
+    export. `withMovedBoxes` re-frames rather than merely re-sizing, so a box
+    dropped at the corner cannot put its band — or the name drawn a header above
+    that band — outside the `viewBox`. And `realign` is in the panel whenever a
+    hand has placed something: the way back is a control, not a function.
   - **No layout library and no mermaid.** The mermaid rejection recorded in
     STEP U6 stands: async render, rigid grammar, unvalidatable. The four
     families have regular geometry, so ~600 lines of pure maths replace a
     general graph-layout dependency — and the tests pin what makes the drawings
     trustworthy (no overlap, nothing off-canvas, orthogonal edges, determinism)
-    rather than how they are computed.
+    rather than how they are computed. `@xyflow/react` arrived with direct
+    editing as the **editing canvas only** — it renders and it reports
+    gestures, it never places a box. `components/diagram/react-flow/` is the
+    whole of the tie, `placement-to-flow.ts` restates the domain `Placement` in
+    the shape that library wants, and another library would be another folder
+    beside it with nothing above `components/diagram/` changing.
   - **One scene, two emitters.** The editor paints theme tokens; the export
     path paints literal values, because librsvg — `sharp`'s renderer — resolves
     no CSS variable, no `currentColor` and no web font. `sharp` is promoted to
