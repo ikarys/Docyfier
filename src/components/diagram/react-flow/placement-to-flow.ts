@@ -28,12 +28,15 @@ import type {
 
 const BOX = "box:";
 const BAND = "band:";
+const WIRE = "wire:";
 
 export type BoxData = {
   /** The label as written; `lines` is the same text broken to the box's width. */
   label: string;
   lines: string[];
   note: string | null;
+  /** The note broken to the box's width, the way `lines` breaks the label. */
+  noteLines: string[];
   accent: number | null;
   direction: DiagramDirection;
   /**
@@ -140,6 +143,7 @@ function boxNode(
       label: box.label,
       lines: box.lines,
       note: box.note,
+      noteLines: box.noteLines,
       accent: box.accent,
       direction,
       roomForNote,
@@ -162,7 +166,7 @@ interface BoxContext {
  */
 function wireEdge(edge: PlacedEdge, index: number, direction: DiagramDirection): FlowEdge {
   return {
-    id: `wire:${index}`,
+    id: `${WIRE}${index}`,
     source: `${BOX}${edge.from}`,
     target: `${BOX}${edge.to}`,
     type: "wire",
@@ -188,4 +192,11 @@ export function boxIdOf(flowId: string): string | null {
 /** The group a band stands for, or null when the id names something else. */
 export function groupIdOf(flowId: string): string | null {
   return flowId.startsWith(BAND) ? flowId.slice(BAND.length) : null;
+}
+
+/** The position in `edges` a wire stands for, or null when the id names something else. */
+export function wireIndexOf(flowId: string): number | null {
+  if (!flowId.startsWith(WIRE)) return null;
+  const index = Number(flowId.slice(WIRE.length));
+  return Number.isInteger(index) ? index : null;
 }

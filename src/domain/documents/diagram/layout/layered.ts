@@ -110,6 +110,7 @@ function laneBox(id: string, at: Point, size: BoxSize, direction: "down" | "righ
     label: "",
     lines: [],
     note: null,
+    noteLines: [],
     icon: null,
     accent: null,
   };

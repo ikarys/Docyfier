@@ -43,7 +43,9 @@ export function BoxNode({ id, data: box, selected }: NodeProps<Node<BoxData, "bo
           value={box.note ?? ""}
           className="diagram-box-note"
           placeholder="Note"
-        />
+        >
+          {box.note ? box.noteLines.map((line, i) => <span key={i}>{line}</span>) : undefined}
+        </InlineText>
       )}
 
       <Handle type="source" position={along ? Position.Bottom : Position.Right} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { NodeToolbar, Position } from "@xyflow/react";
-import { removeNode, setAccent } from "@/domain/documents/diagram/diagram-edits";
+import { moveToGroup, removeNode, setAccent } from "@/domain/documents/diagram/diagram-edits";
 import { ACCENT_CHOICES, toolbarFor } from "./box-toolbar";
 import { useEditing } from "./editing-context";
 
@@ -33,6 +33,22 @@ export function BoxToolbar({ flowId }: { flowId: string }) {
           onClick={() => update(setAccent(attrs, bar.id, slot))}
         />
       ))}
+      {bar.groups.length > 0 && (
+        <select
+          className="tb-select diagram-bar-select"
+          value={bar.group ?? ""}
+          aria-label={`Group of ${bar.id}`}
+          onMouseDown={(e) => e.stopPropagation()}
+          onChange={(e) => update(moveToGroup(attrs, bar.id, e.target.value || null))}
+        >
+          <option value="">No group</option>
+          {bar.groups.map((group) => (
+            <option key={group.id} value={group.id}>
+              {group.label}
+            </option>
+          ))}
+        </select>
+      )}
       {bar.removable && (
         <button
           type="button"

@@ -1,4 +1,4 @@
-import { ACCENT_SLOTS, type DiagramAttrs } from "@/domain/documents/diagram/diagram";
+import { ACCENT_SLOTS, type DiagramAttrs, type DiagramGroup } from "@/domain/documents/diagram/diagram";
 import { removeNode } from "@/domain/documents/diagram/diagram-edits";
 import { boxIdOf } from "./placement-to-flow";
 
@@ -23,6 +23,9 @@ export interface BoxToolbar {
   id: string;
   accent: number | null;
   removable: boolean;
+  /** The group this box sits in, or the groups it could move to. */
+  group: string | null;
+  groups: readonly DiagramGroup[];
 }
 
 export function toolbarFor(attrs: DiagramAttrs, flowId: string): BoxToolbar | null {
@@ -33,6 +36,8 @@ export function toolbarFor(attrs: DiagramAttrs, flowId: string): BoxToolbar | nu
     id: node.id,
     accent: node.accent ?? null,
     removable: removeNode(attrs, node.id) !== attrs,
+    group: node.group ?? null,
+    groups: attrs.groups,
   };
 }
 

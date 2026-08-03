@@ -272,17 +272,18 @@ function boxText(box: PlacedBox): TextShape[] {
     fill: "text",
   }));
   if (!box.note) return lines;
+  const noteTop = box.y + BOX_PAD_Y + box.lines.length * LINE_HEIGHT;
   return [
     ...lines,
-    {
-      shape: "text",
+    ...box.noteLines.map((text, i) => ({
+      shape: "text" as const,
       x: centre,
-      y: box.y + BOX_PAD_Y + box.lines.length * LINE_HEIGHT + NOTE_SIZE * BASELINE,
-      text: box.note,
+      y: noteTop + i * NOTE_HEIGHT + NOTE_SIZE * BASELINE,
+      text,
       size: NOTE_SIZE,
       bold: false,
-      anchor: "middle",
-      fill: "muted",
-    },
+      anchor: "middle" as const,
+      fill: "muted" as const,
+    })),
   ];
 }

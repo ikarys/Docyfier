@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { DiagramNode } from "../diagram";
-import { boxFrom, MAX_BOX_WIDTH, MIN_BOX_WIDTH, uniformBoxSize, wrapLabel } from "./geometry";
+import {
+  boxFrom,
+  MAX_BOX_WIDTH,
+  MIN_BOX_WIDTH,
+  uniformBoxSize,
+  wrapLabel,
+} from "./geometry";
+import { MAX_NOTE } from "../diagram";
 
 const node = (label: string, note?: string): DiagramNode => ({ id: label, label, note });
 
@@ -70,5 +77,47 @@ describe("uniformBoxSize", () => {
     const one = uniformBoxSize([node("API")]);
     const two = uniformBoxSize([node("A rather long service name")]);
     expect(two.height).toBeGreaterThan(one.height);
+  });
+
+  /**
+   * A note is free text, and at MAX_BOX_WIDTH it wraps on screen just like a
+   * label does. A box sized for one note line clips or overlaps whatever sits
+   * below it the moment a note runs past that line.
+   */
+  it("grows tall enough for a note that wraps", () => {
+    const short = uniformBoxSize([node("DB", "PostgreSQL")]);
+    const long = uniformBoxSize([
+      node("DB", "mount: kv/ (v2) policies: eso-reader, dev-projects, ci-terraform auth: k8s+jwt"),
+    ]);
+    expect(long.height).toBeGreaterThan(short.height);
+  });
+});
+
+describe("boxFrom", () => {
+  it("wraps the note the way it wraps the label, so the box drawn matches the box measured", () => {
+    const long = node(
+      "DB",
+      "mount: kv/ (v2) policies: eso-reader, dev-projects, ci-terraform auth: k8s+jwt",
+    );
+    const size = uniformBoxSize([long]);
+    const placed = boxFrom(long, { x: 0, y: 0 }, size);
+    expect(placed.noteLines.length).toBeGreaterThan(1);
+    expect(placed.noteLines.join(" ")).not.toContain("  ");
+  });
+
+  /**
+   * `MAX_NOTE` is the validator's ceiling on how much a note may say; the wrap
+   * cap must not sit below it, or a note the validator let through still loses
+   * words on screen — the bug that made a converted diagram look faithful to
+   * its own attrs but not to the drawing it was read from.
+   */
+  it("wraps a note at MAX_NOTE's length without ellipsis", () => {
+    const items = "unseal-key, root-token, oidc-secret, recovery-keys, ";
+    const note = items.repeat(Math.ceil(MAX_NOTE / items.length)).slice(0, MAX_NOTE);
+    const long = node("Platform KV", note);
+    const size = uniformBoxSize([long]);
+    const placed = boxFrom(long, { x: 0, y: 0 }, size);
+    expect(placed.noteLines.length).toBeGreaterThan(2);
+    expect(placed.noteLines.some((line) => line.endsWith("…"))).toBe(false);
   });
 });

@@ -38,6 +38,18 @@ describe("the bar over a selected box", () => {
     expect(toolbarFor(attrs, "box:absent")).toBeNull();
   });
 
+  it("says which group the box belongs to, and the groups on offer", () => {
+    const attrs = sampleDiagram("architecture");
+    const bar = toolbarFor(attrs, "box:web");
+    expect(bar?.group).toBe("front");
+    expect(bar?.groups).toEqual(attrs.groups);
+  });
+
+  it("says no group for a box in none, and offers none on a diagram with none", () => {
+    expect(toolbarFor(flow(), "box:review")?.group).toBeNull();
+    expect(toolbarFor(flow(), "box:review")?.groups).toEqual([]);
+  });
+
   it("offers to delete a box the diagram can do without", () => {
     expect(toolbarFor(flow(), "box:review")?.removable).toBe(true);
   });

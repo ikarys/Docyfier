@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DIAGRAM_KINDS } from "./diagram";
+import { boxFrom, frame, uniformBoxSize } from "./layout/geometry";
 import { placeNodes } from "./layout/place";
 import { sampleDiagram } from "./sample";
 import { toScene, type Shape, type TextShape } from "./scene";
@@ -74,5 +75,28 @@ describe("toScene", () => {
     const note = texts(scene.shapes).find((t) => t.text === "Q1") as TextShape;
     expect(note.y).toBeGreaterThan(label.y);
     expect(note.x).toBe(label.x);
+  });
+
+  /**
+   * The box drawn on export must be the box measured for: a note that wraps to
+   * two lines on screen has to wrap to two `<text>` elements here too, or the
+   * box the layout sized for two lines shows only one and stands too tall.
+   */
+  it("writes one line of text per line the note wraps to", () => {
+    const long = {
+      id: "svc",
+      label: "DB",
+      note: "mount: kv/ (v2) policies: eso-reader, dev-projects, ci-terraform auth: k8s+jwt",
+    };
+    const size = uniformBoxSize([long]);
+    const placed = boxFrom(long, { x: 0, y: 0 }, size);
+    const placement = frame({ boxes: [placed], groups: [], edges: [], rails: [] });
+    const scene = toScene(placement);
+    const noteTexts = texts(scene.shapes).filter((t) => placed.noteLines.includes(t.text));
+    expect(noteTexts).toHaveLength(placed.noteLines.length);
+    expect(placed.noteLines.length).toBeGreaterThan(1);
+    for (let i = 1; i < noteTexts.length; i++) {
+      expect(noteTexts[i].y).toBeGreaterThan(noteTexts[i - 1].y);
+    }
   });
 });

@@ -4,6 +4,7 @@ import { EdgeLabelRenderer, type Edge, type EdgeProps } from "@xyflow/react";
 import { labelAnchor, routeBetween } from "@/domain/documents/diagram/layout/edges";
 import type { Point } from "@/domain/documents/diagram/layout/geometry";
 import { arrowheadPath, polyline } from "@/domain/documents/diagram/scene";
+import { EdgeToolbar } from "./EdgeToolbar";
 import { InlineText } from "./InlineText";
 import type { WireData } from "./placement-to-flow";
 
@@ -17,10 +18,12 @@ import type { WireData } from "./placement-to-flow";
  * again and the full route comes back.
  */
 export function WireEdge({
+  id,
   sourceX,
   sourceY,
   targetX,
   targetY,
+  selected,
   data: wire,
 }: EdgeProps<Edge<WireData, "wire">>) {
   // The library declares an edge's data optional; every arrow this surface
@@ -44,6 +47,16 @@ export function WireEdge({
         strokeDasharray={wire.dashed ? "5 4" : undefined}
       />
       {wire.head === "arrow" && <path className="diagram-wire-head" d={arrowheadPath(points)} />}
+      {selected && (
+        <EdgeLabelRenderer>
+          <div
+            className="diagram-edge-bar-anchor nodrag nopan"
+            style={{ transform: `translate(-50%, -100%) translate(${at.x}px, ${at.y - 10}px)` }}
+          >
+            <EdgeToolbar flowId={id} />
+          </div>
+        </EdgeLabelRenderer>
+      )}
       {wire.label !== null && (
         <EdgeLabelRenderer>
           <span

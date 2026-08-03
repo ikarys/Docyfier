@@ -24,6 +24,7 @@ export interface PlacedBox extends Point {
   label: string;
   lines: string[];
   note: string | null;
+  noteLines: string[];
   icon: string | null;
   accent: number | null;
 }
@@ -91,8 +92,8 @@ export function textWidth(text: string, size: number): number {
 }
 
 /** Break `label` into at most `maxLines` lines that fit `width`, ellipsing the rest. */
-export function wrapLabel(label: string, width: number, maxLines = 2): string[] {
-  const budget = Math.max(1, Math.floor(width / (LABEL_SIZE * 0.56)));
+export function wrapLabel(label: string, width: number, maxLines = 2, size = LABEL_SIZE): string[] {
+  const budget = Math.max(1, Math.floor(width / (size * 0.56)));
   const lines: string[] = [];
   let line = "";
   for (const word of label.split(/\s+/).filter(Boolean)) {
@@ -130,10 +131,38 @@ export function uniformBoxSize(nodes: readonly DiagramNode[]): BoxSize {
   );
   const width = clamp(Math.ceil(widest) + BOX_PAD_X * 2, MIN_BOX_WIDTH, MAX_BOX_WIDTH);
   const inner = width - BOX_PAD_X * 2;
-  const lines = Math.max(...nodes.map((n) => wrapLabel(n.label, inner).length));
+  const lines = Math.max(...nodes.map((n) => wrapLabel(n.label, inner, LABEL_MAX_LINES).length));
   const hasNote = nodes.some((n) => noteOf(n) !== null);
-  const height = BOX_PAD_Y * 2 + lines * LINE_HEIGHT + (hasNote ? NOTE_HEIGHT : 0);
+  const noteLines = hasNote
+    ? Math.max(...nodes.map((n) => noteWrapOf(n, inner).length))
+    : 0;
+  const height = BOX_PAD_Y * 2 + lines * LINE_HEIGHT + noteLines * NOTE_HEIGHT;
   return { width, height };
+}
+
+/**
+ * A label is a name, not the paragraph the note carries — but a model that
+ * folds a qualifier into it rather than the note (the prompt now says not to,
+ * but an existing diagram was already drawn that way) still should not lose
+ * it to an ellipsis. Measured the same way as `NOTE_MAX_LINES`: a real
+ * offender — `"prd cluster: subscription astro_shared_prd (westeurope) —
+ * SEPARATE"` — needs 5 lines at `MAX_BOX_WIDTH` to clear without one.
+ */
+export const LABEL_MAX_LINES = 5;
+
+/**
+ * Enough lines that a note at `MAX_NOTE`'s length wraps without ellipsis, even
+ * at `MAX_BOX_WIDTH`. Word boundaries waste part of every line's budget, so
+ * this is measured against real content, not `MAX_NOTE` divided by a
+ * character budget: a comma-separated list of short items — the shape a
+ * converted diagram's note actually takes — needs 7 lines at 160 characters.
+ */
+export const NOTE_MAX_LINES = 8;
+
+/** A note that carries no text wraps to nothing: `noteOf` already made that call. */
+function noteWrapOf(node: DiagramNode, innerWidth: number): string[] {
+  const note = noteOf(node);
+  return note === null ? [] : wrapLabel(note, innerWidth, NOTE_MAX_LINES, NOTE_SIZE);
 }
 
 /**
@@ -148,6 +177,7 @@ export function noteOf(node: DiagramNode): string | null {
 }
 
 export function boxFrom(node: DiagramNode, at: Point, size: BoxSize): PlacedBox {
+  const inner = size.width - BOX_PAD_X * 2;
   return {
     id: node.id,
     x: at.x,
@@ -155,8 +185,9 @@ export function boxFrom(node: DiagramNode, at: Point, size: BoxSize): PlacedBox 
     width: size.width,
     height: size.height,
     label: node.label,
-    lines: wrapLabel(node.label, size.width - BOX_PAD_X * 2),
+    lines: wrapLabel(node.label, inner, LABEL_MAX_LINES),
     note: noteOf(node),
+    noteLines: noteWrapOf(node, inner),
     icon: node.icon ?? null,
     accent: node.accent ?? null,
   };

@@ -66,6 +66,9 @@
   color: var(--diagram-text);
 }
 .doc .diagram-box-note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   font-size: 11px;
   line-height: 15px;
   color: var(--diagram-muted);
@@ -109,6 +112,13 @@
 }
 .doc .diagram-wire-label {
   color: var(--diagram-muted);
+}
+.doc .diagram-edge-bar-anchor {
+  position: absolute;
+  pointer-events: all;
+}
+.doc .diagram-edge-bar {
+  padding: 2px;
 }
 
 /* Text edited where it is read: the field takes the place of the words, at
@@ -181,6 +191,13 @@
 }
 .doc .diagram-swatch[data-on="true"] {
   box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--accent);
+}
+.doc .diagram-bar-select {
+  height: 20px;
+  font-size: 11px;
+  padding: 0 4px;
+  margin-left: 2px;
+  border-color: var(--rule-strong);
 }
 .doc .diagram-bar-remove {
   width: 20px;
