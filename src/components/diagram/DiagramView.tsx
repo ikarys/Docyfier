@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import type { DiagramAttrs } from "@/domain/documents/diagram/diagram";
 import { diagramError } from "@/domain/documents/diagram/validation";
 import { Diagram } from "@/infrastructure/editor/diagram";
-import { DiagramPanel } from "./DiagramPanel";
+import { DiagramOptions } from "./DiagramOptions";
 import { DiagramPlot } from "./DiagramPlot";
 
 /**
@@ -44,7 +44,7 @@ export function DiagramView({ node, updateAttributes, selected, editor }: NodeVi
 
       {attrs.caption && <figcaption className="diagram-caption">{attrs.caption}</figcaption>}
 
-      {editing && <DiagramPanel attrs={attrs} update={updateAttributes} />}
+      {editing && <DiagramOptions attrs={attrs} update={updateAttributes} />}
     </NodeViewWrapper>
   );
 }

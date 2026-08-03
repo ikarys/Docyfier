@@ -614,19 +614,6 @@ body {
   align-items: center;
   gap: 0.4rem;
 }
-.diagram-rows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  max-height: 15rem;
-  overflow-y: auto;
-}
-.diagram-rows li::marker {
-  content: "";
-}
 .diagram-input {
   font: inherit;
   font-size: 0.82rem;
