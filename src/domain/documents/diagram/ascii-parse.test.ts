@@ -128,9 +128,21 @@ describe("parseAsciiDiagram", () => {
     expect(parseAsciiDiagram(source)).toBeNull();
   });
 
-  it("returns null when a box's note is longer than the note limit", () => {
+  it("truncates a note down to the note limit rather than refusing the drawing", () => {
     const source = boxLines("Heading", "x".repeat(MAX_NOTE + 5)).join("\n");
-    expect(parseAsciiDiagram(source)).toBeNull();
+    const parsed = parseAsciiDiagram(source);
+    expect(parsed).not.toBeNull();
+    const note = parsed!.nodes[0].note!;
+    expect(note.length).toBeLessThanOrEqual(MAX_NOTE);
+    expect(note.endsWith("…")).toBe(true);
+  });
+
+  it("cuts a truncated note at the last '; ' boundary so no item is chopped mid-word", () => {
+    const items = ["first detail", "second detail", "x".repeat(MAX_NOTE)];
+    const source = boxLines("Heading", ...items).join("\n");
+    const parsed = parseAsciiDiagram(source);
+    const note = parsed!.nodes[0].note!;
+    expect(note).toBe("first detail; second detail…");
   });
 
   it("resolves an arrow to the two node ids it connects", () => {

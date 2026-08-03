@@ -41,6 +41,20 @@ function depthOf(box: Box): number {
 }
 
 /**
+ * A box's descriptive lines joined into one note, kept within `MAX_NOTE` —
+ * cut at the last "; " boundary so a long drawing still parses (PLAN.md
+ * STEP 10) instead of being refused outright: a note is a short annotation
+ * by design, not the whole drawing reproduced verbatim.
+ */
+function noteFrom(lines: readonly string[]): string {
+  const joined = lines.join("; ");
+  if (joined.length <= MAX_NOTE) return joined;
+  const cut = joined.slice(0, MAX_NOTE - 1);
+  const boundary = cut.lastIndexOf("; ");
+  return `${boundary > 0 ? cut.slice(0, boundary) : cut}…`;
+}
+
+/**
  * One box's place in the skeleton: a leaf becomes a node; a box with
  * children becomes a group, and any text it carries beyond its own heading
  * becomes a plain member node — a group has no "note" to hold it, and a box
@@ -62,7 +76,7 @@ function assembleBox(
     nodes.push({
       id,
       label: text[0],
-      ...(text.length > 1 ? { note: text.slice(1).join("; ") } : {}),
+      ...(text.length > 1 ? { note: noteFrom(text.slice(1)) } : {}),
       ...(parentId ? { group: parentId } : {}),
     });
     return;
@@ -73,7 +87,7 @@ function assembleBox(
     nodes.push({
       id: slug(text[1]),
       label: text[1],
-      ...(text.length > 2 ? { note: text.slice(2).join("; ") } : {}),
+      ...(text.length > 2 ? { note: noteFrom(text.slice(2)) } : {}),
       group: id,
     });
   }
@@ -85,13 +99,14 @@ function assembleBox(
  * labels, groups and edges, invent none, drop none" contradicts "at most
  * `MAX_NODES` nodes". Refusing here is the parser's own "returns null
  * whenever the input doesn't parse with confidence": a drawing that cannot
- * possibly fit is not a confident parse of one that can.
+ * possibly fit is not a confident parse of one that can. A note has no such
+ * refusal — `noteFrom` keeps it within `MAX_NOTE` by construction instead,
+ * since a note is the one field a drawing can lose detail from without
+ * losing its structure.
  */
 function exceedsSchemaLimits(nodes: ParsedSkeleton["nodes"]): boolean {
   if (nodes.length > MAX_NODES) return true;
-  return nodes.some(
-    (node) => node.label.length > MAX_LABEL || (node.note?.length ?? 0) > MAX_NOTE,
-  );
+  return nodes.some((node) => node.label.length > MAX_LABEL);
 }
 
 export function parseAsciiDiagram(source: string): ParsedSkeleton | null {
