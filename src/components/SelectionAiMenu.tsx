@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { FormattingRow } from "./editor/FormattingRow";
+import { shouldShowSelectionMenu } from "./editor/selection-menu";
 import type { AiReview } from "./editor/useAiReview";
 import { useSelectionRewrite } from "./editor/useSelectionRewrite";
 
@@ -44,9 +45,7 @@ export function SelectionAiMenu({
       editor={editor}
       className="ai-bubble no-print"
       options={{ placement: "top", offset: 8 }}
-      shouldShow={({ editor: e, state }) =>
-        e.isEditable && !state.selection.empty
-      }
+      shouldShow={({ editor: e, state }) => e.isEditable && shouldShowSelectionMenu(state)}
     >
       {busy ? (
         <div className="ai-bubble-busy">
